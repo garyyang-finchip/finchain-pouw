@@ -1,8 +1,13 @@
 # local tooling and environment files
 node_modules/
-out/
+artifacts/
 cache/
+out/
 .env
 .env.*
 !.env.example
 .DS_Store
+# keys never enter the repository
+*.key
+*.pem
+keys/
