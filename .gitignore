@@ -1,0 +1,8 @@
+# local tooling and environment files
+node_modules/
+out/
+cache/
+.env
+.env.*
+!.env.example
+.DS_Store
