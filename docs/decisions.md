@@ -6,13 +6,15 @@ force only after a ruling, and those that round R1 implements are marked so that
 confirmed or vetoed one by one. **Illustrative** entries are figures used to explain a mechanism;
 none of them is a protocol parameter, and the kernel runs with any value in their place.
 
-Design revision v0.1.4: a revision of the documents after the alignment of 2026-11-24. The
-software is release 0.1.3, unchanged - no contract, interface, client, script, configuration or
-deployment changes with it. Sections 2 and 3 record the two reviews - of v0.1.1, and of v0.1.2
-with round R1 - and how each ruling was applied; section 4 records the alignment on the
-production line and how it is applied; sections 5 and 6 give the state of the earlier proposals;
-section 7 lists what v0.1.3 proposed; section 8 what this revision proposes on its own judgment;
-section 9 holds the questions for the next ruling.
+Design revision v0.1.5: a revision of the documents after the review of design revision v0.1.4.
+The software is release 0.1.3, unchanged - no contract, interface, client, script, configuration,
+runbook or deployment changes with it. Sections 2 and 3 record the two reviews of the kernel - of
+v0.1.1, and of v0.1.2 with round R1 - and how each ruling was applied; section 4 records the
+alignment of 2026-11-24 on the production line; section 5 records the review of v0.1.4 and how it
+is applied; sections 6 and 7 give the state of the earlier proposals; section 8 lists what v0.1.3
+proposed, and section 9 what v0.1.4 proposed with the state of each after the review; section 10
+is what this revision proposes on its own judgment; section 11 holds the questions for the next
+ruling.
 
 ## 1. Approved
 
@@ -72,10 +74,24 @@ section 9 holds the questions for the next ruling.
 | A52 | Recovery (future design). A production implementation recovers work and money together (`genesis-mining-mvp.md` 14.8): it declines or pauses on a shortfall without inferring credit or widening authority; switches only to a source that meets the specification, recording the actual source and revision; reconciles a lost request or payment on its stable identifier before buying or paying again; keeps incomplete, refused and rejected work with its cost and without a qualified delivery; marks a delivery whose required evidence cannot be retrieved as unauditable; resumes after a crash or a self-repair without a second purchase, recording or reward; and gives a replica its own identity and budget. | alignment of the owner and the advisor on the production line, relayed by the owner, 2026-11-24 |
 | A53 | Scope and order. Economic stages are reported separately from the engineering numbers P1-P4 and R0-R4; completing a round certifies no stage. Round R2 continues first, under its approved scope: the alignment adds no gate to it, does not reopen Q9-Q12, and expands it into neither production inference nor Tokenomics. The production extension is then specified and implemented as a separately reviewable increment that starts with one bounded inference profile, a supported procurement route, its evidence envelope and an operating report; further providers, stablecoin settlement, richer verification, SIG calibration and platform economics expand from that evidence. The protocol stays in `finchain-pouw`. No FOGA release, ERC change, mainnet deployment, token issuance or change to consensus or sequencing is authorized. | alignment of the owner and the advisor on the production line, relayed by the owner, 2026-11-24 |
 | A54 | The next round. The executor delivers: (A) route and terms aligned across the decisions, the architecture and the roadmap, with the coexistence of the forms and their mapping to the engineering milestones; (B) the plan of the first token-production service; (C) the plan of the supply and payment interfaces, shared by manual and autonomous operation and covering exhausted quota, failed renewal, unclear payment state, duplicate requests and recovery; (D) a staged acceptance matrix covering at least the seven items of section 4.3. The proposed checks of `genesis-mining-mvp.md` 15 are all proposed and not run; a later run reports its environment, versions, data source, parties, finance mode and evidence, and says what it simulated. The next design review confirms how the first production loop lands. Its milestone: a buyer makes a real request for intelligence service; a supply node completes a standardized delivery; a FOGA cell uses or organizes the service; an independent verifier can re-check the volume of service and the acceptance; the payment completes correctly; a GMU record that can be recomputed is formed; and the actual cost of production is reported. | alignment of the owner and the advisor on the production line, relayed by the owner, 2026-11-24 |
+| A55 | The review of design revision v0.1.4. The direction and the merge of the aligned documents pass: the three stages with their five segments are kept whole, and so is FOGA's independence; the production plan was not put into round R2a, and no change to FOGA or to the mainnet was asked for. The first loop is supported as planned: a bounded structured-extraction task, a model's output, an acceptance that can be repeated, settlement in the native asset through ERC-8414, and records of contribution, usage and cost; stablecoins and the prepaid entitlement ledger are adapted later. The production plans need the corrections of A56 to A62 before they can serve as an implementation specification. None of them is a new gate on round R2a, which continues under its runbook. Q9-Q12 are not reopened, and Q13-Q16 are not approved by the merge of the documents. A revision of the documents applies the corrections, every new acceptance staying marked not run; the next version of the ledger and the first production increment are implemented later, against the corrected specification. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A56 | Measurement. The count of a canonical result is not declared a subset of the tokens that were generated: making a result canonical can change white space, the order of keys, the escaping and the boundaries between tokens, so that count is a standardized length of what was delivered. Recorded separately: the raw usage of generation, as the provider reported it or as the party that runs the model counted it; the delivered text as returned, and its hash; the canonical result, and its count; the canonicalization rule and the tokenizer version. The records can be linked; a subset relation is stated only where the original stream of tokens and the mapping were kept. Qualified service units are computed in integers, with fixed-point weights over a stated scale and one rounding down; the rounding rule, the scale and the counting version belong to the specification. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A57 | Deduplication binds the fixed GMU. The identity of a request is kept apart from the identity of its order on chain: the work id may stay as it is, and a request instance has an identifier fixed before the first attempt, which a retry cannot change. For a contribution the protocol defines as a duplicate, neither GMU nor eligibility for the subsidy increases again; the facts of its transaction and of its payment may stay. The fixed GMU belongs to a complete task unit defined beforehand - in the first round, fixed fixture specifications can serve - so that one delivery cut into ten does not earn ten times. Tests cover another tender, another submission, a retry and the splitting of one root task. The scope of deduplication is stated, so that a legitimate repeat purchase is not refused for ever. These rules control repeated contributions that can be recognized; they do not mean that hidden related parties or several addresses of one party are solved. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A58 | The purchase record and the budget. One purchase record for all routes is right; one single state in it is not enough. Represented separately, because they can hold together: the payment status (authorized, initiated, pending, result unknown, settled by the rule of the channel, or failed), the status of the service credit (not available, available, partly used, exhausted, lapsed) and the adjustments (partial refund, full refund, credit issued again, dispute - each with its amount). Settlement is stated per payment channel - authorization, capture, settlement and later adjustments - and the channel's own state and evidence are kept. Procurement by an agent needs an atomic budget reservation, to be specified before the second increment is implemented: atomic per account, asset and budget period; a payment whose result is unknown goes on holding its budget; a release only on a definite failure or by a stated release rule; the local purchase identifier mapped to the provider's idempotency key or to the authorization or transaction on chain. The report reconciles prepayment, consumed cost and cash paid out, and adds none of them twice. This completes a specification: there is no automatic procurement code in which a defect could exist. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A59 | The scope of the first increment and the milestone of A54. The acceptances are staged, each with evidence of its own: controlled fixtures show that the mechanism of production, acceptance, measurement and payment holds; a FOGA cell taking part shows that a cell can use or organize the service; an external supplier shows that supply from outside can connect; an external customer's own request shows that this one demand from outside exists. External supply and external demand are evidenced separately and neither stands in for the other. A customer's own request that is left for later is written as later and is not required of the controlled fixtures. One independent customer that buys a real service with real funds proves that one independent paid demand; it proves neither the size of a market nor a repeat purchase nor sustainability - and that is what the documents say, not that one customer cannot prove commercial demand. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A60 | An agent as a buyer. An agent's own thinking is not a further fulfillment to anyone. When an agent buys inference from a supplier, the agent is the buyer, and the supplier's qualified service to it can be a delivery: a mature network has cells that buy from one another, route and pay, and a buyer that is an agent is not outside the economy. Where an upstream inference and a downstream task were each really delivered, each is recorded; whether either is subsidized follows its role and the rules of deduplication, and one contribution is not packaged twice. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A61 | ERC-8506. Reusing its Unit, Grade, Source and Receipt records is supported, and the first increment needs no entitlement ledger. Stated before anything is implemented: the repository of the specification and the exact commit; the version of the schemas or sections used; the mapping of this protocol's fields to the fields upstream. The wording: the first increment has no ERC-8506 contract and no runtime dependency, and its record formats are compatible with a pinned revision of the ERC-8506 specification. That is a dependency on a specification, so "no dependency" is not said. Neither FOGA nor ERC-8506 itself has to change. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A62 | Wording made uniform. (a) The table of supply under Startup, Development and Pre-expansion compares forms of supply, or says that the forms appear step by step: in Pre-expansion much supply is still an external API. (b) Platform Tokenomics is a ruling of its own that can serve several stages; what was decided is that nothing is issued in this round, not that platform economics has to wait for Maturity. (c) Hosted CI: the workflow is in place and its first hosted run is pending; the URL, the commit and the result are added when it has run. (d) Stablecoins: they are configured by parameters only after a new policy and its implementation support them; the native-only rule is not lifted by registering an asset parameter. (e) x402: the signed nonce and the validity window are an example of one EVM payment mechanism; a payment may be on the same chain or on another supported chain; version 2 has several mechanisms and networks, and an adapter pins the one it implements. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A63 | The eight questions of v0.1.4, as the review answered them (section 5.3). Q17: structured extraction with its three checks is the first controlled profile, each check keeping the boundary of what it verifies. Q18: the record formats of ERC-8506, on the condition of A61. Q19: published weights and a public tokenizer, the model chosen when the increment is built; the model, the tokenizer, the template and the serving configuration all pinned by version; a specification for the provider a FOGA node calls may be registered beside it. Q20: a fixed GMU first, once the scale of the measurement, the deduplication of requests and the boundary of a task unit are fixed (A56, A57); service units serve observation and recomputation and are not presented as a completed SIG calibration. Q21: public fixtures, with content, versions, commitments, the procedure of the re-check and the statement of availability published together. Q22: one design of the next ledger version is preferred; the rules of authorization and of receipt state of Q13 and Q16 converge first, and a necessary upgrade of the ledger is not held back by a production design that is not finished. Q23: the increments run beside rounds R2b and R3, once the scope of the first increment no longer conflicts with A54 (A59); a third party may also be the customer, each piece of evidence saying which role - supply, purchase, audit - it had. Q24: the providers of the second increment are chosen when it opens; the capability interface, the authorization, the budget, the idempotency and the reconciliation are fixed now, and no provider is presumed to support a top-up without a person. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
+| A64 | A condition on receipts without the demander (A33, Q16), to be decided before the next version of the ledger is coded. A record that anyone may make first, and that is never subsidized, must not let a third party take the one contribution id of a piece of work and so leave the rightful demander's later confirmation unable to obtain eligibility. The next version either keeps the facts of the work apart from the confirmation that leads to the subsidy, or states a safe rule for a later confirmation; either way, an epoch that is frozen is never rewritten. | review of design revision v0.1.4, relayed by the owner, 2026-11-24 |
 
-The rulings of both reviews and the alignment are recorded here in condensed form from the owner's
-relay of them. A review's own text governs wherever a wording here falls short of it, and for
-A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining-mvp.md` 14 and 15.
+The rulings of the reviews and of the alignment are recorded here in condensed form from the
+owner's relay of them. A review's own text governs wherever a wording here falls short of it, and
+for A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining-mvp.md` 14 and
+15. A55-A64 condense the review of design revision v0.1.4. Its corrections (A56-A62, A64) are
+requirements. Its answers to Q17-Q24 (A63) it gives as the advisor's recommendations; the owner
+relayed the whole for application, and they are recorded on that footing: where the owner rules
+otherwise on one of them, his ruling replaces it.
 
 ## 2. The formal review of v0.1.1 and how it was applied
 
@@ -127,17 +143,18 @@ A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining-mvp
 ## 3. The review of v0.1.2 and of round R1, and how it was applied
 
 The reviewer read the code of round R1 and ruled on it without running the tests again: the
-dependencies could not be installed in the reviewer's environment in time. From this revision on
-the tests and the rehearsal can be run on a hosted runner, from a clean checkout, by starting one
-job (`.github/workflows/ci.yml`), and are run so for each version: a reader does not depend on an
-installation of their own.
+dependencies could not be installed in the reviewer's environment in time. Since v0.1.3 the tests
+and the rehearsal can be run on a hosted runner, from a clean checkout, by starting one job
+(`.github/workflows/ci.yml`), so that a reader does not depend on an installation of their own.
+The workflow is in place; its first hosted run is pending (A62). When it has run, the run's URL,
+its commit and its result are added here.
 
 ### 3.1 The rulings
 
 | Ruling | Applied as | Where |
 | --- | --- | --- |
-| A31 | No contract was rebuilt. The six deployable contracts compile to the code of v0.1.2, the metadata hash aside: two comments changed (A38), and the interfaces are identical. What is new is the tooling of round R2 | `build/`; section 7 |
-| A32 | P19 to P31 are in force by ruling, with the notes of the ruling | section 5 |
+| A31 | No contract was rebuilt. The six deployable contracts compile to the code of v0.1.2, the metadata hash aside: two comments changed (A38), and the interfaces are identical. What is new is the tooling of round R2 | `build/`; section 8 |
+| A32 | P19 to P31 are in force by ruling, with the notes of the ruling | section 7 |
 | A33 | Unchanged for R2. A channel for receipts that are not subsidized is proposed for the next version of the ledger (P40) | `genesis-mining-mvp.md` 13.7 |
 | A34 | The R2 configuration: epochs of 7200 seconds, `splitG0Bps` 1000, a parameter version for epoch 0 that subsidizes declared-related parties and one from epoch 1 that does not. The rehearsal runs this configuration. In round R2a the parties of the two epochs are the operator's two wallets, as A37 allows; the OG and cell-b themselves are round R2b | `deployments/finchain-sepolia-r2.config.json`; `scripts/local-run.js` |
 | A35 | Not in R2. The cap per declared operator and the versioned switch are proposed content of the next ledger version (P41); wherever the cap is described, the documents say that it binds an address and that undeclared relations are not identified | `genesis-mining-mvp.md` 7.6, 13.4 |
@@ -208,18 +225,21 @@ allocation formula or interface changed. The architecture keeps the numbers of i
 
 ### 4.2 How each ruling is applied
 
+As the plans stand after the review of v0.1.4 (section 5), which corrected how A47, A48, A50 and
+A54 were applied.
+
 | Ruling | Applied as | Where |
 | --- | --- | --- |
 | A40, A45 | The first production profile is planned as one bounded task class with published checks, procured through ERC-8414 by a designated test demander, with its usage recorded by category | `production-service.md` 1 to 5 |
 | A41, A42 | The stage names and the three dimensions are used as delivered, everywhere. The stage numbering of A17 is replaced in its wording; its compatibility of forms stands. Each dimension is recorded in a place of its own | `architecture.md` 1.2, 1.3; `supply-and-payment.md` 2; A17 |
 | A43, A44 | Recorded; nothing built. The plans name which role each party of the first increment performs | `architecture.md` 2.2, 2.3; `production-service.md` 8 |
 | A46 | The envelope's groups are filled in for the first profile; the evidence class of every claim is stated with what it does not establish; three availability cases are told apart | `production-service.md` 4, 6 |
-| A47 | The kernel's formula and every recorded figure stay. The first increment keeps a fixed GMU per accepted delivery and records qualified units beside it, as material for SIG (P45) | `genesis-mining-mvp.md` 6; `production-service.md` 5 |
-| A48, A49 | Roles, parent and child work and the deduplication key are designed into the receipt of the next ledger version (P50); the operating report is specified (P49) | `production-service.md` 7, 8; `supply-and-payment.md` 8 |
-| A50, A52 | One purchase record with the six state meanings, shared by the manual and the agent routes; the failure rows with the handling proposed | `supply-and-payment.md` 3 to 6 |
+| A47 | The kernel's formula and every recorded figure stay. The first increment keeps a fixed GMU for each task unit that is delivered, accepted and counted, and records qualified units beside it for observation and recomputation - not as a SIG calibration (P45, A57, A63) | `genesis-mining-mvp.md` 6; `production-service.md` 5, 7 |
+| A48, A49 | Roles, parent and child work and the deduplication key - the content key by which a profile counts a task unit once (P55) - are designed into the receipt of the next ledger version (P50); the operating report is specified (P49) | `production-service.md` 7, 8; `supply-and-payment.md` 8 |
+| A50, A52 | One purchase record, shared by the manual and the agent routes, whose three parts - payment, service credit, adjustments - keep the six state meanings apart (A58, P56); the failure rows with the handling proposed | `supply-and-payment.md` 3 to 6 |
 | A51 | The native-asset rule stays. A design for listed assets is kept as a later adaptation and is in no increment yet | `supply-and-payment.md` 7, 9 |
 | A53 | Round R2 and its documents are untouched: nothing of its tooling, configuration or runbook changes in this revision. The production work is planned as increments beside the rounds (P51) | `roadmap.md` 7 to 9 |
-| A54 | Deliverable A: this record, the architecture, the roadmap. B: `production-service.md`. C: `supply-and-payment.md`. D: the staged matrix. The fourteen proposed checks carry identifiers and are marked proposed and not run | `acceptance-matrix.md` 11 to 14 |
+| A54 | Deliverable A: this record, the architecture, the roadmap. B: `production-service.md`. C: `supply-and-payment.md`. D: the staged matrix. The fourteen proposed checks carry identifiers and are marked proposed and not run. The milestone is reached through four acceptances that are evidenced one by one (A59, P58) | `acceptance-matrix.md` 11 to 14; `roadmap.md` 8 |
 
 ### 4.3 The seven items of the staged acceptance (A54)
 
@@ -243,7 +263,76 @@ allocation formula or interface changed. The architecture keeps the numbers of i
 | Production increment | a separately reviewable step of the production extension (A53). Increments are numbered on their own, beside the rounds R0-R4, so that an engineering round is never read as an economic stage |
 | Service ledger, contribution ledger, reward ledger | the three ledgers of A49. `GenesisLedger` is the contribution ledger and, with its allocation view, a simulated reward ledger |
 
-## 5. The proposals of v0.1.0 and v0.1.1, and their state
+## 5. The review of design revision v0.1.4, and how it is applied
+
+The owner relayed the advisor's review of design revision v0.1.4: the documents of the alignment
+as this repository merged and extended them. Its verdict is A55; its corrections are A56 to A62;
+its answers to the eight questions of v0.1.4 are A63; and it puts a condition on an older
+question, A64. This revision applies them, in documents only.
+
+### 5.1 What the review checked, and what it did not
+
+It compared the package of v0.1.4 with the two aligned documents and with what this repository
+had said of it: the hash of the package; eight Markdown files and no contract, client, script,
+configuration or runbook among them; the architecture and sections 14 and 15 of the specification
+merged without loss, the differences being pointers and the note on the baseline's counts; the
+design revision told apart from the software release; every new acceptance marked proposed and
+not run. It did not hold the tree of this repository as it was before the package: that the
+package applied to that tree gives the tree of v0.1.4 remains this repository's own verification.
+It ran no code and contacted no node. These limits are the review's own statement.
+
+### 5.2 The rulings
+
+| Ruling | Applied as | Where |
+| --- | --- | --- |
+| A55 | Round R2a and everything it runs from are untouched. The corrections are made in the documents; the new rows of the matrix are proposed and not run; nothing of the next ledger version or of the production line is built | this revision; `roadmap.md` |
+| A56 | The usage records are `input_tokens`, `cached_input_tokens` and `generated_tokens`. The delivered text and the canonical result are kept, each with its hash; `canonical_delivery_tokens` is the count of the canonical result and is stated as a part of no other count. The formula is in integers, with `weightScale` 1,000,000 and one division rounded down; a measurement version fixes the scale, the weights, the limits, the counter, the template, the canonicalization rule and the rounding | `production-service.md` 5; rows S6, S15, S16 |
+| A57 | Three identities: a request id fixed before the first attempt, the work id of an order on chain, and a content key (P54). The task units of profile version 1 are the members of a fixture set committed by one root; a task unit counts once; a later accepted delivery of the same content is recorded as a duplicate and adds no units, no GMU and no eligibility; a part of a fixture is not a task unit; the scope belongs to this profile version and is not inherited (P55). What the rules do not identify is said beside them | `production-service.md` 2, 4.1, 7; rows S5, S17 to S21 |
+| A58 | A purchase record has three parts - payment, service credit, adjustments - and the six meanings of A50 stay apart across them; what "settled" means is tabled per channel, with the channel's own state kept (P56). The budget book and its rules of reservation, for the second increment (P57). The report has lines for prepaid credit, reconciles them exactly and counts one movement of money once; its example is corrected | `supply-and-payment.md` 3, 4, 6, 8; rows F4, F17 to F22 |
+| A59 | The first increment is the controlled fixtures, and its acceptance is the mechanism. Three further acceptances follow, each with evidence of its own: a FOGA cell taking part, a supplier that is not the operator's, a customer's own request. The customer's own request comes after the first increment and needs a later version of the profile. When the milestone of A54 is met is proposed (P58, Q27). The wording on what one customer shows is corrected | `roadmap.md` 8; `production-service.md` 10, 11; `acceptance-matrix.md` 11, 14 |
+| A60 | The sentence is replaced: an agent that buys is a customer, and the supplier's qualified service to it is a delivery; the agent's own thinking is not a further one | `production-service.md` 8; row S14 |
+| A61 | The pin - the repository, the commit, the hash of the specification and of four schema files, the sections used - and the mapping, which says for each record what is claimed: a conformant Unit and a conformant Grade; from the Source and the Receipt a vocabulary and the format of two members, and not those records (P59). The wording on the dependency is corrected wherever it stood | `production-service.md` 4.2; `roadmap.md` 1, 6; `architecture.md` 3.2 |
+| A62 | (a) The table compares forms of supply and names the segment in which each first appears. (b) Tokenomics has a row of its own beside the stages, with no stage attached. (c) The wording on the hosted run, in four places. (d) The order: a policy, its implementation, then parameters. (e) One mechanism of x402 as an example, the adapter's pin, the same chain or another | `production-service.md` 9; `roadmap.md` 2, 7; section 3, `acceptance-matrix.md`, `README.md`; `supply-and-payment.md` 9 |
+| A63 | The answers are recorded in 5.3 and carried into the plans. Q17 to Q24 leave the list of open questions | 5.3; section 11 |
+| A64 | A design that keeps the facts of the work apart from the receipt is proposed for the ruling (P60) and put with the questions on the next ledger version (Q26). The kept design 13.7 points to it | `genesis-mining-mvp.md` 13.7; row D18 |
+
+### 5.3 The eight questions of v0.1.4
+
+| Question | The review's answer | Carried out as |
+| --- | --- | --- |
+| Q17 The task class of the first production profile and its three checks (P42) | Agreed, as the first controlled profile. Format, grounding and reference each keep the boundary of what they verify | `production-service.md` 2 |
+| Q18 The record formats of ERC-8506 (P43) | Agreed on a condition: the source, the pinned version and the mapping of the fields are stated, and the dependency is said to be on the specification only (A61) | P59; `production-service.md` 4.2 |
+| Q19 Published weights and a public tokenizer; the model chosen at the build round (P44) | Agreed. The model, the tokenizer, the template and the serving configuration are all pinned by version. A specification for the provider a FOGA node calls may be registered separately | `production-service.md` 3 |
+| Q20 A fixed GMU first (P45) | Agreed. First the scale of the measurement, the deduplication of requests and the boundary of a task unit are fixed (A56, A57). Service units serve observation and recomputation and are not presented as a completed SIG calibration | `production-service.md` 5, 7 |
+| Q21 Public controlled fixtures (P47) | Agreed. Content, versions, commitments, the procedure of the re-check and the statement of availability are published together | `production-service.md` 4.3 |
+| Q22 One version of the next ledger with the production fields (P50) | One design is preferred. The rules of authorization and of receipt state of Q13 and Q16 converge first, and a necessary upgrade of the ledger is not held back while the production design is incomplete. With it, the condition of A64 | section 11, Q26; `roadmap.md` 5 |
+| Q23 The increments beside rounds R2b and R3; the third party as the first customer (P51) | Agreed, once the scope of the first increment and the milestone of A54 no longer conflict (A59). A third party may also be the customer; each piece of evidence says which role it had: supply, purchase or audit | `roadmap.md` 8, 9 |
+| Q24 The providers of the second increment (P48) | Agreed: chosen when it opens. Fixed now: the capability interface, the authorization, the budget, the idempotency and the reconciliation. No provider is presumed to support a top-up without a person | `supply-and-payment.md` 3, 4.3 |
+
+Q9-Q12 are not reopened. Q13-Q16 are approved neither by the merge of the documents nor by this
+review, and stay open (section 11).
+
+### 5.4 Corrections the review required
+
+| What v0.1.4 said | Correction |
+| --- | --- |
+| `production-service.md` 5: `output_delivered` is "included in `output_generated`" | Not so: a canonical result is counted in its own right, and nothing makes it a part of the stream that was generated (A56) |
+| The same section: the units are a weighted sum "/ 1,000,000", beside an example that uses the weights 0.25 and 1 | The formula and the example differed by a scale that was never defined; as written, the example rounds down to zero. Weights of 250,000 and 1,000,000 over a `weightScale` of 1,000,000 give its 1,810 (A56) |
+| The same document, 4, 5 and 7, and matrix row S5: a repeated request has no units; every accepted delivery has the fixed GMU; the work id contains the tender and the submission | Together they left a gap: the same request issued again as another tender has another work id, and nothing said that it earns no second fixed GMU (A57) |
+| `supply-and-payment.md` 3 and 4: a purchase has one `state`; "Settlement is money leaving the payer" | Three records; and settlement by the rule of the channel (A58) |
+| The same document, 5: the worker checks that the policy has room, and buys | For a purchase by an agent the room is a reservation, made atomically (A58) |
+| The same document, 8: 5.00 bought, 0.41 and 0.07 consumed, and no line for what is left | Lines for prepaid credit, and the reconciliation (A58) |
+| `roadmap.md` 8: a customer's own task as the third acceptance of the first increment, met by "a customer ... or a supplier"; `production-service.md` 10: customers' own tasks left out of the first increment | The two contradicted each other, and a supplier stood in for a customer. Four acceptances, each evidenced on its own (A59) |
+| `roadmap.md` 8: "commercial demand: one party is one party"; `acceptance-matrix.md` 14: "commercial demand, from one customer" | One independent customer that pays with real funds proves that one independent paid demand, and no more (A59) |
+| `production-service.md` 8: an agent's own use of a model "has no buyer and no acceptance of its own" | True of its thinking only. An agent that buys is a buyer (A60) |
+| `production-service.md` 4, `roadmap.md` 1 and 6, and the suggestion under Q18: the first increment adds "no contract and no dependency" | No contract and no runtime dependency; a dependency on a pinned specification (A61) |
+| `production-service.md` 9: a table of supply headed Startup, Development, Pre-expansion | Forms of supply, with the segment in which each first appears (A62) |
+| `roadmap.md` 7: "An autonomous operating economy; FCT", first needed in Stage 3 | Two rows: the economy of Maturity; and Tokenomics as a ruling of its own, tied to no stage (A62) |
+| Section 3 of this document, the matrix, the roadmap and the README: the tests are run on a hosted runner "for each version" | The workflow is in place and its first hosted run is pending (A62) |
+| `supply-and-payment.md` 9: "The kernel's rule stays until a new policy replaces it", followed by a parameter version that lists assets | A policy, its implementation, and only then parameters (A62) |
+| The same section: payments by x402 "are usually made on another chain" | On the same chain or on another supported one; the mechanism described is one example, and an adapter pins its own (A62) |
+
+## 6. The proposals of v0.1.0 and v0.1.1, and their state
 
 | Id | Proposal (short) | State after the review |
 | --- | --- | --- |
@@ -266,7 +355,7 @@ allocation formula or interface changed. The architecture keeps the numbers of i
 | P17 | Instances derive from a seed captured at epoch open | In force, with the claim about unpredictability withdrawn (A22) |
 | P18 | The technical loop and the economics are separate acceptances | In force (`acceptance-matrix.md`, last section) |
 
-## 6. Proposed in v0.1.2, and ruled on
+## 7. Proposed in v0.1.2, and ruled on
 
 Implemented in R1 on this repository's own judgment, and approved since by the review of v0.1.2
 and round R1 (A32). The notes of that ruling: P22 is limited to eligibility for the public
@@ -295,12 +384,13 @@ Kept for later rulings, not implemented (`genesis-mining-mvp.md` 13): the `g0.ve
 conditions on a seed for a valuable subsidy, receipts without the demander, the binding of the
 settlement-time authority, the delegation signed by an account.
 
-## 7. Proposed in v0.1.3
+## 8. Proposed in v0.1.3
 
 On this repository's own judgment, to carry out the rulings of section 3. P32, P33, P34, P37, P38
 and P39 are implemented and in force unless vetoed. P35, P36, P40 and P41 are designs put up for
-a ruling; nothing of them is built. The alignment of 2026-11-24 ruled on none of them: round R2
-continues as approved (A53), and the questions Q13 to Q16 stay open.
+a ruling; nothing of them is built. Neither the alignment of 2026-11-24 nor the review of v0.1.4
+ruled on them: round R2 continues as approved (A53, A55), and the questions Q13 to Q16 stay open.
+The review put one condition on P40 (A64), which P60 is proposed to meet.
 
 | Id | Proposal | Why | Where |
 | --- | --- | --- | --- |
@@ -315,11 +405,12 @@ continues as approved (A53), and the questions Q13 to Q16 stay open.
 | P40 | For ruling, with the next ledger version - receipts without the demander: anyone may record a settled submission as a receipt that is measured and never subsidized. The subsidy still takes the owner's confirmation | A33 | `genesis-mining-mvp.md` 13.7 |
 | P41 | For ruling, with the next ledger version - the cap per declared operator of 13.4, and a manifest field that names the deployment a new one supersedes. The old ledger stays readable and auditable, as every ledger does | A35 | `genesis-mining-mvp.md` 13.4; `deployments/README.md` |
 
-## 8. Proposed in this revision
+## 9. Proposed in v0.1.4, and their state after the review
 
 On this repository's own judgment, to carry out the alignment of section 4. All of it is design:
-nothing is built, and each entry is in force only after a ruling. Where an entry and
-`genesis-mining-mvp.md` 14 or 15 differ, those sections govern.
+nothing is built. Where an entry and `genesis-mining-mvp.md` 14 or 15 differ, those sections
+govern. The first table has the proposals as v0.1.4 made them; the second says what the review of
+v0.1.4 did with each (section 5). Where the two differ, the second governs.
 
 | Id | Proposal | Why | Where |
 | --- | --- | --- | --- |
@@ -336,24 +427,56 @@ nothing is built, and each entry is in force only after a ruling. Where an entry
 | P52 | Designs kept for later adaptations, in no increment yet: a list of accepted assets per parameter version; the agent-wallet route by signed stablecoin transfer, as x402 does it; metered and prepaid supply on the entitlement ledger of ERC-8506, where an authorization up to a ceiling is a Holder's delegated budget; a G0 production profile and paid verification as the content of the kept designs `g0.cal` and `g0.ver`; the sponsoring of gas | A51, A45, A48: each needs its own review. Writing the designs down keeps the first increment from closing a door | `supply-and-payment.md` 9; `genesis-mining-mvp.md` 13.1, 13.2 |
 | P53 | The reference worker, the reference demander, the evaluator and the recount of the first profile are programs of this repository's client. FOGA is not modified: a cell takes part through the capabilities it has - it issues and fulfills tenders today - or through an adapter of its own, on its own cycle | A29, A53. The first acceptance of the first increment therefore needs nothing from FOGA, and the second waits for nothing in this repository | `production-service.md` 10 |
 
-## 9. Open for the next ruling
+| Id | State after the review of v0.1.4 |
+| --- | --- |
+| P42 | Confirmed as the first controlled profile (A63, on Q17). Added: the task units are enumerated as a committed fixture set (P55) |
+| P43 | Confirmed on a condition, which P59 carries out (A61; A63, on Q18). Narrowed by the mapping: a conformant Unit and a conformant Grade; from the Source and the Receipt a vocabulary and the format of two members. The wording is: no ERC-8506 contract and no runtime dependency, and a dependency on a pinned specification |
+| P44 | Confirmed (A63, on Q19), with the template and the serving configuration pinned as the model and the tokenizer are |
+| P45 | Confirmed as to the fixed GMU (A63, on Q20). Corrected in the measurement (A56): the count of the canonical result is a count of its own, and the formula has a stated scale. Corrected in what the fixed GMU attaches to (A57): a task unit that is delivered, accepted and counted, not every accepted delivery |
+| P46 | Stands for the work id and for the correspondence of envelope, tender and receipt. Extended: the request id and the content key are identities of their own (A57, P54) |
+| P47 | Confirmed (A63, on Q21), with what is published together |
+| P48 | The records and the routes stand. Corrected (A58): the state of a purchase is three records, not one state machine (P56), and a purchase by an agent reserves its budget (P57). What an adapter declares is fixed before providers are chosen (A63, on Q24) |
+| P49 | Stands. The report gains the lines and the reconciliation of prepaid credit, and its example is corrected (A58) |
+| P50 | One design is preferred, after Q13 and Q16 have converged (A63, on Q22). Extended by the content key and by the two reasons of P55; to be decided together with P60 (Q26) |
+| P51 | The increments and their own numbering stand (A63, on Q23). Corrected (A59): the first increment has one acceptance, the mechanism; three further acceptances are evidenced one by one (P58) |
+| P52 | Stands, as designs kept. The wording on assets and on x402 is corrected (A62) |
+| P53 | Stands. In the terms of P58: the first increment needs nothing from FOGA, and the acceptance with a cell waits for nothing in this repository |
+
+## 10. Proposed in this revision
+
+On this repository's own judgment, to carry out the review of section 5. All of it is design:
+nothing is built, and each entry is in force only after a ruling. The review states what has to
+be decided; these entries are how this repository proposes to decide it, and each can be
+confirmed, changed or vetoed on its own.
+
+| Id | Proposal | Why | Where |
+| --- | --- | --- | --- |
+| P54 | Three identities of a piece of work. The request id names one request instance of one demander: it is derived from the demander, the specification, the commitment to the input and a salt the demander chose, is fixed before the first attempt, and is carried by the tender's task document and by the envelope of every attempt. The work id names one order on chain and is unchanged (P46). The content key names what the profile counts as one contribution. Recovery and the reconciliation of payments go by the request id; a receipt and the payment records of one delivery carry the work id; deduplication reads the content key | A57: the identity of a request apart from that of its order. A retry, a second submission and a second tender keep the request id and get another work id. A third identity is needed because a demander who simply makes a new request for the same content has a new request id as well | `production-service.md` 4.1 |
+| P55 | Task units and duplicates in profile version 1. The work is enumerated beforehand: a fixture set committed by one root in the profile version, each member one whole document with the whole schema and a committed reference. A delivery counts only for a member, shown to be one when the contribution is recorded; a part of a fixture is not a task unit (reason `not-a-task-unit`). The content key of a fixture is the commitment to its input, without the specification, and a task unit counts once per deployment of the ledger: its first accepted delivery. A later accepted delivery is recorded with the reason `duplicate-contribution` and the receipt it repeats; its transaction and its payment stay as facts; it adds no qualified units, no GMU and no eligibility. A fixture whose reference has been revealed is not committed again. The scope belongs to this profile version: a later version for customers' own tasks states its own | A57. A fixed GMU per delivery would pay for the same work as often as it was wrapped again; and the first acceptance of a fixture makes its reference public, so that a later delivery of it shows nothing under any model. The scope is stated so that a rule made for fixtures refuses no later repeat purchase | `production-service.md` 2, 7 |
+| P56 | The state of a purchase is three parts that move independently: `payment.status` (`authorized`, `initiated`, `pending`, `unknown`, `settled`, `failed`), `credit.status` (`not-available`, `available`, `partly-used`, `exhausted`, `lapsed`) and a list of adjustments (`partial-refund`, `full-refund`, `credit-reissued`, `dispute`), each with its amount. The six meanings of A50 stay apart across them. What `settled` means is the declared rule of the adapter's channel; three kinds of channel are tabled with their stages - authorization, capture, settlement, later adjustment - and the channel's own state is kept beside the status, as returned | A58. The three parts and their values are the review's; the transitions, the mapping from the six meanings and the table of channels are this repository's | `supply-and-payment.md` 3, 4 |
+| P57 | The budget book, for a purchase by an agent: one book per boundary, asset or currency and budget period; a reservation that tests the room and holds the amount in one operation, written together with the purchase's idempotency identifier before anything is sent; kept while the payment is pending or unknown; released only on a definite failure or by the release rule the adapter declares; consumed at the amount settled, in the period it was made in; a refund returning nothing unless the policy says so; checked against the purchase records at every start. `purchaseId` maps one to one to the identifier under which the channel knows the purchase. What an adapter declares - operations, channel, idempotency, release, authorization - is fixed before any provider is chosen | A58; A63, on Q24. To be specified before the second increment is implemented; nothing of it belongs to the first | `supply-and-payment.md` 3, 4.3 |
+| P58 | The acceptances of the production line. The first increment is the controlled fixtures and has one acceptance, the mechanism. Three further acceptances follow it, each with evidence of its own and none standing in for another: a FOGA cell taking part; a supplier that is not the operator's; a customer's own request, which needs a later version of the profile. The milestone of A54 is met when the mechanism, a cell taking part and a customer's own request have each been evidenced; an external supplier is not among its conditions and is reported for what it shows | A59. A54 names a buyer's real request, a standardized delivery, a cell, an independent re-check, a completed payment, a GMU record and a cost report. It names no external supplier | `roadmap.md` 8; `acceptance-matrix.md` 11 |
+| P59 | The pin of ERC-8506 for the first specification: `garyyang-finchip/ai-inference-token` at commit `2b62b6171a504dc504cbb89a1b2b5d13520e1595`, the specification and four schema files by their SHA-256, the sections used. The mapping: the usage categories with their counter are a conformant Unit; the count of a canonical result is a second conformant Unit, with no relation declared to the first; the model, its configuration, the requirements and the evidence of each claim are a conformant Grade; from the Source record its vocabulary of origin and of authorization, and from the Receipt record its `claim` and `evidence` members, without the envelope being called either record. A later revision of the standard is adopted by a new pin, in a new version of the specification | A61. A Source states the grounds on which units are issued and a Receipt describes a request on a home ledger; the first increment has neither, so that claiming those two records would claim more than is there | `production-service.md` 4.2 |
+| P60 | For ruling, with the next ledger version - work facts apart from receipts; it settles the choice that P40 left open. Anyone may record that a submission settled: a work fact, read from the tender, naming its worker and the measure its profile gives it, entering no total of any epoch and not taking the contribution id. It is the trace that A33 reserves for work whose demander does nothing. A receipt - the record that has an eligibility and counts in an epoch - is made only by the confirmation of the tender's owner or of its delegate (P35), whether or not a work fact exists, and counts in the epoch in which it is recorded. No recorded status changes, and no epoch that is frozen is rewritten | A64: a third party must not take the contribution id before the rightful demander confirms. The other answer the review names - a rule by which a later confirmation raises the eligibility of a receipt already recorded - is the one place where a recorded status would change, and it would put eligible GMU into an epoch other than the one that measured it | `genesis-mining-mvp.md` 13.7 |
+
+## 11. Open for the next ruling
+
+Q17 to Q24 were answered by the review of v0.1.4 (5.3). Q13 to Q16 are as they were. Q25 to Q29
+ask for a ruling on what this revision proposes.
 
 | Id | Question | This repository's suggestion |
 | --- | --- | --- |
 | Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA |
 | Q14 | Whether round R2b is run on the present kernel. That is possible only by driving a cell's `execute` with the cell's own key from the reference client, with the cell's node stopped for the duration | No. R2a now, on the present kernel; R2b on the next ledger version |
 | Q15 | The independent machine of R2: a hosted CI runner (P38) | Confirm. A further audit from any other machine costs nothing and can be added |
-| Q16 | The content of the next ledger version, before R3: the cap per declared operator (A35, P41), receipts without the demander (A33, P40), the delegation (P35), and what is decided about the authority at settlement (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value |
-| Q17 | The task class of the first production profile and its three checks (P42) | Confirm structured extraction, or name another bounded class. The plan changes in section 2 of `production-service.md` only |
-| Q18 | Whether the specification, the provenance of supply and the usage records are written in the record formats of ERC-8506 (P43) | Confirm. It adds no contract and no dependency to the first increment |
-| Q19 | The model of the first specification (P44): published weights and a public tokenizer; and whether a specification for the provider a FOGA node calls today is registered beside it | Confirm the criteria and choose the model at the build round, from what can be bought then. Register the second specification when a cell is to take part with the model it has |
-| Q20 | The reward rule of the first increment (P45): a fixed GMU per accepted qualified delivery with the units recorded and recounted - or GMU proportional to units from the start | Fixed first. Proportional when a recount has shown, on real records, that the counts hold |
-| Q21 | Availability of evidence in the first increment (P47): public fixtures | Confirm. Controlled access comes with customers' own tasks |
-| Q22 | The next version of the ledger (P50): one version with the items of Q16 and the four production fields, or two versions | One, if this ruling comes with that of Q16. Otherwise two, and neither waits for the other |
-| Q23 | The order after round R2a (P51): the first increment beside R2b and R3, its first acceptance worked by parties the operator holds and labelled so; and whether the third party of R3 may also be the first customer that is not the operator's | Yes to each. A third party is better invited to work that is real than to a test tender |
-| Q24 | The routes of the second increment (P48): which provider for the agent-wallet route and which for the fiat-billed account | Decide when the second increment is opened; one adapter of each kind |
+| Q16 | The content of the next ledger version, before R3: the cap per declared operator (A35, P41), receipts without the demander (A33, P40), the delegation (P35), and what is decided about the authority at settlement (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value. On the second item the review set a condition (A64), which P60 is proposed to meet (Q26) |
+| Q25 | The identities of a piece of work, and the rules of task units and duplicates in profile version 1 (P54, P55): a request id, a work id and a content key; a committed fixture set; one counted delivery per fixture and per deployment of the ledger; a scope that a later profile version does not inherit | Confirm for version 1 of the profile |
+| Q26 | The next version of the ledger as one design (A63, on Q22): the items of Q16; for the production line, the role, the work id, the parent, the envelope commitment and the content key in a receipt, with the two reasons of P55; and work facts apart from receipts (P60) | Decide Q13 and P60 first, as the review asks: they fix who may record what, and with what state. Then one version. If the production fields are not ruled by then, the ledger is built without them and they follow by the same versioned switch |
+| Q27 | When the milestone of A54 is met (P58): the mechanism, a cell taking part and a customer's own request, each evidenced on its own; a customer's own request after the first increment, with a later version of the profile | Confirm. An external supplier is evidenced when there is one - the third party of round R3 may be it - and is not a condition of A54 |
+| Q28 | The purchase record in three parts and the budget book (P56, P57), as the specification the second increment is built to | Confirm the records now. The providers are chosen when the second increment is opened (A63, on Q24) |
+| Q29 | The pin and the mapping of ERC-8506 (P59): two records conformant, two used for a vocabulary and two members | Confirm. If the standard has moved when the increment is built, the owner chooses whether the pin moves with it, in a new version of the specification |
 
-## 10. Illustrative (figures used to explain, not parameters)
+## 12. Illustrative (figures used to explain, not parameters)
 
 The parameters of the R2 deployment are ruled (A34) and are that test deployment's own: epochs of
 two hours and a 10 / 90 split say nothing about any later deployment. The other figures of its
@@ -367,5 +490,5 @@ configuration are the examples below.
 | 25 percent share cap per address | tests, the R2 configuration | an example cap |
 | GMU bases: `g0.ref` 10, `g1.tender` 50; per-worker caps 10 and 200 | tests, the R2 configuration | examples; set when a profile version is registered |
 | G1 rules: a minimum bounty of 0.001 ETH in the tests and 0.0001 ETH in the R2 configuration, whose test tenders pay 0.0005 ETH; 3 subsidized receipts per demander and 1 per pair, per epoch | tests, the R2 configuration | examples; carried by the parameter version |
-| Measurement weights of 0.25 for input and 1 for delivered output; limits of 8,000 input and 1,000 delivered tokens; a fixture of 6,000 input, 1,150 generated and 310 delivered tokens; a `baseGmu` of 50 for `g1.inference` | `production-service.md` 5 | examples of a measurement version and of a profile; nothing of it is registered |
-| A period of 12 deliveries, 21,700 qualified service units, 0.006 of the native asset received and 5.00 of a fiat currency bought by the Holder | `supply-and-payment.md` 8 | an example of the report's shape; no figure of it was observed |
+| Measurement weights of 250,000 for input and 1,000,000 for the canonical result over a scale of 1,000,000 - a quarter and one; limits of 8,000 input tokens and 1,000 tokens of canonical result; a fixture of 6,000 input tokens, 1,150 generated tokens and a canonical result of 310; a `baseGmu` of 50 for `g1.inference` | `production-service.md` 5 | examples of a measurement version and of a profile; nothing of it is registered |
+| A period of 12 deliveries, 21,700 qualified service units and 0.006 of the native asset received; 5.00 of a fiat currency paid by the Holder to a provider, 0.48 of it consumed and 4.52 left as prepaid credit | `supply-and-payment.md` 8 | an example of the report's shape; no figure of it was observed |

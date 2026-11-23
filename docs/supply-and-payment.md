@@ -1,15 +1,23 @@
 # Supply and Payment Interfaces: Plan
 
-Design revision v0.1.4, documentation alignment of 2026-11-24. This is the executor's plan for
-the supply and payment interfaces: deliverable C of the alignment (`decisions.md` A54), carrying
-out `genesis-mining-mvp.md` 14.6 to 14.8 and `architecture.md` 5.3. It covers the source of
-supply, the execution of payment, the source of funds and the scope of permission, in one form
-shared by manual and autonomous operation; and what happens when quota runs out, a renewal fails,
-the state of a payment is unclear, a request is duplicated, or a service has to recover.
+Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). This is the
+executor's plan for the supply and payment interfaces: deliverable C of the alignment of
+2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.6 to 14.8 and `architecture.md` 5.3. It
+covers the source of supply, the execution of payment, the source of funds and the scope of
+permission, in one form shared by manual and autonomous operation; and what happens when quota
+runs out, a renewal fails, the state of a payment is unclear, a request is duplicated, or a
+service has to recover.
 
-Nothing here is built, and nothing here changes round R2. Every choice is a proposal put up for a
-ruling (`decisions.md` P48, P49, P52); where this plan and `genesis-mining-mvp.md` 14 differ,
-that section governs. Where the text says "is", read "is proposed to be".
+Nothing here is built, and nothing here changes round R2. The review required corrections before
+this plan can serve as an implementation specification (A58, A62): a purchase is not one state
+but three records that move independently - the payment, the service credit and the adjustments
+(sections 3 and 4); what "settled" means is stated per payment channel (4.1); a purchase by an
+agent reserves its budget atomically before anything is sent (4.3); the report reconciles what was
+prepaid, what was consumed and what was paid out, and adds none of them twice (section 8); and the
+wording on assets and on x402 is made exact (section 9). They are applied here. What this revision
+adds on its own judgment to carry them out is marked as a proposal (P56, P57). Where this plan and
+`genesis-mining-mvp.md` 14 differ, that section governs. Where the text says "is", read "is
+proposed to be".
 
 ## 1. Four flows of money, kept apart
 
@@ -35,11 +43,13 @@ The three are reported side by side and never as one figure. An account that ren
 still live on fresh Holder funding; an operated GPU can still lose money; a profitable service can
 buy all its inference. Each combination is valid and each is recorded as what it is.
 
-## 3. What a worker's side keeps: four records
+## 3. What a worker's side keeps
 
-Proposed (P48). The records are JSON documents the worker's side keeps and reports; none of them
-is a contract field. They are the same whether a person or an agent acts, which is what lets the
-startup and the development forms share one interface.
+Proposed (P48, P56, P57). The records are JSON documents the worker's side keeps and reports; none
+of them is a contract field. They are the same whether a person or an agent acts, which is what
+lets the startup and the development forms share one interface. The first increment keeps four:
+supply source, purchasing policy, purchase, funding. The second adds a fifth, the budget book,
+which an agent's purchases need (4.3).
 
 **Supply source** - what the worker can deliver from.
 
@@ -61,31 +71,49 @@ startup and the development forms share one interface.
 | `spender` | who may spend: `operator` or `agent` |
 | `providers`, `specifications` | what may be bought, and from whom |
 | `boundary` | the account or the wallet the policy is limited to |
-| `perRequest`, `perPeriod` | the budgets, per asset or currency |
+| `perRequest`, `perPeriod` | the budgets, per asset or currency; the period by its start and its length |
 | `renewal` | the conditions under which a renewal may be made |
 | `escalation` | what happens at the limit: `decline`, or `ask-holder` |
 | `validUntil`, `grantedBy` | the policy's term, and the Holder that granted it |
 
-**Purchase** - one purchase or renewal, through its states (section 4).
+**Purchase** - one purchase or renewal. Its state is three parts that move independently
+(section 4).
 
 | Member | Meaning |
 | --- | --- |
 | `purchaseId` | a stable identifier chosen before anything is sent. A retry reuses it |
 | `source`, `policy` | the supply source bought for; the policy it was bought under |
 | `decidedBy`, `executedBy` | `operator` or `agent`, each |
-| `route` | `manual-fiat`, `agent-wallet`, `agent-fiat-account` |
+| `route`, `channel` | `manual-fiat`, `agent-wallet` or `agent-fiat-account`; and the payment channel with its mechanism, as the adapter pins it (4.1) |
 | `asset`, `amount` | a currency, or a chain and an asset contract; the raw amount and its precision |
-| `state`, `references` | the state, and for each state reached the reference that supports it |
+| `idempotency` | the identifier under which the channel knows this purchase, mapped one to one to `purchaseId` and written before the first attempt (4.3) |
+| `reservation` | on an agent route, the entry in the budget book (4.3) |
+| `payment` | its status; the channel's own state as the channel returned it; for each status reached, the reference that supports it and the time it was observed |
+| `credit` | its status; the quantity made available, used and left, in the provider's unit of account; as of when; its expiry |
+| `adjustments` | a list: what changed afterwards, each entry with its kind, its amount, its reference and its time |
 | `fundingSource` | `holder`, `service-revenue`, `protocol`, or the shares of each where the worker can tell; otherwise `undeclared` |
 
 **Funding** - what the Holder put in: the amount, the asset or currency, the date, the account or
 wallet it went to, and its evidence.
 
-An adapter implements a route. It declares which operations its provider really supports - read
-the quota, quote, buy, renew, read the state of a payment, confirm that credit arrived - and an
-operation it does not support is reported as unsupported, never assumed. A fiat route means buying
-or renewing inside an account the Holder has authorized and funded; it does not mean that a
-provider lets an agent enter a card or open an account.
+**Budget book** - on an agent route: per boundary, asset or currency and budget period, the limit,
+what is held and what is consumed, each entry under the `purchaseId` it belongs to (4.3).
+
+An adapter implements a route. What an adapter has to declare is fixed now, before any provider
+is chosen (A63, Q24); the providers are chosen when the second increment is opened:
+
+| An adapter declares | Content |
+| --- | --- |
+| Operations | for each of: read the quota, quote, buy, renew, read the state of a payment, confirm that credit arrived, read adjustments - `supported`, or `unsupported` |
+| Channel | the payment channel and its mechanism, pinned by version; which of its stages the adapter records as `settled`, and by which evidence (4.1) |
+| Idempotency | the identifier the channel accepts for one purchase, or that it accepts none |
+| Release | the rule, if the channel has one, by which an amount that was held is free again |
+| Authorization | the scope of the account or the wallet it acts in, and what it can never do there |
+
+An operation an adapter does not support is reported as unsupported, never assumed. No provider is
+presumed to support a top-up without a person. A fiat route means buying or renewing inside an
+account the Holder has authorized and funded; it does not mean that a provider lets an agent enter
+a card or open an account.
 
 | Route | Who acts | Increment |
 | --- | --- | --- |
@@ -96,28 +124,131 @@ provider lets an agent enter a card or open an account.
 Both kinds of route can run in one deployment, and one worker may have a source of each. A manual
 top-up is never reclassified as an autonomous purchase or as income.
 
-## 4. One state machine for a purchase
+## 4. The state of a purchase: three records
 
-The six meanings of `genesis-mining-mvp.md` 14.6, as the states of a purchase record:
+The review's correction (A58): one field cannot hold what is true of a purchase. Money can have
+been taken while the credit has not arrived; credit can be half used while part of the money
+comes back; a service can stay usable while its payment is disputed. A purchase record therefore
+has three parts, and each moves on its own (P56):
 
-| State | Reached when | The reference to keep |
+| Part | Values | What it answers |
 | --- | --- | --- |
-| `authorized` | a policy that covers the purchase exists and its budget has room. Nothing is paid | the policy; the budget before and after |
-| `initiated` | a transaction was sent or a payment request made | the transaction hash, the nonce of a signed authorization, or the provider's request identifier |
-| `pending` or `unknown` | the payment has not reached the required confirmation, or the answer was lost | the same identifier: reconcile on it before anything else |
-| `settled` | the required finality on chain, or the provider's own evidence of settlement or capture | the block and the transaction, or the provider's receipt |
-| `credit-available` | the provider has made the quota or the credit usable | the quota read back, or the provider's confirmation |
-| `refunded`, `credited` or `disputed` | a reversal, a credit or an open liability, linked to the original purchase | the adjusting reference |
+| `payment.status` | `authorized`, `initiated`, `pending`, `unknown`, `settled`, `failed` | where the money is, by the rule of the channel it went through |
+| `credit.status` | `not-available`, `available`, `partly-used`, `exhausted`, `lapsed` | whether what was bought can be used, and how much of it is left |
+| `adjustments` | entries of kind `partial-refund`, `full-refund`, `credit-reissued`, `dispute` | what changed after the payment or the credit was first recorded, and by how much |
 
-Initiation is not settlement. Settlement is money leaving the payer; credit becoming available is
-a separate fact; and neither is a delivery. On the manual route the same states are entered from
-what the person reports and what the quota reads back, and the report labels them so.
+The payment:
+
+| Status | Reached when | The reference to keep |
+| --- | --- | --- |
+| `authorized` | the policy covers the purchase and, on an agent route, its amount is held in the budget book (4.3). Nothing is paid | the policy; the reservation |
+| `initiated` | a transaction was sent, a signed authorization was handed over, or a payment request was made | the identifier fixed beforehand: the transaction, the identifier of the signed authorization, or the provider's idempotency key |
+| `pending` | the channel has the payment and has not finished with it | the channel's own state as returned; the transaction that was broadcast, where there is one |
+| `unknown` | the answer was lost, or the channel cannot say | the same identifier: reconcile on it before anything else |
+| `settled` | the channel's rule for settlement is met (4.1) | the evidence that rule names |
+| `failed` | the channel's own evidence says that nothing was taken and that nothing can still be taken | that evidence |
+
+`pending` and `unknown` are different: the first is the channel's answer, the second is the
+absence of one. Nothing leaves `settled` or `failed`; what happens to the money afterwards is an
+adjustment, linked to the purchase, with its own amount.
+
+The six meanings of `genesis-mining-mvp.md` 14.6 (A50) all stay apart, now across the three parts:
+
+| Meaning | Recorded as |
+| --- | --- |
+| Authorized or reserved | `payment.status` `authorized`, with the reservation |
+| Initiated | `payment.status` `initiated` |
+| Pending or unknown | `payment.status` `pending`, or `unknown` |
+| Settled or captured | `payment.status` `settled`, the channel's own state saying which of the two it was |
+| Service credit available | `credit.status` `available` |
+| Refunded, credited or disputed | an entry in `adjustments` |
+
+States that hold together, and are recorded together:
+
+| What happened | `payment.status` | `credit.status` | `adjustments` |
+| --- | --- | --- | --- |
+| The money was taken and the credit has not arrived | `settled` | `not-available` | none |
+| Half the credit was used and part of the money came back | `settled` | `partly-used` | a `partial-refund`, with its amount |
+| The service is in use and its payment is disputed | `settled` | `available` or `partly-used` | a `dispute`, open, with the amount in dispute |
+| The answer to a payment was lost and the quota reads higher | `unknown` | `available` | none. The payment is reconciled on its identifier; the credit that appeared is evidence to weigh and does not settle it |
+
+Initiation is not settlement, settlement is not credit, and none of them is a delivery. On the
+manual route the same records are entered from what the person reports, the provider's receipt
+and the quota read back, and the report labels them so.
+
+### 4.1 What "settled" means, by channel
+
+A payment channel has up to four stages, and channels differ in which of them exist and in when
+money has moved for good. The adapter of a route pins its channel and declares which stage it
+records as `settled`, and by which evidence. Beside the status, the record keeps the channel's
+own state as the channel returned it.
+
+| Stage | A transfer the payer sends on chain | A signed authorization that another party settles on chain | A card or a billed account at a provider |
+| --- | --- | --- | --- |
+| Authorization | none of the channel's: the payer sends the transfer itself, under its policy | the payer signs. Nothing has moved, and the amount can be taken until the authorization is used or lapses | the provider or the network holds an amount. Nothing has moved for good |
+| Capture | the transaction is in a block | the settling transaction is in a block | the provider captures the amount |
+| Settlement | that block has the finality the policy names | the same, for the settling transaction | the provider's or the network's own settlement, as its statement or invoice shows |
+| Later adjustment | a separate transfer back; the first is not undone | a separate transfer back | a refund, a reversal or a dispute, which can come long after |
+| State to keep as returned | the transaction, its block, the finality that was read | the identifier and the validity of the signed payload; every answer of the settling party; the transaction | the provider's identifiers and status values; the invoice or the statement |
+
+A stage that a channel does not have is recorded as absent, not as passed. A capture that has not
+met the declared rule is `pending`. On the manual route a person's report and the provider's
+receipt stand where the adapter's reading would, and are labelled so.
+
+### 4.2 The service credit
+
+Credit is counted in the provider's own unit of account - a balance, an allowance, a number of
+requests - and is not converted here. It is `not-available` until the provider makes it usable;
+`available`; `partly-used` and `exhausted` as it is drawn, from the worker's own usage records and
+from the quota read back, each labelled with its origin; `lapsed` when it expired or the provider
+withdrew it. A quantity that could not be read is recorded as not observed and never as zero. A
+`credit-reissued` adjustment makes credit available again without a new payment. Credit becoming
+available is not a delivery, and a top-up is never production (A40).
+
+### 4.3 The budget book: a reservation before a purchase
+
+For the agent routes, in the second increment. To check that a budget has room and then to buy is
+not enough: two requests can read the same room at the same moment and both spend it (A58).
+Proposed (P57):
+
+1. One book per boundary of a policy, asset or currency, and budget period. It holds the limit,
+   what is held and what is consumed, each entry under its `purchaseId`.
+2. A reservation is atomic: testing the room and holding the amount are one operation on the
+   book. Where the worker's side is more than one process, the book is the one durable place they
+   all pass through; two copies of a book are not a book. The per-request budget is tested in the
+   same operation.
+3. The reservation comes first. It is written, together with the purchase's `idempotency`
+   identifier, before anything is sent: after a crash, the record of a possible attempt exists
+   before the attempt could have.
+4. A payment that is `pending` or `unknown` keeps its reservation. It counts as possibly made.
+5. A reservation is released only on a definite failure - the channel's own evidence that nothing
+   was taken and nothing can still be taken, such as a signed authorization whose validity ended
+   unused, or a provider's definite refusal - or by the release rule the adapter declares for its
+   channel, such as a hold the provider has released. A timeout releases nothing.
+6. When the payment settles, the amount settled becomes consumption of the period, and what was
+   held beyond it is released. A reservation belongs to the period it was made in and stays
+   there, whenever the payment settles.
+7. A refund is an adjustment. It returns nothing to a budget unless the policy says that its
+   budgets are net of refunds.
+8. At every start, before any new purchase: the book is checked against the purchase records,
+   every purchase found `initiated`, `pending` or `unknown` is reconciled on its identifier, and
+   what is held plus what is consumed is at most the limit. The report states the same figures.
+9. `purchaseId` maps one to one to the identifier under which the channel knows the purchase: an
+   idempotency key given to the provider, the identifier of a signed authorization, or the
+   sending account's nonce and then the transaction. Where a channel accepts none, the adapter
+   says so, and a lost answer on that channel is resolved by reading the account and never by
+   sending again.
+
+The manual route has no book: a person decides each purchase, and what is recorded is who
+decided. The protocol's records state the policy, the reservations and the purchases; enforcing
+them is the agent's own software (section 10).
 
 ## 5. The state of a supply source, and when new work is taken
 
 A source is `serving`, `low` (a renewal is due), `exhausted`, `paused` or replaced by another
 source of the same specification. Before the worker commits to a request it checks that the
-source can serve it and that the policy has room. If not, it declines: no commitment is made
+source can serve it. Where serving it needs a purchase by the agent, the room in the budget is a
+reservation (4.3), not a reading. If either fails, the worker declines: no commitment is made
 first and funded later.
 
 ## 6. Failure and recovery
@@ -129,16 +260,18 @@ together, each from its own durable record.
 | --- | --- | --- |
 | Quota exhausted | takes no new request; ends requests in flight as what they are - completed, or failed with their cost recorded; switches only to a source that meets the same specification and its evidence requirements; resumes when credit is available | a delivery claimed for output that never reached the customer; a silent change of model |
 | Budget, gas or authorized quota insufficient | declines or pauses as the policy says, keeps the state of the request, reports the shortfall | credit inferred; authority widened |
-| A renewal fails | retries a bounded number of times inside the policy; then stops and escalates | spending outside the policy |
-| The state of a payment is unclear | reconciles on the purchase's identifier - and on the account balance and the provider's receipt - before any resubmission; until then the payment counts as possibly made | a second payment for one purchase; an invented success |
-| Paid, and the credit does not arrive | records it, stops buying from that source, takes it up with the provider; the amount stays in the report as paid | booking it as service received, or writing it off in silence |
+| Two requests need the same room in a budget at once | the reservation admits one; the other is declined or waits, as the policy says | two purchases made on one reading of the same room |
+| A renewal fails | retries a bounded number of times inside the policy, each retry under the same `purchaseId`; then stops and escalates | spending outside the policy; a retry that is a second purchase |
+| The state of a payment is unclear | reconciles on the purchase's identifier - and on the account balance and the provider's receipt - before any resubmission; until then the payment counts as possibly made and keeps its reservation | a second payment for one purchase; an invented success; room in a budget freed by a timeout |
+| Paid, and the credit does not arrive | the payment stays `settled` and the credit `not-available`; stops buying from that source and takes it up with the provider; the amount stays in the report as paid | booking it as service received, or writing it off in silence |
+| Money comes back in part, or a payment is disputed while the credit is in use | an adjustment linked to the purchase, with its amount; the payment and the credit keep their own status | one of the three overwritten by another |
 | A request times out after the provider accepted it | reconciles the request's identifier and the usage billed before buying the service again | paying twice without saying so. If the provider did bill twice, that is two costs and one delivery |
-| A customer sends the same request twice | one work id, one delivery, one receipt; the second submission is answered with the first result | two contributions |
+| The same request reaches the worker twice: sent again, or issued again as another tender | recognized by its request id (`production-service.md` 4.1): the first result answers it, and the model service is not bought again. A second order on chain is a second work id of the same request: its payment is a fact and is recorded, and it adds no contribution (`production-service.md` 7) | two contributions; a second cost passed on in silence |
 | Work incomplete, refused or rejected | keeps the partial evidence and the cost; applies the agreed rule of acceptance and refund | counting it as a qualified delivery |
-| Payment and delivery complete in different orders | keeps both state machines and their references | reporting both as complete because one is |
+| Payment and delivery complete in different orders | keeps both records and their references | reporting both as complete because one is |
 | Required evidence cannot be retrieved | marks the delivery unauditable under its profile | a verified qualification for it |
-| The worker crashes, or a cell repairs itself | resumes from the durable records of work, payment and authority; prior evidence is kept | a second purchase, a second recording or a second reward |
-| A cell is replicated | the replica gets its own identity and its own scoped budget by an authorized procedure, and keeps a record of its lineage | signing secrets copied; earlier contributions claimed again |
+| The worker crashes, or a cell repairs itself | resumes from the durable records of work, payment, reservation and authority; prior evidence is kept | a second purchase, a second recording or a second reward |
+| A cell is replicated | the replica gets its own identity and its own scoped budget by an authorized procedure, and keeps a record of its lineage | signing secrets copied; a budget book shared; earlier contributions claimed again |
 | The chain reorganizes | reconciles what was read from the chain under the configured finality; purchases made outside the chain cannot be rolled back with it and stay recorded | - |
 
 Every purchase and every request has an identifier that is fixed before the first attempt.
@@ -164,7 +297,7 @@ The payment record of a delivery, proposed (`architecture.md` 5.3):
 
 | Member | Content |
 | --- | --- |
-| `work` | the work id |
+| `request`, `work` | the request id and the work id (`production-service.md` 4.1). Payments are reconciled per request; one request can have several work ids |
 | `payer`, `payee` | accounts, each with its chain |
 | `asset` | the chain and the asset contract, or the native asset; the decimals. A symbol is not an identity |
 | `amount` | the raw integer amount |
@@ -184,12 +317,14 @@ Proposed (P49). A worker reports per stated period, and per asset or currency, i
 | --- | --- |
 | Qualified deliveries and their qualified service units, per specification | on chain and in the envelopes: can be recomputed |
 | Customer cash received; receivables (accepted and not yet withdrawn); refunds | on chain: can be recomputed |
-| Provider charges paid; charges incurred and unpaid | on chain when paid from a wallet; otherwise the provider's receipt by reference, or self-reported |
+| Cash paid to providers; charges incurred and unpaid | on chain when paid from a wallet; otherwise the provider's receipt by reference, or self-reported |
+| Prepaid service credit, per provider: opening, bought, consumed, adjusted, closing | the purchase records; the provider's balance read back |
 | Inference cost of the deliveries; cost of requests that failed or were rejected | the envelopes; the provider's bill |
 | Verification and orchestration costs | as incurred |
 | Chain fees | on chain: can be recomputed from the worker's transactions |
 | Hosting and hardware | self-reported |
 | Holder contributions | on chain for a wallet transfer; otherwise self-reported |
+| Budgets, on an agent route: limit, held, consumed | the budget book |
 | Protocol subsidy | none of value; test points as a count |
 | Costs the report leaves out | named, not silent |
 
@@ -197,7 +332,16 @@ Rules of the report (`genesis-mining-mvp.md` 14.7):
 
 - every line carries its evidence: `on-chain`, `receipt` (a document, by reference) or
   `self-reported`. What could not be observed is listed as missing and is never written as zero;
-- cash that moved and costs that were incurred are told apart;
+- cash that moved and costs that were incurred are told apart. What was paid for credit is cash
+  out in the period it was paid; what was drawn from the credit is the cost of the period. They
+  are two views of the same money and are never added to each other;
+- prepaid credit reconciles exactly, per provider and in the provider's unit of account: opening
+  plus bought, less consumed, plus or less adjustments, is the closing figure; where the
+  provider's balance can be read back, it is shown beside the computed one and a difference is a
+  line of its own;
+- one movement of money is one movement. A payment the Holder made to a provider appears as the
+  source of the funds and as their use, which are its two ends; the two are never summed into a
+  total of spending;
 - amounts in different assets or currencies are never added. A conversion, where one is given,
   names its source and the time it was observed, and the native amounts stay beside it;
 - revenue coverage is stated per period as what it is. Nothing is inferred from a token count, a
@@ -207,20 +351,25 @@ The shape proposed for it is the observation record of the owner's ERC-8454 (AIF
 Framework), which already requires these things of a record: stocks and flows per asset, flows
 by port, a reconciliation that must hold exactly, missing values listed and never zeroed, and no
 sum across assets. The ports of a worker are its customers, its Holder, its providers, the
-protocol and the chain's fees.
+protocol and the chain's fees; prepaid credit is one of its stocks.
 
-An example with *illustrative* figures, for a worker of the startup form over one period:
+An example with *illustrative* figures, for a worker of the startup form over one period. The
+Holder paid a provider 5.00 by hand, once; the period drew 0.48 of it:
 
 | Line | Amount | Evidence |
 | --- | --- | --- |
 | Qualified deliveries | 12; 21,700 qualified service units | on-chain; envelopes |
 | Customer cash received | 0.006 of the native asset | on-chain |
 | Receivables | 0 | on-chain |
-| Provider charges paid | 5.00 of a fiat currency, bought by the Holder | receipt |
-| Inference cost of the 12 deliveries | 0.41 of that currency | envelopes; the provider's bill |
-| Cost of 2 rejected requests | 0.07 of that currency | envelopes |
+| Holder contributions | 5.00 of a fiat currency, paid by the Holder to the provider | receipt; self-reported |
+| Cash paid to the provider | 5.00 of that currency: the same payment, at its other end | receipt |
+| Prepaid credit, opening | 0 | - |
+| Prepaid credit bought | 5.00 | receipt |
+| Consumed: inference cost of the 12 deliveries | 0.41 | envelopes; the provider's bill |
+| Consumed: cost of 2 rejected requests | 0.07 | envelopes |
+| Prepaid credit, closing | 4.52 = 0 + 5.00 - 0.41 - 0.07; the provider's balance read back: 4.52 | computed; the balance read back |
+| Cost of the period | 0.48 of that currency. Cash out of the period: 5.00. The difference, 4.52, is the credit that is left | computed from the lines above |
 | Chain fees | 0.0000031 of the native asset | on-chain |
-| Holder contributions | 5.00 of that currency | self-reported |
 | Hosting | missing | - |
 | Dimensions | payment: manual; supply: external; coverage of the period's cost by revenue: not stated - cost and revenue are in different assets and no conversion is given | - |
 
@@ -229,48 +378,57 @@ An example with *illustrative* figures, for a worker of the startup form over on
 Each needs its own review, policy and implementation (P52). None of them is in round R2 or in the
 first increment.
 
-**Assets other than the native one** (A51). The kernel's rule stays until a new policy replaces
-it. The design kept: a parameter version lists the assets it accepts, each identified by chain
-and contract with its decimals, each with its own thresholds in raw amounts; there is no live
-exchange rate and amounts in two assets are never compared; the manifest says for each asset
-whether it is issued on the chain by its issuer or is a bridged representation, and through which
-bridge; a test network uses an asset that is labelled a test asset; the real contracts of a main
-network are a separate acceptance. Listing an asset implies nothing about its issuer having
-deployed or endorsed it.
+**Assets other than the native one** (A51, A62). The order is: a reviewed policy; a new version
+of the contracts that implements it; and only then parameters that configure it. The present
+contracts apply the native-only rule in code (code 6), so entering an asset in a parameter cannot
+lift it. The design kept for that policy: a parameter version lists the assets it accepts, each
+identified by chain and contract with its decimals, each with its own thresholds in raw amounts;
+there is no live exchange rate and amounts in two assets are never compared; the manifest says
+for each asset whether it is issued on the chain by its issuer or is a bridged representation,
+and through which bridge; a test network uses an asset that is labelled a test asset; the real
+contracts of a main network are a separate acceptance. Listing an asset implies nothing about its
+issuer having deployed or endorsed it.
 
-**The agent-wallet route.** One target is payment over HTTP by a signed stablecoin transfer, as
-x402 does it. In version 2 of its specification a server answers with its payment requirements,
-the client sends a signed authorization that carries a nonce and a validity window, a facilitator
-verifies it and settles it on chain, and the answer names the transaction; a settlement that is
-still pending is reported as pending, with the transaction that was broadcast. Those are the
-identifiers and the states of section 4. Such payments are usually made on another chain than the
-one the work is recorded on, which is why a purchase record names its chain.
+**The agent-wallet route.** One target is payment over HTTP as x402 does it. Version 2 of that
+specification carries several payment mechanisms and networks, and an adapter pins the one it
+implements: the version of the specification, the scheme, the network, the asset, and the party
+it relies on to verify and settle. One such mechanism, as an example: the `exact` scheme on an
+EVM network, in which the client signs a transfer authorization that carries a nonce and a
+validity window, a facilitator verifies it and settles it on chain, and the answer names the
+transaction; a settlement that is still pending is reported as pending, with the transaction that
+was broadcast. The nonce and the window belong to that mechanism and not to the protocol as a
+whole; another mechanism has other identifiers and other stages, and its adapter maps them to the
+records of section 4. The payment can be made on the chain the work is recorded on or on another
+chain the mechanism supports, which is why a purchase record names its chain.
 
 **Supply that is metered and prepaid.** Where inference is sold as supply rather than as an
 accepted task - a cell buying its fuel from a supplier on the network - the carrier proposed is
-the entitlement ledger of ERC-8506: a supplier issues units under a specification; a holder
-authorizes a consumer up to a ceiling, which is a Holder's delegated budget in the standard's own
-terms; a request reserves an upper bound and is settled at what was accepted; a stream of calls
-settles as one request. A FOGA Cell Account, as built today, can hold such units and authorize
-their consumption with its owner's signature and without a transaction of its node: revision 3 of
-the account receives ERC-1155 units and validates its owner's signature (checked against the
-source of FOGA 1.0.9; to be shown on chain before it is relied on).
+the entitlement ledger of ERC-8506, at a pinned revision (`production-service.md` 4.2): a
+supplier issues units under a specification; a holder authorizes a consumer up to a ceiling,
+which is a Holder's delegated budget in the standard's own terms; a request reserves an upper
+bound and is settled at what was accepted; a stream of calls settles as one request. A conformant
+Source record and a conformant Receipt record come with that ledger, not before it. A FOGA Cell
+Account, as built today, can hold such units and authorize their consumption with its owner's
+signature and without a transaction of its node: revision 3 of the account receives ERC-1155
+units and validates its owner's signature (checked against the source of FOGA 1.0.9; to be shown
+on chain before it is relied on).
 
 **Gas.** Paying for a service in a stablecoin does not change the asset gas is paid in. Sponsoring
 gas is a separate arrangement with a budget and an abuse model of its own.
 
 ## 10. Who enforces a budget
 
-For purchases outside the chain, the agent's own software enforces the policy: a FOGA cell has
-budget books of its own, and another agent has its own controls. The protocol's records state the
-policy and the purchases; they neither enforce it nor go around it (A37). Chain administration,
-worker operation, procurement permissions and delegated smart-account permissions stay distinct,
-and no L1 administration or sequencer key ever becomes a payment key or a worker key (A43).
+For purchases outside the chain, the agent's own software enforces the policy and keeps the
+budget book: a FOGA cell has budget books of its own, and another agent has its own controls. The
+protocol's records state the policy, the reservations and the purchases; they neither enforce
+them nor go around them (A37). Chain administration, worker operation, procurement permissions
+and delegated smart-account permissions stay distinct, and no L1 administration or sequencer key
+ever becomes a payment key or a worker key (A43).
 
 ## 11. What each increment builds
 
 | Increment | Routes | Builds |
 | --- | --- | --- |
-| First | `manual-fiat` | the four records; the state machine as entered from a person's report and the quota read back; the failure rules that need no payment adapter; the operating report |
-| Second | `agent-wallet`, `agent-fiat-account` | one adapter of each kind, each with the operations its provider supports; reconciliation of unknown payments; the policy enforced by the agent |
+| First | `manual-fiat` | the four records; the three parts of a purchase as entered from a person's report, the provider's receipt and the quota read back; the failure rules that need no payment adapter; the operating report with its prepaid-credit lines |
+| Second | `agent-wallet`, `agent-fiat-account` | the budget book with its atomic reservation; one adapter of each kind, each with its declaration - operations, channel, idempotency, release, authorization; reconciliation of unknown payments; the policy enforced by the agent |
 | Third | any | an operated model as a supply source of the same specification; the evidence that exists for its mode |

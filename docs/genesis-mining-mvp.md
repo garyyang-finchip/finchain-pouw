@@ -18,7 +18,9 @@ exactly - who a participant is when its identity is a contract account (section 
 self-dealing rule reads (section 7.5) - and added three kept designs (13.7 to 13.9).
 Documentation alignment: 2026-11-24 (design revision v0.1.4; `decisions.md`, A40-A54). This
 alignment is not a new software release and does not claim an implementation beyond that
-baseline.
+baseline. Design revision v0.1.5 applies the review of v0.1.4 (A55-A64) in the executor's plans.
+In this document it adds a note to 13.7 and updates the pointer in section 14; no rule, section
+number or acceptance row changes.
 
 Sections 1-12 describe the existing contracts under `contracts/`, reference client under
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
@@ -636,6 +638,17 @@ submission, so the design has to say whether a later confirmation may raise its 
 one place where a recorded status would change - or whether an unconfirmed receipt is final as it
 stands. That choice is the ruling to ask for.
 
+The review of v0.1.4 set a condition on this design (A64): a record that anyone may make first
+must not take the one contribution id of a piece of work, or a third party could record a settled
+submission before its demander does and leave the demander's confirmation nothing to obtain.
+Proposed for the ruling (`decisions.md` P60, Q26): the entry that is open to anyone records a
+work fact - the settlement as read from the tender, attributed to its worker, entering no total
+of any epoch and not taking the contribution id - and a receipt is made only by the
+confirmation, whether or not a work fact exists, in the epoch in which the confirmation is
+recorded. Under that proposal no recorded status changes and no epoch that is frozen is
+rewritten, and the choice named above falls away: an unconfirmed submission has no receipt whose
+eligibility could be raised. It is to be decided before the next version of the ledger is coded.
+
 ### 13.8 The authority as it was at settlement (A38)
 
 Before any subsidy of value, eligibility has to rest on who owned and who judged a tender when the
@@ -682,7 +695,8 @@ rule, the epoch calculation, or the deployed ERC-8414 contracts.
 
 The executor's plans for carrying this section out are `production-service.md` (14.2 to 14.5) and
 `supply-and-payment.md` (14.6 to 14.8). They add concrete choices, each put up for a ruling
-(`decisions.md`, P42-P53). Where a plan and this section differ, this section governs.
+(`decisions.md`, P42-P60); the review of v0.1.4 answered on the first of them and corrected the
+plans (A55-A64). Where a plan and this section differ, this section governs.
 
 ### 14.1 Three stages, with three parts of Stage 1
 

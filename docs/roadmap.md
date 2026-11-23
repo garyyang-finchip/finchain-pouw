@@ -1,10 +1,10 @@
 # Implementation Roadmap
 
-Design revision v0.1.4, documentation alignment of 2026-11-24. Engineering milestones are the
-owner's four: P1 PoUW Kernel, P2 Genesis Network, P3 SIG + IPC, P4 FCT Economy. This document
-details P1 and the entry into P2. Rounds are the steps inside P1: R0 design, R1 the kernel on a
-local network, R2 Finchain Sepolia, R3 a third party. Round R2 is two acceptances (`decisions.md`
-A37, P32): R2a with wallets an operator holds, R2b with agents taking part as their contract
+Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). Engineering
+milestones are the owner's four: P1 PoUW Kernel, P2 Genesis Network, P3 SIG + IPC, P4 FCT Economy.
+This document details P1 and the entry into P2. Rounds are the steps inside P1: R0 design, R1 the
+kernel on a local network, R2 Finchain Sepolia, R3 a third party. Round R2 is two acceptances
+(A37, P32): R2a with wallets an operator holds, R2b with agents taking part as their contract
 accounts.
 
 Engineering numbers are not economic stages. The stages - Startup, Development and Pre-expansion
@@ -17,10 +17,11 @@ Where things stand: R0 is closed by the formal review (A19-A30). R1 has passed i
 conditions (A31): the kernel, its tests and the reference client. For R2a everything is built and
 rehearsed on a development network with the commands and the configuration of the public
 deployment (`npm run local-run`); nothing is deployed on a public chain yet. R2b waits for a
-ruling on how a contract account takes part (Q13). The alignment of 2026-11-24 changed nothing in
-this: the software is release 0.1.3, and round R2a runs from it as it was prepared. What the
-alignment adds is design - the production line, in documents - and it is put up for the next
-review (Q17 to Q24).
+ruling on how a contract account takes part (Q13). Neither the alignment of 2026-11-24 nor the
+review of v0.1.4 changed anything in this: the software is release 0.1.3, and round R2a runs from
+it as it was prepared (A53, A55). What they add is design - the production line, in documents.
+The review answered Q17 to Q24 and required corrections, which this revision applies; what is
+open for a ruling now is Q13 to Q16 and Q25 to Q29.
 
 ## 1. Reused as they are (A6)
 
@@ -32,7 +33,7 @@ review (Q17 to Q24).
 | `finchain`'s evidence conventions: records with schema, environment and recordedAt; delta packages; byte-exact verification | `finchain` | the same conventions here | none |
 | ERC-8004 identity root, ERC-8434 AID, ERC-8419 KYA | World address book and the standards' repositories | evidence the steward may ask for before admitting an address; not read by the contracts (A20) | none |
 | ERC-8444 value registry, ERC-8436 decision bodies, ERC-8471 disputes | the standards' repositories | later: registering profiles for discovery, a decision body as steward, disputes over attested work | none in P1 |
-| ERC-8506 AI Inference Token Onchain: its record formats | the standard's repository | proposed (P43): the service specification, the provenance of supply and the usage records of the production line are written as its Unit, Grade, Source and Receipt records. Later, its entitlement ledger for supply that is metered and prepaid (P52) | none. The first production increment needs none of its contracts |
+| ERC-8506 AI Inference Token Onchain: its record formats, at a pinned revision | the standard's repository, at the commit named in `production-service.md` 4.2 | agreed on the condition that the revision is pinned and the fields are mapped (A61, P59): the usage categories and the service specification of the production line are a Unit record and a Grade record of the standard; the provenance of supply and the entries for usage and verification use the vocabulary of its Source record and two members of its Receipt record. Later, its entitlement ledger for supply that is metered and prepaid (P52) | none to the standard. The first production increment has no ERC-8506 contract and no runtime dependency on it; it depends on the pinned specification |
 | ERC-8454 AIFi Unit Framework: its observation record | the standard's repository | proposed (P49): the shape of a worker's operating report | none |
 
 ## 2. New in this repository
@@ -40,7 +41,7 @@ review (Q17 to Q24).
 | Piece | Round | State |
 | --- | --- | --- |
 | Contracts: `GenesisPolicy`, `GenesisLedger`, `AuditV1`, `PrevBlockSeedSource`, `L1BlockSeedSource`, `TenderAdapter8414` | R1 | built and reviewed; Solidity 0.8.24, no proxy, no balance. Unchanged since v0.1.2 but for two comments |
-| Tests: policy, G0, G1, epochs, the client and its audit, contract accounts, deployment, the round's test tender, boundaries | R1, R2 | built; `npm test`, also on a hosted runner for each version |
+| Tests: policy, G0, G1, epochs, the client and its audit, contract accounts, deployment, the round's test tender, boundaries | R1, R2 | built; `npm test`. The workflow that runs them on a hosted runner is in place; its first hosted run is pending (`decisions.md` 3) |
 | Reference client `pouw`: `status`, `work`, `bridge`, `seal`, `audit`, `verify`; `--account` for a contract account | R1, R2 | built; Node.js, ethers, JSON-RPC only |
 | Committed builds of the deployable contracts | R2 | built; `build/`, with a test that they are what the sources compile to |
 | Deployment from a configuration file, with a manifest that records code hashes and blocks, and a read-back | R2 | built; `scripts/deploy.js` |
@@ -52,10 +53,10 @@ review (Q17 to Q24).
 | The R2a configuration and runbook | R2a | built; `deployments/finchain-sepolia-r2.config.json`, `docs/r2-runbook.md` |
 | The independent audit job | R2 | built; `.github/workflows/ci.yml` |
 | The Finchain Sepolia manifest; evidence records of the deployment, the rounds and the audits | R2a | to do: they are made by running R2a |
-| The next version of the ledger: a cap per declared operator, receipts without the demander, a delegation signed by an account | before R3 | designs kept (`genesis-mining-mvp.md` 13.4, 13.7, 13.9); to be ruled (Q13, Q16) |
+| The next version of the ledger: a cap per declared operator, receipts without the demander, a delegation signed by an account | before R3 | designs kept (`genesis-mining-mvp.md` 13.4, 13.7, 13.9); to be ruled (Q13, Q16, Q26) |
 | `g0.ver`, `g0.cal`, the authority at settlement, a freshness window | after rulings | designs kept (`genesis-mining-mvp.md` 13) |
-| The production line: the first specification with its evaluator, counter and fixtures; the `g1.inference` profile and its adapter; the reference worker, demander and recount; the operating report; the rehearsal of the increment | the first production increment | designed, not built (`production-service.md`, `supply-and-payment.md`); to be ruled (Q17 to Q23) |
-| Procurement adapters for an agent's wallet and for a fiat-billed account; an operated model as a source of supply | the second and third increments | outlined (`supply-and-payment.md` 11) |
+| The production line: the first specification with its evaluator, counter, canonicalization rule and committed fixture set; the `g1.inference` profile and its adapter; the reference worker, demander and recount; the operating report; the rehearsal of the increment | the first production increment | designed, not built (`production-service.md`, `supply-and-payment.md`). The review's answers are A63; what this revision adds to carry out its corrections is to be ruled (Q25 to Q29) |
+| The budget book and the procurement adapters for an agent's wallet and for a fiat-billed account; an operated model as a source of supply | the second and third increments | outlined; the records an adapter is built to are specified (`supply-and-payment.md` 3, 4, 11) |
 | Node attestation registry (FPM01-N) | P2 | later module |
 
 Not built, by ruling (A30): calibration records, an agreement verifier, commit-reveal, multi-level
@@ -126,11 +127,18 @@ subsidized (A33); the delegation by which a contract account names a key that wo
 (P35), which is what R2b would run on. The authority at settlement (A38) needs the verification
 work and comes with it, before any subsidy of value. None of this is built.
 
-Proposed with this revision (P50; Q22): that version is designed once with the production line in
-view. A receipt would also carry the role of the contribution, the work id, the parent work and
-the commitment to an evidence envelope, so that the first production profile arrives as a profile
-and an adapter and not as a third ledger. If the two rulings do not come together, the version
-ruled first is built first and the other follows by the same versioned switch; neither waits.
+Proposed in v0.1.4 (P50) and answered by the review (A63, on Q22): one design of that version,
+with the production line in view, is preferred. A receipt would also carry the role of the
+contribution, the work id, the parent work, the commitment to an evidence envelope and the content
+key by which a profile counts a task unit once (P55), so that the first production profile arrives
+as a profile and an adapter and not as a third ledger.
+
+The order the review asks for: first the rules of authorization and of receipt state - Q13, and
+the condition on receipts without the demander (A64), for which this revision proposes that the
+facts of settled work be recorded apart from receipts (P60, Q26) - and then the version. A
+necessary upgrade of the ledger is not held back by a production design that is not finished: if
+the production fields are not ruled when the ledger is, the ledger is built without them and they
+follow by the same versioned switch.
 
 ## 6. Dependencies and what does not block what
 
@@ -141,15 +149,16 @@ ruled first is built first and the other follows by the same versioned switch; n
 - The FPM01 / FPM01-G v0.2 record is the design source for terms and for the later milestones;
   the approved decisions in `decisions.md` are enough for R1 and R2, and differences in terms are
   listed when the record arrives (A29).
-- Tokenomics is not designed here; R4 asks for the ruling. Test points are a simulation and
-  create no obligation (A5, A26).
+- Tokenomics is not designed here; R4 asks for the ruling. It is a ruling of its own and is tied
+  to no economic stage (A62). Test points are a simulation and create no obligation (A5, A26).
 - The steward of R2a is a key in a file on the host that deploys: acceptable for a test deployment
   that holds nothing and issues nothing. A deployment whose admissions matter to third parties
   needs a steward that is not one key in a file (`architecture.md` 7).
 - The production increments hold up no round, and no round holds them up beyond the next version
   of the ledger, which both need. Round R2a needs nothing from them.
-- The first increment needs no ERC-8506 contract, no asset but the native one, no FOGA release
-  and no model that the operator cannot buy with an ordinary account.
+- The first increment needs no ERC-8506 contract and has no runtime dependency on that standard;
+  it follows a pinned revision of its specification (A61). It needs no asset but the native one,
+  no FOGA release and no model that the operator cannot buy with an ordinary account.
 
 ## 7. Economic stages and engineering numbers
 
@@ -163,66 +172,79 @@ deployment can support several operating forms at once (A41).
 | Contribution records and an allocation that anyone can recompute | every stage | the kernel | P1: rounds R1, R2a | built; R2a prepared |
 | An agent that takes part as its own account | every stage | the route for a contract account | P1: round R2b, on the next ledger version | to be ruled (Q13) |
 | Parties that are not the operator's; a cap per declared operator | every stage | the next ledger version; round R3 | P2 | after R2 (A35, A39) |
-| A published service specification; usage recorded by category; a delivery qualified by published checks; a contribution linked to its evidence | Stage 1, Startup | the first specification, the `g1.inference` profile, the evidence envelope, the recount | first production increment | designed |
+| A published service specification; usage recorded by category; a delivery qualified by published checks; a contribution linked to its evidence and counted once per task unit | Stage 1, Startup | the first specification, the `g1.inference` profile, the evidence envelope, the recount | first production increment | designed |
 | A model service that a person bought, recorded as input and never as production; pause, resume and switch of a source | Stage 1, Startup | the supply and purchase records on the manual route | first production increment | designed |
 | Holder funding, customer revenue, subsidy and cost told apart | Stage 1, Startup | the operating report | first production increment | designed |
-| An agent that buys and renews within a delegated budget, from a wallet or through a fiat-billed account; reconciliation of a payment whose state is unknown | Stage 1, Development | one adapter of each route | second production increment | outlined |
+| An agent that buys and renews within a delegated budget, from a wallet or through a fiat-billed account; a budget that two purchases cannot both spend; reconciliation of a payment whose state is unknown | Stage 1, Development | the budget book; one adapter of each route | second production increment | outlined; its records specified |
 | Manual and autonomous operation side by side | Stage 1, Development | nothing new in the protocol: the same records, two routes | second production increment | outlined |
 | An operated model accepted under the specification an external service is accepted under | Stage 1, Pre-expansion | an operated source of supply; the evidence that exists for its mode | third production increment | outlined |
-| Payment and subsidy criteria in assets other than the native one | when a ruling asks for it | a reviewed asset policy in a parameter version (A51) | a later adaptation | design kept |
+| Payment and subsidy criteria in assets other than the native one | when a ruling asks for it | a reviewed asset policy, a version of the contracts that implements it, and then the parameters that configure it (A51, A62) | a later adaptation | design kept |
 | Verification as paid work; public procurement of useful inference | Stage 1 into Stage 2 | `g0.ver` and a G0 production profile, with a seed fit for them | P2 into P3 | designs kept |
 | Supply that is metered and prepaid; delegated budgets enforced on chain | Stage 2 | the entitlement ledger of ERC-8506 with an adapter that reads it | a later adaptation | design kept |
 | Capability measured and compared: SIG; IPC; routing | Stage 2 | P3 | P3 | later |
-| An autonomous operating economy; FCT | Stage 3 | P4 | P4 | later; needs the owner's ruling on Tokenomics |
+| An autonomous operating economy | Stage 3 | P4 | P4 | later |
+| Platform Tokenomics; FCT | no stage: a ruling of its own, which can serve several stages (A62) | the owner's ruling on Tokenomics; then P4 | R4 asks for the ruling | not designed here. Decided so far: nothing is issued in this work (A5, A53) |
 
 No date, share or threshold is attached to a stage (A41).
 
-## 8. The first production increment
+## 8. The first production increment, and the acceptances after it
 
-What it is (A53): one bounded inference profile, one supported procurement route, its evidence
-envelope and an operating report. The plans are `production-service.md` and
-`supply-and-payment.md`; this section says what the increment has to produce and how it is
-accepted. All of it is proposed (P51) and none of it is run.
+What the increment is (A53): one bounded inference profile, one supported procurement route, its
+evidence envelope and an operating report. The plans are `production-service.md` and
+`supply-and-payment.md`; this section says what the increment has to produce and how the
+production line is accepted. All of it is proposed (P51, P58) and none of it is run.
 
 What it builds, in this repository: the first specification with its instruction, schema,
-evaluator, counter and fixtures; the next version of the ledger with the `g1.inference` profile
-and its adapter; a reference worker, a reference demander and the recount; the four records of the
-manual route; the operating report; a rehearsal of the whole on a development network, with a
-deterministic stand-in for the model service, as round R2 was rehearsed.
+evaluator, counter, canonicalization rule and committed fixture set; the next version of the
+ledger with the `g1.inference` profile and its adapter; a reference worker, a reference demander
+and the recount; the four records of the manual route; the operating report; a rehearsal of the
+whole on a development network, with a deterministic stand-in for the model service, as round R2
+was rehearsed.
 
-Its acceptances are three and are kept apart, as those of round R2 are. A record of one is never
-presented as another.
+The review's correction (A59): the acceptances are staged, each has evidence of its own, and none
+stands in for another. The first increment is the first of them and nothing more. v0.1.4 listed a
+customer's own task among the acceptances of the first increment while the plan left customers'
+own tasks out of it, and let a supplier stand where a customer was asked for. Both are withdrawn.
 
-| Acceptance | Who takes part | What it shows | What it does not show |
-| --- | --- | --- | --- |
-| The mechanism | a worker and a designated test demander that the operator holds; a model service a person bought; a machine that is not the operator's for the audit and the recount | a specification published; fixtures delivered, checked and accepted; usage recorded with the origin of every counter; counts and checks repeated from public content; a contribution recomputed from the chain; a report that tells the cost of the model service from the bounty and from the Holder's funding | demand, an agent, or that the named model ran. Labelled `public-testnet`, `controlled-self-test` and `controlled-procurement` |
-| The agent | the same, with a FOGA cell as the worker or as the demander, through the capabilities the cell has or an adapter of its own | that a cell uses or organizes the service as its own account | demand. It waits for nothing in this repository and is on FOGA's cycle |
-| A request that is not the operator's | a customer with a task of its own, or a supplier, that the operator does not hold | the first evidence that somebody else asked or supplied | commercial demand: one party is one party |
+| Acceptance | Who takes part | What it shows | What it does not show | When |
+| --- | --- | --- | --- | --- |
+| 1. The mechanism: controlled fixtures | a worker and a designated test demander that the operator holds; a model service a person bought; a machine that is not the operator's for the audit and the recount | that production, acceptance, measurement and payment work as specified: a specification published; fixtures delivered, checked and accepted; usage recorded with the origin of every counter; counts and checks repeated from public content; a task unit counted once; a contribution recomputed from the chain; a report that tells the cost of the model service from the bounty and from the Holder's funding | demand, an agent, supply from outside, or that the named model ran. Labelled `public-testnet`, `controlled-self-test` and `controlled-procurement` | the first increment |
+| 2. A FOGA cell takes part | the same, with a FOGA cell as the worker or as the demander, through the capabilities the cell has or an adapter of its own | that a cell can use or organize the service as its own account | demand; supply from outside | after the first; on FOGA's cycle, waiting for nothing in this repository |
+| 3. An external supplier | a worker that the operator does not hold, delivering under the published specification | that supply from outside can connect: another party's deliveries are accepted and recounted under the same specification | demand: its tasks can still be fixtures. Nothing about that supplier's hardware or model beyond what its evidence classes say | when such a party is admitted; the third party of round R3 may be it |
+| 4. An external customer's own request | a customer that the operator does not hold, with a task of its own and funds of its own | that this one request from outside exists and was served; where it was paid with funds of value, that this one independent paid demand exists | the size of a market, a repeat purchase, or sustainability | after the first increment: it needs a later version of the profile (`production-service.md` 2) |
 
-The milestone of A54 names all three together. It is met by the third acceptance with a cell
-taking part, and by nothing less.
+Acceptances 3 and 4 are different evidence: a supplier from outside shows nothing about demand,
+and a customer from outside shows nothing about supply. One party may be both (A63, on Q23); each
+piece of evidence then says which role - supply, purchase or audit - that party had in it.
 
-Every run of an increment reports its environment, the versions, the source of its data, the
-parties, the finance mode and the evidence, and says which facts were simulated. A mocked
-provider, a sandbox bill or a test asset can establish a technical behaviour; none of them
-establishes revenue, a live payment integration, demand or self-sufficiency (A54).
+The milestone of A54 names a buyer's real request, a standardized delivery, a cell that uses or
+organizes the service, an independent re-check, a payment that completes, a GMU record that can
+be recomputed and a report of the actual cost. Proposed (P58, Q27): it is met when acceptances 1,
+2 and 4 have each been evidenced, and by nothing less. Acceptance 3 is not among its conditions
+and is reported for what it shows.
+
+Every run reports its environment, the versions, the source of its data, the parties, the finance
+mode and the evidence, and says which facts were simulated. A mocked provider, a sandbox bill or
+a test asset can establish a technical behaviour; none of them establishes revenue, a live payment
+integration, demand or self-sufficiency (A54).
 
 ## 9. The later increments, and the order
 
 | Increment | Adds | Accepted when |
 | --- | --- | --- |
-| Second | procurement by the agent: one adapter for a wallet in digital assets, one for a fiat-billed account its Holder authorized; the purchasing policy enforced by the agent; reconciliation of payments whose state is unknown | an agent buys and renews within its policy without a person acting; a purchase beyond the policy is declined; a lost answer is reconciled without a second payment; a worker of the manual route and one of an agent route deliver under the same specification in one epoch |
+| Second | procurement by the agent: the budget book with its atomic reservation; one adapter for a wallet in digital assets, one for a fiat-billed account its Holder authorized, each with its declaration; the purchasing policy enforced by the agent; reconciliation of payments whose state is unknown | an agent buys and renews within its policy without a person acting; a purchase beyond the policy is declined; two purchases that need the same room in a budget are not both made; a lost answer is reconciled without a second payment and without freeing its budget; a worker of the manual route and one of an agent route deliver under the same specification in one epoch |
 | Third | an operated model as a source of supply | deliveries from an external service and from an operated model are assessed against one specification, each with its source and its evidence classes stated |
 
-The order proposed (Q23):
+The order, as the review agreed it (A63, on Q23):
 
 1. Round R2a, now, on the software as released. Nothing below is a condition of it.
-2. The rulings on the next version of the ledger (Q13, Q16) and on the production plans (Q17 to
-   Q22). They may come together or apart.
+2. The rulings on the next version of the ledger (Q13, Q16, Q26) and on what this revision adds to
+   the production plans (Q25, Q27 to Q29). They may come together or apart.
 3. The next version of the ledger. Round R2b and round R3 run on it, as ruled (A35, A39).
-4. The first production increment, beside R2b and R3. Its first acceptance needs no third party
-   and no cell.
+4. The first production increment, beside R2b and R3: the mechanism. It needs no third party and
+   no cell. The three further acceptances follow as their parties are there, in no fixed order.
 5. The second and third increments, each opened by a ruling of its own.
 
 Not in any increment yet, by ruling (A51, A53): settlement in stablecoins, richer verification,
 SIG calibration and platform economics. They expand from the evidence the increments produce.
+Platform Tokenomics is a ruling of its own and waits for no economic stage (A62).

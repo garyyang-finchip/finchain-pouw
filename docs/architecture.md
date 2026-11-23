@@ -7,10 +7,13 @@ This document aligns the architecture with the owner-approved economic developme
 intelligence-production direction. It does not change a release version, contract, ABI,
 deployment or the approved R2 scope. References are to `decisions.md`: A1-A39 and P1-P41 belong
 to the baseline, A40-A54 record this alignment, and P42-P53 are the executor's proposals for
-carrying it out. Sections labelled **future design** describe requirements for later work, not
-features available in R1. The three stages and five subdivisions below refine and replace A17's
-older economic-stage numbering. A17's approved compatibility with operator funding, agent
-procurement and self-operated hardware remains in force; those operating forms can coexist.
+carrying it out. A55-A64 record the review of design revision v0.1.4, and P54-P60 are the
+executor's proposals for carrying that review out (design revision v0.1.5); in this document they
+change the pointers to the plans and nothing else. Sections labelled **future design** describe
+requirements for later work, not features available in R1. The three stages and five subdivisions
+below refine and replace A17's older economic-stage numbering. A17's approved compatibility with
+operator funding, agent procurement and self-operated hardware remains in force; those operating
+forms can coexist.
 
 ## 1. Purpose and position
 
@@ -208,9 +211,11 @@ and validation requirements differ from an on-chain recomputable reference outpu
 
 The executor's plans for the first of these responsibilities are `production-service.md` (service
 specification, usage and delivery evidence) and `supply-and-payment.md` (procurement, payment
-reconciliation and the operating report). They are proposals (`decisions.md` P42-P53), among them
-that the service specification, the provenance of supply and the usage records be written in the
-record formats of ERC-8506, the owner's standard for inference supply (P43).
+reconciliation and the operating report). They are proposals (`decisions.md` P42-P60), corrected
+by the review of design revision v0.1.4 (A55-A64). Among them: the service specification and the
+usage records follow the record formats of ERC-8506, the owner's standard for inference supply,
+at a pinned revision of that specification. The first increment has no ERC-8506 contract and no
+runtime dependency on it (A61, P59).
 
 ## 4. Identity, admission and relations
 

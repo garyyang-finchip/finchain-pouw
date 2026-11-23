@@ -16,13 +16,16 @@ check - and rehearses round R2 with them. Nothing is deployed on a public chain 
 owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what is
 approved, what this repository proposes, and which figures are only illustrative.
 
-Design revision v0.1.4 (2026-11-24) is a revision of the documents. The software is release
-0.1.3, unchanged: no contract, interface, client, script, configuration or deployment changes
-with it, and round R2 runs from it as it was prepared. The revision records the alignment of the
-owner and the advisor on the production line - model-token generation as the first production
-commodity, the economic stages, the three operating dimensions, the complete AI Node, production
-roles, evidence, procurement and payment - and adds the plans for carrying it out. Nothing of the
-production line is built.
+Design revisions v0.1.4 and v0.1.5 (both 2026-11-24) are revisions of the documents. The
+software is release 0.1.3, unchanged: no contract, interface, client, script, configuration,
+runbook or deployment changes with either, and round R2 runs from it as it was prepared. v0.1.4
+records the alignment of the owner and the advisor on the production line - model-token
+generation as the first production commodity, the economic stages, the three operating
+dimensions, the complete AI Node, production roles, evidence, procurement and payment - and adds
+the plans for carrying it out. v0.1.5 applies the review of those plans: the measurement, the
+rules that count a task unit once, the state of a purchase and the budget of an agent, the staged
+acceptances, and the pinned revision of ERC-8506 the records follow. Nothing of the production
+line is built.
 
 ## What this repository is for
 
@@ -90,8 +93,10 @@ which two contract accounts take part as themselves. Keys are made for the run o
 checkout and deleted after it. It ends with `PASS` and the number of checks, and prints the
 epochs' tables as an auditor sees them.
 
-The same tests and the same rehearsal run on a hosted runner from a clean checkout, started by
-hand for each version (`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow".
+The same tests and the same rehearsal can be run on a hosted runner from a clean checkout
+(`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow". The workflow is in place and its
+first hosted run is pending; the run's URL, its commit and its result are recorded in
+`docs/decisions.md`, section 3, when it has run.
 
 ## The reference client
 
@@ -140,12 +145,12 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 
 | Document | Content |
 | --- | --- |
-| `docs/decisions.md` | Approved rulings; the two reviews and how each ruling was applied; the alignment of 2026-11-24 and how it is applied; this repository's proposals, each open to a veto; open questions; illustrative figures |
+| `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the review of design revision v0.1.4, and how each is applied; this repository's proposals, each open to a veto; open questions; illustrative figures |
 | `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
 | `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
-| `docs/production-service.md` | Plan, not built: the first production profile - its task class and published checks, the pinned choices, the evidence envelope, the measurement rule, the evidence class of every claim, the contribution record, three forms of supply under one profile |
-| `docs/supply-and-payment.md` | Plan, not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; one state machine for a purchase on the manual and the agent routes; failure and recovery; the customer's payment; the operating report; the later adaptations |
-| `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the production increments and their order |
+| `docs/production-service.md` | Plan, not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
+| `docs/supply-and-payment.md` | Plan, not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - and what settlement means per channel; the budget book of an agent's purchases; failure and recovery; the customer's payment; the operating report; the later adaptations |
+| `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the first production increment and the staged acceptances after it; the later increments and the order |
 | `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the rehearsal's checks; when round R2 is accepted; what the rounds prove and do not prove; the staged acceptance of the production extension, every row proposed and not run |
 | `docs/r2-runbook.md` | Round R2a on Finchain Sepolia, one command at a time, with the clock and what to do when something goes wrong |
 | `deployments/README.md` | The deployment manifest, the configuration a deployment is made from, the files of this directory |

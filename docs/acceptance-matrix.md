@@ -1,9 +1,10 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.4, documentation alignment of 2026-11-24. Sections 1 to 10 are those of
-v0.1.3, unchanged: the rows of the kernel and of round R2. Sections 11 to 14 are deliverable D of
-the alignment (`decisions.md` A54): the staged acceptance of the production extension, every row
-of which is proposed and not run.
+Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). Sections 1 to 10 are
+those of v0.1.3 - the rows of the kernel and of round R2 - with one row added for the next version
+of the ledger (D18, A64). Sections 11 to 14 are deliverable D of the alignment of 2026-11-24
+(A54): the staged acceptance of the production extension, corrected and extended as the review
+required (A56 to A60). Every row of those four sections is proposed and not run.
 
 Following the formal review (A28), a row is accepted in a round only if that round implements
 what it tests. Every row therefore carries a state:
@@ -13,7 +14,8 @@ what it tests. Every row therefore carries a state:
 - **Sepolia** - belongs to a round on Finchain Sepolia (`roadmap.md` 3), where the same behaviour
   is shown on a public chain or needs another party: round R2a (wallets an operator holds), round
   R2b (agents as their contract accounts) or round R3 (a third party);
-- **deferred** - belongs to something not implemented (`decisions.md` A19, A23, A30);
+- **deferred** - belongs to something not implemented (`decisions.md` A19, A23, A30), or to the
+  next version of the ledger (A35, A64);
 - **proposed; not run** - belongs to the production extension (sections 11 to 13): designed, not
   built, not run. Such a row says what a later increment has to show. It is no addition to the
   tests of this repository or to the checks of its rehearsal.
@@ -29,8 +31,10 @@ at finalized state by a machine that is not the operator's. Evidence is a record
 `environment` and `recordedAt`, as in `finchain`, and with the deployment's `labels`.
 
 Tests are named by file: `policy`, `g0`, `g1`, `epoch`, `audit`, `account`, `deploy`, `round`,
-`boundaries` stand for `test/<name>.test.js`. All of them, and the rehearsal, are also run on a
-hosted runner from a clean checkout, for each version (`.github/workflows/ci.yml`).
+`boundaries` stand for `test/<name>.test.js`. All of them, and the rehearsal, can also be run on a
+hosted runner from a clean checkout (`.github/workflows/ci.yml`). That workflow is in place and
+its first hosted run is pending; the run's URL, its commit and its result are recorded when it
+has run (`decisions.md` 3).
 
 ## 1. Normal operation
 
@@ -79,6 +83,7 @@ hosted runner from a clean checkout, for each version (`.github/workflows/ci.yml
 | D15 | Work delivered before the deployment's genesis | recorded and measured; not subsidized | passes: `g1`; rehearsal (a tender older than the deployment, confirmed by the account that owns it) |
 | D16 | A tender settled by default, the judge having said nothing | the worker has the bounty and cannot bridge by itself; subsidized once the demander confirms it; the audit reports the settlement as `default` | passes: `g1`, `audit` |
 | D17 | The worker judged its own delivery and handed the right to judge to another address before the bridge | not caught by the ledger: the rule reads the judge of the moment of bridging, finds another address, and the receipt is subsidized when the tender's owner - another admitted address - confirms it, within the caps. The audit reads the tender's own log, finds who judged and who owned it at settlement, and reports the receipt as an observation; `ok` is not affected | passes: `g1`, `audit` - the tests assert the boundary. Eligibility is to depend on it before any subsidy of value (A38) |
+| D18 | A third party records a settled submission before its demander confirms it (the next version of the ledger) | the third party's record is a work fact: it enters no total and does not take the contribution id. The demander's later confirmation makes the receipt, its eligibility decided as for any confirmation, in the epoch in which it is recorded. No earlier epoch changes and no recorded status changes | deferred: with the next version of the ledger. The design is proposed, and is to be ruled before that version is coded (A64; `decisions.md` P60, Q26) |
 
 ## 4. Disconnection, restart, lateness and recovery
 
@@ -249,12 +254,25 @@ The seven items of A54, and where each is first accepted:
 | Item | Checks | First accepted in |
 | --- | --- | --- |
 | 1. A model service bought by a person; the agent produces, the delivery is accepted, the contribution is recorded | E1, E5, E8, E14 | the first increment |
-| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11 | the second increment |
+| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11; rows F5 to F8, F18 to F21 | the second increment |
 | 3. Both kinds of participant under one work protocol | E4 | the second increment |
 | 4. An external model service and a self-operated model under one specification | E6 | the third increment |
-| 5. A third party re-checks usage, delivery, billing and contribution | E5, E7, E13, E14; rows S7, S9, S13 | the first increment, by a machine that is not the operator's; by a party that is not the operator's in its third acceptance |
-| 6. Holder input, customer revenue, protocol subsidy and production cost told apart | E1, E8, E9; rows F1, F12, F13 | the first increment |
-| 7. A cell recovers after a failure; a replica obeys deduplication and attribution | E10, E11, E12; rows F11, F15 | the first increment for the reference worker; with a cell for E12 |
+| 5. A third party re-checks usage, delivery, billing and contribution | E5, E7, E13, E14; rows S7, S9, S13 | the first increment, by a machine that is not the operator's; by a party that is not the operator's when one takes part (acceptances 3 and 4, below) |
+| 6. Holder input, customer revenue, protocol subsidy and production cost told apart | E1, E8, E9; rows F1, F12, F13, F22 | the first increment |
+| 7. A cell recovers after a failure; a replica obeys deduplication and attribution | E10, E11, E12; rows F11, F15, S17 to S20 | the first increment for the reference worker; with a cell for E12 |
+
+The acceptances of the production line (`roadmap.md` 8; A59). Each has evidence of its own, and
+none stands in for another:
+
+| Acceptance | Rows | What it shows |
+| --- | --- | --- |
+| 1. The mechanism: controlled fixtures - the first increment | E1, E5, E7 to E9, E11 for a restart, E13 for missing evidence, E14; S1 to S13 and S15 to S20; F1 to F4, F9 to F13, F16, F22, and F17 as far as the manual route shows it | production, acceptance, measurement and payment work as specified |
+| 2. A FOGA cell takes part | the rows of the first, with a cell as the worker or as the demander; E12, F15 | a cell can use or organize the service |
+| 3. An external supplier | the rows of the first, with a worker that the operator does not hold; T1, T2 | supply from outside can connect. Not demand |
+| 4. An external customer's own request | S21, and the rows of the profile version that admits customers' own tasks, which this matrix does not have yet | one request from outside; paid with funds of value, one independent paid demand. Not supply, and not a market |
+
+Proposed (`decisions.md` P58, Q27): the milestone of A54 is met when acceptances 1, 2 and 4 have
+each been evidenced.
 
 ## 12. The first production profile
 
@@ -264,11 +282,11 @@ a row says otherwise.
 | Id | Scenario | Expected outcome |
 | --- | --- | --- |
 | S1 | The specification is published | the identifiers of its records are recomputed from their canonical form; a delivery made under another specification is not a delivery under the profile |
-| S2 | A fixture is delivered and accepted | the checks that apply all pass; the submission settles by the route the profile names; one receipt with the role, the work id and the envelope's hash; GMU is the profile's `baseGmu` |
+| S2 | A fixture is delivered and accepted | the checks that apply all pass; the submission settles by the route the profile names; the fixture is shown to be a member of the committed set; one receipt with the role, the work id, the content key and the envelope's hash; GMU is the profile's `baseGmu` |
 | S3 | A delivery fails a check: not JSON, not valid against the schema, over the limit, a value not in the input, not the reference, late, or refused by the model | rejected with the published reason; no qualified delivery and no contribution; the cost stays in the worker's records |
 | S4 | The same accepted result out of more generated tokens | the same qualified service units and the same GMU |
-| S5 | A retry; the same input asked again by the same demander | one work id and one delivery for the retry; no units for the repeat, which the report lists |
-| S6 | Categories that overlap | cached input is never added to input; delivered output is never added to generated output |
+| S5 | A retry (revised, A57: the row also covered a repeat, to which it gave no units while the fixed GMU stayed) | one request id through every attempt, whatever work id an attempt has; the cost of every attempt stays in the worker's records; one delivery that counts. A repeat is rows S17 to S19 |
+| S6 | Categories that overlap (revised, A56) | cached input is never added to input. The count of the canonical result is a count of its own: never added to the generated tokens, and never stated as a part of them |
 | S7 | The counts are made again | for the categories that can be counted again, the recount equals the envelope; a difference is reported by category, with the counter used |
 | S8 | The envelope stated by the worker is not the one the demander confirms | no receipt under the profile; the two statements are reported |
 | S9 | Evidence that is public; evidence that cannot be retrieved | a machine with no role repeats the checks and the counts; the second delivery is marked unauditable and has no verified qualification, and its receipt stays as recorded |
@@ -276,7 +294,14 @@ a row says otherwise.
 | S11 | The rules of the kernel on a production receipt: self-dealing, admission on both sides, a declared relation, a bounty in another asset or below the minimum, the caps | the outcomes of rows D5, D8, D9 and D12 to D14 |
 | S12 | History | the receipts and the audits of the first ledger are unchanged; no `g0.ref` receipt is read as production; a new measurement version changes no recorded envelope |
 | S13 | The ledger is right and a count is wrong | `pouw audit` says `ok` and the recount reports the difference: two reports, and neither stands for the other |
-| S14 | A task fulfilled with inference bought for it (later, with a fulfiller's profile) | two receipts, the child naming its parent; each contribution counted once in its own role |
+| S14 | A task fulfilled with inference bought for it (later, with a fulfiller's profile) | the agent that bought is the customer of the inference, and the supplier's qualified service to it is a delivery (A60); two receipts, the child naming its parent; each contribution counted once in its own role, and the agent's own thinking is no third one |
+| S15 | A canonical result that is not a part of what was generated: re-ordered and re-escaped by the canonicalization, or counting more tokens than the provider reported as generated | recorded as it is: the delivered text and the canonical result each with its hash, `generated_tokens` with its origin, `canonical_delivery_tokens` from the public counter. No report states one as a part of the other unless the stream of tokens and the mapping were kept |
+| S16 | The units of a delivery computed by two implementations | integers only, one division, rounded down: the same figure, and for the plan's example 1,810. A change of scale, weight, limit, counter, template, canonicalization rule or rounding is another measurement version, and a recorded delivery keeps its own |
+| S17 | The fixture of a counted delivery is delivered again under another tender | another work id; the tender settles and pays, and those facts stay. The delivery is recorded as `duplicate-contribution` and names the receipt it repeats: no qualified units, no GMU measured or subsidized, no eligibility |
+| S18 | Another submission for a fixture already counted: by the same worker or by another, under the same specification or under another | as S17: the first accepted delivery of a content key is the one that counts, whoever delivers later and under whatever model |
+| S19 | A demander makes a new request, with a new request id, for a fixture already counted | as S17: the content key decides, not the request id |
+| S20 | One fixture cut into parts, each part tendered as a task | a part is not a member of the committed set: `not-a-task-unit`. What settles is recorded with that reason: no units, no GMU, no eligibility |
+| S21 | A customer buys the same service for the same content again (later, with the profile version that admits customers' own tasks) | that version states its own scope of deduplication. The rule for fixtures is not inherited, and a legitimate repeat purchase is not refused by it |
 
 ## 13. Supply, funds and payment
 
@@ -287,32 +312,49 @@ Rows for `supply-and-payment.md`. All are proposed and not run.
 | F1 | A person buys quota for the worker | recorded as Holder funding and as a cost; never as production, never as income | first |
 | F2 | The quota runs out during service | no new request is taken; requests in flight end as what they are; service resumes when credit is available; nothing is claimed for output that was not delivered | first |
 | F3 | A second source under the same specification | deliveries go on; each envelope names the source and the revision actually used; a source that does not meet the specification is not used | first |
-| F4 | The states of a purchase on the manual route | entered from the person's report and the quota read back, and labelled so | first |
+| F4 | The state of a purchase on the manual route (revised, A58) | its three parts - payment, service credit, adjustments - are entered from the person's report, the provider's receipt and the quota read back, and labelled so | first |
 | F5 | The agent buys within its policy; a purchase beyond it | bought and renewed without a person acting; declined or escalated as the policy says | second |
 | F6 | A renewal fails | a bounded number of retries inside the policy, then a stop and an escalation | second |
-| F7 | The answer to a payment is lost | reconciled on the purchase's identifier before anything is sent again; one payment | second |
-| F8 | Paid, and the credit does not arrive | recorded as paid and not credited; not booked as service received | second |
+| F7 | The answer to a payment is lost | the payment is `unknown`: reconciled on the purchase's identifier before anything is sent again; one payment; its budget stays held meanwhile (row F20) | second |
+| F8 | Paid, and the credit does not arrive | the payment `settled` and the credit `not-available`, both on record; not booked as service received | second |
 | F9 | A request times out after the provider accepted it | reconciled before the service is bought again; a second bill is a second cost and still one delivery | first |
-| F10 | A customer sends one request twice | one work id, one delivery, one receipt | first |
+| F10 | The same request reaches the worker twice (revised, A57) | one request id: the first result answers it, and the model service is not bought again. A second order on chain is another work id of that request, and row S17 | first |
 | F11 | The worker is stopped at each step of a delivery and started again | one submission, one envelope, one receipt, one cost per provider bill | first |
 | F12 | The customer's payment | reserved, owed, received: an accepted submission that was not withdrawn is a receivable and is reported as one | first |
 | F13 | The report | native amounts per asset or currency; what was not observed is listed as missing and is not zero; no sum across assets; a conversion names its source and time | first |
 | F14 | A worker with a manual source and an agent's source at once | each purchase carries who decided and who executed it; the three dimensions are three fields | second |
 | F15 | A replica | its own identity and budget, by an authorized procedure; no signing secret copied; no earlier contribution claimed again; the operator's rules bind it | with a cell |
-| F16 | A bounty in an asset other than the native one | recorded, measured and not subsidized, as today (row D13), until an asset policy is ruled | unchanged |
+| F16 | A bounty in an asset other than the native one | recorded, measured and not subsidized, as today (row D13), until an asset policy is ruled and a version of the contracts implements it | unchanged |
+| F17 | States that hold together: the money taken and the credit not arrived; the credit half used and part of the money returned; the service in use and its payment disputed | each recorded as it is: the payment, the credit and the adjustments keep their own status and their own amounts, and none overwrites another | first, as far as the manual route shows them; second |
+| F18 | What `settled` means on a channel | reached by the rule the adapter declared for its channel, with the channel's own state kept beside it as returned. A stage the channel does not have is recorded as absent; a capture that has not met the rule is `pending` | second |
+| F19 | Two purchases need the same room in a budget at the same moment | one is reserved; the other is declined or waits, as the policy says. What is held plus what is consumed never exceeds the limit | second |
+| F20 | A reservation whose payment is unknown; one whose request timed out; one whose payment definitely failed; one that the channel's release rule frees | kept; kept; released; released. A refund returns nothing to a budget unless the policy says so | second |
+| F21 | The worker stops between the reservation and the sending, and between the sending and the answer | at the next start the book is checked against the purchase records, and the purchase is reconciled on the identifier the channel knows it by. Nothing is sent twice, and nothing is freed by the stop | second |
+| F22 | The report over a period with prepaid credit | per provider: opening plus bought, less consumed, with adjustments, is the closing figure, and the provider's balance read back stands beside it. Cash out, the cost of the period and the change of credit reconcile. One payment appears as a source and as a use and is not summed | first |
 
 ## 14. What the production increments are to show, and what they will not
 
-The first increment, in its first acceptance, is to show: a published specification; deliveries
-qualified by published checks; usage recorded by category with the origin of every counter;
-counts and checks repeated by a machine that is not the operator's; a contribution recomputed
-from the chain; and a report that tells the cost of the model service from the bounty received
-and from the Holder's funding.
+The first increment - the mechanism, on controlled fixtures - is to show: a published
+specification; deliveries qualified by published checks; usage recorded by category with the
+origin of every counter; counts and checks repeated by a machine that is not the operator's; a
+task unit counted once, however often it was wrapped; a contribution recomputed from the chain;
+and a report that tells the cost of the model service from the bounty received and from the
+Holder's funding.
 
-No increment shows, and none will claim:
+The three acceptances after it each show one thing more, and only that: a cell that uses or
+organizes the service; supply that connects from outside; one request from outside.
+
+No increment and no acceptance shows, and none will claim:
 
 - that a named model ran, before there is execution evidence;
-- demand, while the procurement is controlled; commercial demand, from one customer;
+- demand, while the procurement is controlled;
+- more than there is, of a customer from outside: one such customer with a request of its own
+  shows that one request and, paid with funds of value, that one independent paid demand. It
+  shows neither the size of a market nor a repeat purchase nor sustainability;
+- demand from a supplier, or supply from a customer: the two are evidenced separately (A59);
+- that related parties who are not declared, or one party behind several addresses, were
+  identified: the rules that count a task unit once catch what can be recognized as the same
+  (A57);
 - self-sufficiency, from a renewal that happened by itself or from a token count;
 - anything about real payments, from a mocked provider, a sandbox bill or a test asset;
 - an economic stage: completing an increment certifies none (A53).
