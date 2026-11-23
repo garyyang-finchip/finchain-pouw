@@ -6,8 +6,8 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **round 1 - design only**. This repository holds the first-round design documents for
-review by the owner and the advisor. No code is written until the architecture and the minimal
+Status: **round 1 - design only (v0.1.1, revised after the first review)**. This repository holds
+the first-round design documents for review by the owner and the advisor. No code is written until the architecture and the minimal
 scope of the Genesis Mining MVP are ruled on. The strategic baseline is FPM01 / FPM01-G v0.2
 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what is
 approved, what is proposed here, and which figures are only illustrative.

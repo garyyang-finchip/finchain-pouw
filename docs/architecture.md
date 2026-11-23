@@ -1,7 +1,8 @@
 # PoUW Architecture
 
-Round 1 design. Rulings and open points are tracked in `decisions.md` (Approved A1-A18,
-Proposed P1-P14, Illustrative figures); this document refers to them by id.
+Round 1 design, revised after the first review (v0.1.1). Rulings and open points are tracked in
+`decisions.md` (Approved A1-A18, Proposed P1-P18, Illustrative figures); this document refers to
+them by id.
 
 ## 1. Purpose and position
 
@@ -68,15 +69,16 @@ The reference implementation is a small family of contracts plus a client.
 | Module | Role | Notes |
 | --- | --- | --- |
 | `ProfileRegistry` | Work profiles: id, kind (G0 or G1), verifier module, GMU formula version, caps, status | profiles are versioned; a receipt names the profile version it was verified under |
-| `WorkReceipts` | One record per verified piece of work: profile, worker, task reference, input and output hashes, verdict, verifier, timestamps, dedup key, epoch | append-only; a rejected receipt is kept with its verdict (A4: never fabricated, never erased) |
-| `GMULedger` | Contribution per (epoch, worker, pool), derived from accepted receipts under the formula version pinned for the epoch | derived data: recomputable from `WorkReceipts` |
-| `EpochRewards` | The schedule (duration, budgets, pool split, caps, treatment of unclaimed budget) pinned per epoch; finalization; test-point balances and claims (P6, P7, P8) | test points are an internal non-transferable balance |
+| `WorkReceipts` | One record per verified piece of work: profile, worker, instance or task reference, input and output hashes, verdict, verifier, timestamps, dedup key, epoch, subsidy eligibility; the commit-reveal of `g0.ver` findings | append-only; a rejected receipt is kept with its verdict (A4: never fabricated, never erased) |
+| `CalibrationRecords` | The measured capability of a worker from `g0.cal` jobs, with its confirmations and contradictions; informational, the input of SIG later | never read by the GMU formula (P5) |
+| `GMULedger` | Contribution per (epoch, worker, pool), derived from accepted, final, subsidy-eligible receipts under the formula version pinned for the epoch; the participant list per epoch | derived data: recomputable from `WorkReceipts` |
+| `EpochRewards` | Opens epochs (seed capture, parameter pinning), the schedule (duration, budgets, pool split, caps, treatment of unallocated budget), deterministic on-chain finalization in pages, the allocation table (P6, P7, P8, P15, P17) | no balance, no claim: the table is the test-reward record |
 | `TenderBridge8414` | Reads ERC-8414 tenders: a taken, submitted and accepted (or settled-by-silence) tender becomes one G1 receipt (P4) | an adapter over the live TaskToken; the tender's own judgment path stays the dispute path |
 | `ParamsRegistry` | Versioned parameter sets (formula constants, tier factors, windows); a set is immutable once pinned by an epoch | a new set applies from the next epoch at the earliest |
 | Verifier modules | `RecomputeVerifier` (`g0.ref`), `CalibrationVerifier` (`g0.cal`), `AgreementVerifier` (`g0.ver`), `AcceptanceVerifier` (G1 through the bridge) | each a contract behind one interface, so profiles can swap modules by version |
-| Reference client `pouw` | `work` (run a G0 job, submit the receipt), `tender` (take, deliver and settle a G1 tender through ERC-8414), `epoch` (finalize), `audit` (recompute an epoch from the chain), `status` | JSON-RPC only; runs anywhere the worker key is (P11) |
+| Reference client `pouw` | `work` (derive this epoch's instances, compute, submit), `verify` (sampled commit-reveal of other receipts), `tender` (take, deliver and settle a G1 tender through ERC-8414), `epoch` (open, finalize), `audit` (recompute an epoch from the chain), `status` | JSON-RPC only; runs anywhere the worker key is (P11) |
 
-What is on chain is small and hash-shaped: receipts, verdicts, measurements, results, claims. The
+What is on chain is small and hash-shaped: receipts, verdicts, measurements, tables. The
 work itself, its inputs and outputs, stay with the worker and the demander and are referenced by
 hash (P2). This keeps the chain footprint independent of the size of the work and keeps the
 protocol usable from an ordinary RPC endpoint.
@@ -84,7 +86,7 @@ protocol usable from an ordinary RPC endpoint.
 ## 4. Identity and eligibility
 
 A worker is an EVM address (P1). The protocol binds nothing else. Three optional bindings raise
-the worker's eligibility tier, which the reward layer reads for caps and for the controlled claim
+the worker's eligibility tier, which the reward layer reads for caps and for the controlled
 eligibility of the early subsidy pool (A3):
 
 | Binding | Standard | Effect |
@@ -117,7 +119,8 @@ belong to SIG (A9).
   deployment on Finchain is recorded in this repository under `deployments/` and, as a verified
   version with its evidence, in `finchain`'s manifests (A12).
 - `foga` adds, in its own repository and release cycle, an optional adapter that lets a cell act
-  as a worker: run a G0 job, deliver a G1 tender, submit a receipt, claim test points. The adapter
+  as a worker: derive and compute G0 instances, deliver a G1 tender, submit receipts, verify under
+  commit-reveal, read its allocations. The adapter
   consumes this repository's published interface and ABI; `foga` builds and runs without them
   (A10, P11).
 - An external worker needs an RPC endpoint, a funded key for gas, and either the reference client
@@ -127,15 +130,18 @@ belong to SIG (A9).
 
 G0 (protocol work), profile `g0.ref` as the example:
 
-1. The worker fetches the current job set of the profile (committed on chain as a Merkle root;
-   the jobs themselves are published off chain by the steward and reproducible).
-2. The worker computes the job, writes the output locally and submits `(profileId, jobRef,
-   inputHash, outputHash)`; the dedup key is derived; a second submission of the same key reverts.
-3. The verifier module recomputes or checks the output against the committed answer and records
-   the verdict and the measurement inputs in the receipt.
-4. At epoch end, anyone finalizes: the GMU ledger is summed per pool, capped per worker, and the
-   pool budget is divided pro rata; the result is stored.
-5. The worker claims its test points for the epoch, once.
+1. Anyone opens the epoch; the contract captures the seed. The worker derives its own instances
+   of the epoch's job indices from the seed and its address (P17); no answer exists anywhere
+   before this point.
+2. The worker computes an instance, writes the output locally and submits `(profileId, jobIndex,
+   inputHash, outputHash)`; the contract derives the instance and the dedup key; a second
+   submission of the same key reverts.
+3. The verifier module recomputes the instance on chain, or - for expensive functions - sampled
+   `g0.ver` workers commit their findings during the window and reveal after it, and the module
+   applies them; the verdict and the units go into the receipt.
+4. From `finalizableAt`, anyone finalizes in pages: the contract sums the ledger per pool, caps per
+   worker and divides the pool budget pro rata; the allocation table is stored (P15).
+5. Nothing to claim: the table is the record; anyone reads or recomputes it.
 
 G1 (real demand):
 
@@ -144,9 +150,10 @@ G1 (real demand):
    loop.
 2. The demander accepts (or the judgment window closes in the worker's favour); the bounty is
    paid by the tender contract - real revenue, accounted on its own (A18).
-3. The bridge reads the acceptance and writes one G1 receipt with the declared GMU of the tender's
-   terms; a tender under dispute yields no receipt until settled (P4).
-4. Steps 4 and 5 as for G0.
+3. The bridge reads the settlement and writes one G1 receipt; it earns test points only if the
+   epoch's subsidy rules hold (distinct parties, minimum bounty, per-demander and per-pair caps,
+   P16); a tender under dispute yields no receipt until settled (P4).
+4. Step 4 as for G0.
 
 ## 7. Trust and abuse model
 
@@ -156,12 +163,16 @@ pinned before the work, and only once.
 
 | Threat | Mitigation in the MVP | Later |
 | --- | --- | --- |
-| Duplicate reward for the same work | dedup key per (profile, worker, task reference, input hash); one claim per (epoch, worker) | - |
+| Fake compute: correct answers without the work (copied, precomputed or shared answers) | no committed answer sets; instances are derived from a seed captured at epoch open and from the worker's address, so every worker computes different inputs that did not exist before the epoch; verification recomputes the instance (P17) | pinned-model inference checks, SIG |
+| Declared capability earning reward | a `g0.cal` job earns the fixed GMU of doing the job; its figures go to a calibration record that the GMU formula never reads (P5) | SIG Assessed tier from confirmed records |
+| Verifiers copying a verdict | `g0.ver` is assigned by sampling, committed before the verdict is final and revealed after; a finding that repeats an already-final verdict earns nothing; one never verifies one's own receipt or one bound to the same identity (P3) | verifier bonds |
+| Keeper submits a wrong epoch summary | impossible by construction: finalization computes from the ledger on chain and takes no numbers (P15) | - |
+| Duplicate reward for the same work | dedup key per (profile, worker, instance or task reference); no claim exists, so nothing can be claimed twice | - |
 | Replay from another chain or deployment | receipts bind the deployment's domain separator (chain id and contract address, read at deployment, not hard coded) | - |
-| Self-dealing in G1 (demander and worker the same party) | a G1 receipt counts the tender's declared GMU only up to a per-tender cap and a per-worker share cap; the real bounty changes hands anyway and is not rewarded twice | SIG assessment, demand-side reputation |
+| Non-real demand drawing the subsidy (self-dealing, related parties, wash tenders) | settlement and subsidy are separate: distinct parties, a minimum real bounty, per-demander and per-pair caps per epoch, a fixed G1 pool (P16); the related-party trade is recorded and never subsidized; the real bounty changes hands anyway and is accounted apart (A18) | SIG assessment, demand-side reputation |
 | Sybil workers | per-worker share cap limits the gain of splitting; the early subsidy pool's claim eligibility is controlled (A3); Declared tier needs an identity binding | KYA-gated tiers, stake |
 | False verdicts by a verifier | recomputation verifiers are contracts; attested verifiers are challengeable within the window by a higher tier or a decision body (P9); the final verdict is the one after the window | ERC-8471 dispute path, verifier bonds |
-| Idle farming of G0 | G0 job sets are finite per epoch, committed in advance, with a per-worker cap; `g0.cal` outputs are spot re-measured | demand-weighted schedules |
+| Idle farming of G0 | a finite number of job indices per epoch, each once per worker, a GMU cap per worker per epoch, a per-worker share cap of the pool | demand-weighted schedules |
 | Parameter changes mid-epoch | an epoch pins its parameter and profile versions at start; changes apply from the next epoch | - |
 | Loss of history | receipts are append-only; results are derived and recomputable (`pouw audit`) | - |
 

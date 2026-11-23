@@ -1,6 +1,9 @@
 # Implementation Roadmap
 
-Round 1 design. The roadmap answers three questions: what existing code and contracts the MVP
+Round 1 design, revised after the first review (v0.1.1). The R1 unit is fixed by the review:
+two independent workers -> one round of G0 and G1 work -> GMU scoring -> the epoch closed on
+chain -> a third party recomputes the same table; no balance, no claim, no SIG, no governance
+flow in R1. The roadmap answers three questions: what existing code and contracts the MVP
 reuses, what must be new, and the minimal order of implementation. Milestones follow the owner's
 four-stage route (P1 PoUW Kernel, P2 Genesis Network, P3 SIG + IPC, P4 FCT Economy); this document
 details P1 and the entry into P2.
@@ -24,9 +27,9 @@ details P1 and the entry into P2.
 
 | Piece | Round | Notes |
 | --- | --- | --- |
-| Contracts: `ProfileRegistry`, `WorkReceipts`, `GMULedger`, `EpochRewards`, `ParamsRegistry`, `TenderBridge8414`, verifier modules `RecomputeVerifier`, `CalibrationVerifier`, `AgreementVerifier`, `AcceptanceVerifier` | R1 | Solidity, Foundry tests, interfaces of `genesis-mining-mvp.md` section 10; no upgradeable proxies |
-| Reference client `pouw` (`work`, `tender`, `epoch finalize`, `audit`, `status`, `claim`) | R1 | Node.js, JSON-RPC only, manifest-driven; runs anywhere the worker key is |
-| G0 job-set tooling: generate a job set, commit its root, publish it, produce the answer set | R1 | steward tooling; the first job sets are deterministic and reproducible |
+| Contracts: `ProfileRegistry`, `WorkReceipts` (with commit-reveal), `CalibrationRecords`, `GMULedger`, `EpochRewards` (seed capture, paged on-chain finalization), `ParamsRegistry`, `TenderBridge8414` (with the eligibility rules), verifier modules `RecomputeVerifier`, `CalibrationVerifier`, `AgreementVerifier`, `AcceptanceVerifier` | R1 | Solidity, Foundry tests, interfaces of `genesis-mining-mvp.md` section 10; no upgradeable proxies, no balances |
+| Reference client `pouw` (`work`, `verify`, `tender`, `epoch open`, `epoch finalize`, `audit`, `status`) | R1 | Node.js, JSON-RPC only, manifest-driven; runs anywhere the worker key is |
+| G0 functions: the first `g0.ref` functions (recomputation of a past epoch's table, canonical hashing of public records) as deterministic code shared by workers and verifiers | R1 | no job sets, no answer sets: instances derive from the epoch seed |
 | Deployment manifest format and the Finchain Sepolia manifest | R2 | `deployments/finchain-sepolia.json` |
 | Evidence records: deployment, first epoch, audit recomputation, third-party participation | R2-R3 | schema-tagged JSON like `finchain`'s |
 | FOGA PoUW adapter | R2 (in `foga`) | optional; calls the same interface as the reference client |
@@ -37,8 +40,8 @@ details P1 and the entry into P2.
 | Round | Deliverable | Acceptance (see `acceptance-matrix.md`) |
 | --- | --- | --- |
 | R0 (this round) | the four design documents; rulings on `decisions.md` P1-P14 | the owner and the advisor rule on the architecture and the minimal scope |
-| R1 | contracts + tests + reference client + job-set tooling; a local run (Anvil) of two workers through one epoch with G0 and G1 receipts, finalization, claims and an audit that matches | all matrix rows marked "local" pass |
-| R2 | deployment on Finchain Sepolia (manifest, source verification, evidence); profiles registered; job set 0 committed; the OG cell and cell-b mine epoch 0 (G0 jobs; one G1 tender between them as in M3-C); finalization by a third account; audit recomputed from the public RPC on a machine that is not a node | the P1 milestone of the owner's route: two existing cells complete one round of mining and scoring with an independent recomputation |
+| R1 | contracts + tests + reference client + the first G0 functions; a local run (Anvil) of two independent workers through one epoch with G0 and G1 receipts, on-chain finalization and an audit that matches | all matrix rows marked "local" pass |
+| R2 | deployment on Finchain Sepolia (manifest, source verification, evidence); profiles registered; epoch 0 opened; the OG cell and cell-b mine epoch 0 (G0 instances; one G1 tender between them as in M3-C, eligible because they are distinct parties); finalization by a third account; audit recomputed from the public RPC on a machine that is not a node | the P1 milestone of the owner's route: two existing cells complete one round of mining and scoring with an independent recomputation; the technical loop, not the economy (P18) |
 | R3 | one independent third-party worker (no Finchain node, RPC only) joins with the reference client; a second epoch; the failure drills of the matrix (restart, duplicate, replay, parameter change) run on Sepolia | the entry into P2 Genesis Network |
 | R4 | SIG and IPC design round (documents first, as in R0); Tokenomics ruling requested from the owner; mainnet deployment of the kernel only after the owner's separate decision | - |
 
