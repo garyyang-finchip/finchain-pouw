@@ -1,0 +1,20 @@
+ERC-8414 Token-Bound Task Tenders - reference contracts (TASK-KERNEL v3.0)
+
+Source    https://github.com/garyyang-finchip/task-token-standard
+Commit    b3da62e761b00ef0921860f353d7eed24c6c85ae
+          (the commit the Finchain covenant World and FOGA 1.0.9 lock)
+License   CC0-1.0 (the source repository's LICENSE; each file carries its SPDX line)
+
+The six Solidity files in this directory are copies, byte for byte, of
+contracts/TaskToken.sol, contracts/TaskVault.sol and contracts/interfaces/*.sol of the
+source at that commit. SHA256SUMS lists them; test/boundaries.test.js checks them.
+
+Why they are here. The G1 adapter of this repository reads an ERC-8414 contract. Its tests
+and the local run exercise it against the standard's own reference contract, unmodified,
+not against a stand-in written for the purpose. The files are test fixtures: they are not
+part of the PoUW protocol, nothing in the protocol's contracts imports them, and this
+repository does not deploy them on a public chain - on Finchain the adapter is pointed at
+the TaskToken that the covenant World already has.
+
+To move to another commit of the standard: replace the files, update the commit above and
+SHA256SUMS, and run the tests.

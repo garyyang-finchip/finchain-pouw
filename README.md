@@ -6,11 +6,13 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **round 1 - design only (v0.1.1, revised after the first review)**. This repository holds
-the first-round design documents for review by the owner and the advisor. No code is written until the architecture and the minimal
-scope of the Genesis Mining MVP are ruled on. The strategic baseline is FPM01 / FPM01-G v0.2
-(the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what is
-approved, what is proposed here, and which figures are only illustrative.
+Status: **v0.1.2 - design revision after the formal review, and round R1 built.** The Genesis
+Mining kernel runs on a local network: two workers, one round of G0 and G1 work, GMU, epochs
+closed by time, and an audit from the chain alone that agrees with the ledger on every figure.
+Nothing is deployed on a public chain yet; that is round R2 (`docs/roadmap.md`). The strategic
+baseline is FPM01 / FPM01-G v0.2 (the owner's PoUW strategy and Genesis Mining design record);
+`docs/decisions.md` lists what is approved, what this repository proposes, and which figures are
+only illustrative.
 
 ## What this repository is for
 
@@ -21,18 +23,89 @@ approved, what is proposed here, and which figures are only illustrative.
 | `finchain-pouw` (this one) | The PoUW work protocol: Genesis Mining, work receipts, the GMU contribution ledger, epoch rewards, later SIG, IPC and the FCT economy, with a reference implementation and its tests. Protocol independent, chain-native integration. |
 
 The protocol is written to be chain-neutral: no chain id, FOGA identity or FCT address is hard
-coded; a deployment is described by a manifest (chain, addresses, parameters, versions). Finchain
-is the first complete reference chain, not the only chain that may adopt the protocol.
+coded; a deployment is described by a manifest. Finchain is the first complete reference chain,
+not the only chain that may adopt the protocol.
+
+## What is here
+
+```
+contracts/             the kernel
+  GenesisPolicy.sol      the epoch clock; versioned profiles and parameters; admissions, operators; the pause
+  GenesisLedger.sol      receipts, GMU, the epoch's allocation as a view
+  TenderAdapter8414.sol  reports a settled ERC-8414 submission; only the tender's owner can call it
+  functions/AuditV1.sol  the first G0 function: the audit of the previous epoch
+  seed/                  where an epoch's seed material comes from (any EVM chain; OP Stack)
+  interfaces/            the kernel's interfaces and the part of ERC-8414 it reads
+  testing/               contracts used by the tests only
+  vendor/erc8414/        the ERC-8414 reference contracts, pinned byte for byte, as test fixtures
+client/                the reference client: pouw.js, lib/, abi/
+test/                  the test suite
+scripts/               local-run.js (round R1 end to end), export-abi.js
+deployments/           the manifest format; manifests of public deployments (none yet)
+evidence/              records, as in finchain: local-run-<time>.json
+docs/                  decisions, architecture, the MVP specification, roadmap, acceptance matrix
+```
+
+## Run it
+
+Node.js 20 or later, and nothing else: the Solidity compiler is the solc-js build pinned in
+`package.json`, so nothing is downloaded when the tests run.
+
+```
+npm ci
+npm test            # the kernel, the client and its audit, on an in-process network
+npm run local-run   # round R1 end to end on a development network; writes evidence/local-run-<time>.json
+```
+
+To run the client alone - a worker, a demander or an auditor needs nothing else - install without
+the build tools: `npm ci --omit=dev` brings in `ethers` and its dependencies only.
+
+The local run starts its own development node, deploys the kernel beside the ERC-8414 reference
+contract and takes six parties through two epochs. Workers, demanders and a third party act
+through the reference client as separate processes, each with a key generated for the run and
+deleted after it. It ends with `PASS` and the number of checks, and prints the two epochs' tables
+as an auditor sees them.
+
+## The reference client
+
+```
+node client/pouw.js status --manifest <manifest> --rpc <endpoint>
+node client/pouw.js work   --manifest <manifest> --rpc <endpoint> --key-file <file>
+node client/pouw.js bridge <tokenId> <submissionId> --manifest <manifest> --rpc <endpoint> --key-file <file>
+node client/pouw.js seal   <epoch> --manifest <manifest> --rpc <endpoint> --key-file <file>
+node client/pouw.js audit  <epoch> --manifest <manifest> --rpc <endpoint> [--out record.json]
+```
+
+It speaks JSON-RPC only and runs on any machine; an ordinary full node behind the endpoint is
+enough. A key is read from a file on the machine that holds it, never from the command line, and
+never leaves that machine. `audit` needs no key: it re-decides every receipt of an ended epoch
+from the chain's log, recomputes the totals and every allocation, and reports each figure in which
+the ledger differs. `work` does the same audit of the previous epoch before it submits, and
+submits nothing over a difference.
+
+## What round R1 shows, and what it does not
+
+It shows that the loop Work -> Verify -> GMU -> Epoch -> Test Reward runs end to end, that an
+epoch closes without anyone supplying a figure, and that a party with no role can recompute every
+receipt, total and allocation from the chain alone.
+
+It does not show computation (an accepted G0 receipt is evidence of presence and of a conforming
+submission), demand (a settled tender is evidence of a settlement confirmed by its owner; all
+parties of a local run are one party), resistance to one party holding several admitted
+addresses, an unpredictable seed, or an economy. Test points are the value of a view function:
+nothing is issued, held or claimable, and they carry no right to any future asset.
+`docs/acceptance-matrix.md`, section 8, has the full list.
 
 ## Documents
 
 | Document | Content |
 | --- | --- |
-| `docs/decisions.md` | Approved rulings, proposed defaults awaiting a ruling, illustrative parameters - kept strictly apart |
-| `docs/architecture.md` | PoUW architecture: actors, layers, modules, interfaces between the chain, the cells and external workers, dependencies, security model, chain neutrality |
-| `docs/genesis-mining-mvp.md` | Genesis Mining MVP: the minimal loop Work -> Verify -> GMU -> Epoch -> Test Reward, data structures, state machine, G0 / G1 profiles, GMU and epoch rules, defaults, versioning, recovery |
-| `docs/roadmap.md` | Implementation roadmap: what is reused (ERC-8414, ERC-8444, FOGA, the World), what is new, and the minimal order of implementation |
-| `docs/acceptance-matrix.md` | Acceptance and failure matrix: normal operation, third-party participation, duplicate rewards, disconnection and recovery, version upgrades, adversarial cases |
+| `docs/decisions.md` | Approved rulings; the formal review and how each ruling was applied; this repository's proposals, each open to a veto; open questions; illustrative figures |
+| `docs/architecture.md` | Position, actors, modules as built, identity and admission, interfaces between the three repositories, the trust and abuse model with what each measure does not do, chain neutrality |
+| `docs/genesis-mining-mvp.md` | The specification of what is built: data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit, and the designs kept for what is deferred |
+| `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4 and what round R2 needs |
+| `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the local run's checks; what round R1 proves and does not prove |
+| `deployments/README.md` | The deployment manifest |
 
 ## Principles (from FPM01)
 
@@ -41,7 +114,7 @@ is the first complete reference chain, not the only chain that may adopt the pro
 - **Open Participation**: a third-party miner takes part with FOGA, another agent, a GPU or a model
   API, over RPC, without running a Finchain full node.
 - **Conservative Settlement**: work verification, contribution measurement and reward distribution
-  are evidenced, recomputable, recoverable and never paid twice.
+  are evidenced, recomputable, recoverable and never counted twice.
 
 ## Hard boundaries
 
@@ -56,4 +129,5 @@ deployment and operation services allowed later.
 
 ## License
 
-Apache-2.0. See `LICENSE`.
+Apache-2.0. See `LICENSE`. The files under `contracts/vendor/erc8414/` are CC0-1.0 and come from
+the ERC-8414 reference repository; see the `NOTICE` there.

@@ -1,0 +1,1037 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "steward_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "genesisTime_",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "epochDuration_",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetBase",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "halvingInterval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "splitG0Bps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "workerCapBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minBountyWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerDemander",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerPair",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bool",
+            "name": "subsidizeDeclaredRelated",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Params",
+        "name": "initialParams",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "BadActivation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BadParams",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BadProfile",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "NoActiveProfile",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotPendingSteward",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotStarted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotSteward",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "admitted",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "fromEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "AdmissionSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "fromEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "OperatorDeclared",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint32",
+        "name": "version",
+        "type": "uint32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetBase",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "halvingInterval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "splitG0Bps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "workerCapBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minBountyWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerDemander",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerPair",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bool",
+            "name": "subsidizeDeclaredRelated",
+            "type": "bool"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Params",
+        "name": "params",
+        "type": "tuple"
+      }
+    ],
+    "name": "ParamsRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "paused",
+        "type": "bool"
+      }
+    ],
+    "name": "PausedSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "key",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "version",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "module",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "baseGmu",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maxGmuPerWorkerPerEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "jobsPerEpoch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "retiredFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Profile",
+        "name": "profile",
+        "type": "tuple"
+      }
+    ],
+    "name": "ProfileRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "retiredFromEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "ProfileRetired",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "steward",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "pendingSteward",
+        "type": "address"
+      }
+    ],
+    "name": "StewardshipTransferStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousSteward",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "steward",
+        "type": "address"
+      }
+    ],
+    "name": "StewardshipTransferred",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "acceptStewardship",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "activeProfile",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "key",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "version",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "module",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "baseGmu",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maxGmuPerWorkerPerEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "jobsPerEpoch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "retiredFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct Profile",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "budgetFor",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "currentEpoch",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      }
+    ],
+    "name": "declareOperator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "epochDuration",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochEnd",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochStart",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "genesisTime",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "isAdmitted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextEpoch",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "operatorOf",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paramsCount",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "paramsFor",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "version",
+        "type": "uint32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetBase",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "halvingInterval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "splitG0Bps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "workerCapBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minBountyWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerDemander",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerPair",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bool",
+            "name": "subsidizeDeclaredRelated",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Params",
+        "name": "params",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingSteward",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      }
+    ],
+    "name": "profileVersions",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "key",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "version",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "module",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "baseGmu",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maxGmuPerWorkerPerEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "jobsPerEpoch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "retiredFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct Profile[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "activeFromEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetBase",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "halvingInterval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "splitG0Bps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "workerCapBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minBountyWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerDemander",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxSubsidizedPerPair",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bool",
+            "name": "subsidizeDeclaredRelated",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct Params",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "registerParams",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "version",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "module",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "baseGmu",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "maxGmuPerWorkerPerEpoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "jobsPerEpoch",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "activeFromEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "registerProfile",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "key",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "fromEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "retireProfile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "admitted",
+        "type": "bool"
+      }
+    ],
+    "name": "setAdmission",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "paused_",
+        "type": "bool"
+      }
+    ],
+    "name": "setPaused",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "started",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "steward",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSteward",
+        "type": "address"
+      }
+    ],
+    "name": "transferStewardship",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

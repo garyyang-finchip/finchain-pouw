@@ -1,0 +1,776 @@
+{
+  "schema": "finchain-pouw.local-run/1",
+  "environment": "local-devnet",
+  "recordedAt": "2026-11-23T12:08:14.237Z",
+  "what": "Round R1: two workers, one round of G0 and G1 work, GMU, two epochs closed by time, an audit from the chain alone",
+  "ok": true,
+  "host": {
+    "node": "v22.23.4",
+    "platform": "linux/x64"
+  },
+  "tools": {
+    "hardhat": "2.29.2",
+    "ethers": "6.17.0",
+    "solc": "0.8.24"
+  },
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.2"
+  },
+  "sources": {
+    "contracts/GenesisTypes.sol": "e86e51962b4f0765ec4303a02d486f73a67bbc2520b0f6eb6b51dec0a9a18aae",
+    "contracts/GenesisPolicy.sol": "aa2cbbe21af747e75d9adbaceb5e410b208870715237db67aaa9cac8c10dd5be",
+    "contracts/GenesisLedger.sol": "e983ebfa9ed874555f1953f4d119ecb1bdd2364141e487152d779078095f8e2c",
+    "contracts/TenderAdapter8414.sol": "31069fc81b0d4ab081b4922e2008f790464cf12972e3ac102b21104ed8126adc",
+    "contracts/functions/AuditV1.sol": "7d799f867d437ce527287bdfce199b4a34ba942a7b6923239d114563edf7ca21",
+    "contracts/seed/PrevBlockSeedSource.sol": "21042d3af92f33288c5e5b212963273ce2dc9ad97c2f6e3f369a05e1c23e7081",
+    "contracts/interfaces/IGenesisLedger.sol": "72cfb8593ea278f48dfd0d69d63161b6482a413fbcae2c5e88d46b79e1b125eb",
+    "contracts/interfaces/IGenesisPolicy.sol": "d74d0f82f2c4dbf8fff9e89892f28a049abd24f69c6222c803430858bc09236f",
+    "contracts/interfaces/IG0Function.sol": "6deaa90e5ec5848fb5494518b34b070d54fddc11fe776a297cad7bc5f12e5702",
+    "contracts/interfaces/ISeedSource.sol": "9f5809bcaf4bf5f9173072c591d608fc518b462dd0387800605c7c20db753fc5",
+    "contracts/interfaces/ITaskTender8414.sol": "ee97cd60e17e6399c9b2b9cc3c84383fc52a736cc17cf2fe78db48d33ed4c198",
+    "contracts/vendor/erc8414/TaskToken.sol": "33d4376c8c5047f075df3c7d94cdbd8fa8f8c26dc3909f7490f0210d2f878e87",
+    "client/pouw.js": "5b6f74649ebcf7edea10a549164a88bac0ad23277d23ad407554962648a48b0b",
+    "client/lib/genesis.js": "2e39058dc111109e93c62f6a80b82280a868478caebf5d45e612c372463bfb07",
+    "client/lib/report.js": "b45eea71ea0016acb64003a4a6dd251ae3754c84799d52eacd882fc74f4c6ecc",
+    "scripts/local-run.js": "23b759ff65d566311711bb0dec0c3931b1aaaed822ec93e0a2508802b7642c33"
+  },
+  "deployment": {
+    "schema": "finchain-pouw.deployment/1",
+    "name": "local-run",
+    "environment": "local-devnet",
+    "chainId": 31337,
+    "deployBlock": 7,
+    "protocol": "0.1.2",
+    "contracts": {
+      "GenesisPolicy": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "GenesisLedger": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "SeedSource": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "AuditV1": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "TenderAdapter8414": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"
+    },
+    "external": {
+      "taskToken8414": {
+        "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+        "deployBlock": 11
+      }
+    },
+    "clock": {
+      "genesisTime": 1795435988,
+      "epochDuration": 600
+    }
+  },
+  "parameters": {
+    "activeFromEpoch": 0,
+    "budgetBase": "1000000000000000000000",
+    "halvingInterval": 8,
+    "splitG0Bps": 7000,
+    "workerCapBps": 2500,
+    "minBountyWei": "1000000000000000",
+    "maxSubsidizedPerDemander": 3,
+    "maxSubsidizedPerPair": 1,
+    "subsidizeDeclaredRelated": false
+  },
+  "profiles": [
+    {
+      "name": "g0.ref",
+      "function": "audit-v1",
+      "module": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "baseGmu": 10,
+      "maxGmuPerWorkerPerEpoch": 10,
+      "jobsPerEpoch": 1
+    },
+    {
+      "name": "g1.tender",
+      "module": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+      "baseGmu": 50,
+      "maxGmuPerWorkerPerEpoch": 200
+    }
+  ],
+  "parties": [
+    {
+      "role": "worker A",
+      "address": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+      "operator": 1,
+      "admitted": true
+    },
+    {
+      "role": "worker B",
+      "address": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+      "operator": 2,
+      "admitted": true
+    },
+    {
+      "role": "demander",
+      "address": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+      "operator": 3,
+      "admitted": true
+    },
+    {
+      "role": "demander declared under worker B's operator",
+      "address": "0x6bB5A782c5cEcD3162f13C8bffada503Cc561aaB",
+      "operator": 2,
+      "admitted": true
+    },
+    {
+      "role": "address that is not admitted",
+      "address": "0x1F10B18cB8Af87DDF71028674383B5742E381DB9",
+      "operator": 0,
+      "admitted": false
+    },
+    {
+      "role": "third party: asks for the close records and audits; no role in the protocol",
+      "address": "0xd37fF6616a3C95c5937Be44D19cbAFCd6d9F67C6",
+      "operator": 0,
+      "admitted": false
+    }
+  ],
+  "gasUsed": {
+    "deployment": {
+      "GenesisPolicy": 2325133,
+      "PrevBlockSeedSource": 90431,
+      "GenesisLedger": 3133427,
+      "AuditV1": 296959,
+      "TaskToken": 5442814,
+      "TenderAdapter8414": 603607
+    },
+    "work": [
+      458239,
+      389827,
+      337864,
+      468463,
+      417163
+    ],
+    "bridge": [
+      558383,
+      423327,
+      558383,
+      99013
+    ],
+    "seal": [
+      27599,
+      53975
+    ]
+  },
+  "checks": [
+    {
+      "check": "the worker cannot bridge a tender by itself: the client is refused with NotDemander",
+      "ok": true
+    },
+    {
+      "check": "an audit of an epoch that has not ended is refused (exit status 3)",
+      "ok": true
+    },
+    {
+      "check": "a close record for a running epoch is refused with EpochNotEnded",
+      "ok": true
+    },
+    {
+      "check": "a second submission for the same instance is refused with AlreadySubmitted",
+      "ok": true
+    },
+    {
+      "check": "bridging the same submission again returns the same receipt and adds nothing",
+      "ok": true
+    },
+    {
+      "check": "epoch 0: the audit, run as a separate process with the manifest and the endpoint only, agrees with the ledger on every figure",
+      "ok": true
+    },
+    {
+      "check": "epoch 0: every row of the audit's table equals the ledger's view",
+      "ok": true
+    },
+    {
+      "check": "epoch 1: the audit, run as a separate process with the manifest and the endpoint only, agrees with the ledger on every figure",
+      "ok": true
+    },
+    {
+      "check": "epoch 1: every row of the audit's table equals the ledger's view",
+      "ok": true
+    },
+    {
+      "check": "epoch 0: worker A is allocated 175 test points and worker B 250 - the capped share of each pool they worked in",
+      "ok": true
+    },
+    {
+      "check": "epoch 1: worker A is allocated 250 test points and worker B 175",
+      "ok": true
+    },
+    {
+      "check": "the address that is not admitted is measured and allocated nothing",
+      "ok": true
+    },
+    {
+      "check": "the tender between declared-related parties is recorded, classed and not subsidized",
+      "ok": true
+    },
+    {
+      "check": "the tender confirmed late counts in epoch 1, and epoch 0 did not move",
+      "ok": true
+    },
+    {
+      "check": "no contract of the kernel holds funds; the bounties were paid by the tenders' own vaults",
+      "ok": true
+    },
+    {
+      "check": "each epoch's allocations and its unallocated remainder add up to its budget",
+      "ok": true
+    }
+  ],
+  "transcript": [
+    {
+      "step": "deployed: policy, seed source, ledger, audit function, ERC-8414 reference contract, adapter; two profiles; admissions and operators declared before genesis",
+      "manifest": "out/local-run/manifest.json",
+      "ledger": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
+    },
+    {
+      "step": "epoch 0: worker A does the audit job (pouw work)",
+      "by": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+      "epoch": "0",
+      "audited": "the deployment's configuration",
+      "receiptsAudited": 0,
+      "receiptId": "1",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "txHash": "0x24d2c71b24ebc949d728ba26783440e2094572eef63387f2eb86873f048b9565"
+    },
+    {
+      "step": "epoch 0: worker B does the audit job (pouw work)",
+      "by": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+      "epoch": "0",
+      "audited": "the deployment's configuration",
+      "receiptsAudited": 0,
+      "receiptId": "2",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "txHash": "0x4a21fefd518a485df05127495dd2aa6fe1238aa5ba09e65fc1b502719c2b9af2"
+    },
+    {
+      "step": "epoch 0: an address that is not admitted does the audit job (pouw work)",
+      "by": "0x1F10B18cB8Af87DDF71028674383B5742E381DB9",
+      "epoch": "0",
+      "audited": "the deployment's configuration",
+      "receiptsAudited": 0,
+      "receiptId": "3",
+      "verdict": "accepted",
+      "eligibility": "worker-not-admitted",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "0",
+      "txHash": "0x0a71eb06513ce407d9bc929887e84d60b2001e27251abf4950020826db048fbb"
+    },
+    {
+      "step": "epoch 0: the demander's tender, delivered by worker B, accepted; the demander confirms it (pouw bridge)",
+      "by": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+      "receiptId": "4",
+      "epoch": "0",
+      "eligibility": "eligible",
+      "relation": "none-found",
+      "gmuMeasured": "50",
+      "gmuSubsidized": "50",
+      "txHash": "0x80b5fc5cb6cd175d7a7b77b2c27d4dab91be25acc8741efe7731d048ee2c3144"
+    },
+    {
+      "step": "epoch 0: a tender between declared-related parties, confirmed by its owner (pouw bridge)",
+      "by": "0x6bB5A782c5cEcD3162f13C8bffada503Cc561aaB",
+      "receiptId": "5",
+      "epoch": "0",
+      "eligibility": "declared-related-not-subsidized",
+      "relation": "declared-related",
+      "gmuMeasured": "50",
+      "gmuSubsidized": "0",
+      "txHash": "0x7738f1b9ed4d25ae081bb85f809b95c33d1a33a48039c5490bd48692133bc2b3"
+    },
+    {
+      "step": "epoch 0: a second tender of the demander, delivered by worker A and accepted - not bridged yet",
+      "tokenId": "3",
+      "submissionId": "1"
+    },
+    {
+      "step": "epoch 1: worker A recomputes epoch 0 from the log and submits (pouw work)",
+      "by": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+      "epoch": "1",
+      "audited": "epoch 0",
+      "receiptsAudited": 5,
+      "receiptId": "6",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "txHash": "0xa172930037d86ec3061f18225f494036a001c7ab522f3f55b636043d20a03f76"
+    },
+    {
+      "step": "epoch 1: worker B recomputes epoch 0 from the log and submits (pouw work)",
+      "by": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+      "epoch": "1",
+      "audited": "epoch 0",
+      "receiptsAudited": 5,
+      "receiptId": "7",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "txHash": "0xa8d425ba0f669c140ea6434d5c9653033b321edec604aa635206acc94f5c432b"
+    },
+    {
+      "step": "epoch 1: the tender accepted in epoch 0 is confirmed now (pouw bridge)",
+      "by": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+      "receiptId": "8",
+      "epoch": "1",
+      "eligibility": "eligible",
+      "relation": "none-found",
+      "gmuMeasured": "50",
+      "gmuSubsidized": "50",
+      "txHash": "0x8ed01ecda2276d0253f0efbd2276dccac7f9e61f5f5212bd08f8da7671f754b9"
+    },
+    {
+      "step": "the third party asks for the close record of epoch 0 (pouw seal)",
+      "epoch": "0",
+      "sealed": true,
+      "txHash": "0x7247172cf64858abd8619e612435a73cb66ce6d80beba21c3a03b8ee34eda3a0"
+    },
+    {
+      "step": "the third party asks for the close record of epoch 1 (pouw seal)",
+      "epoch": "1",
+      "sealed": true,
+      "txHash": "0xb0c7adf97e5a9b09277c0c5a752896ef596797ebe801f2aa49f76994baa88abf"
+    }
+  ],
+  "epochs": [
+    {
+      "schema": "finchain-pouw.audit/1",
+      "environment": "local-devnet",
+      "deployment": "local-run",
+      "chainId": "31337",
+      "ledger": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "domain": "0x3dafcb3abb82561c6914efd9b9c0b0483ae2c7b2bec138a331bfb1fa9ac3d445",
+      "epoch": "0",
+      "epochStart": "1795435988",
+      "epochEnd": "1795436588",
+      "settledTag": "finalized",
+      "settledBlock": 50,
+      "endpointHost": "127.0.0.1:18545",
+      "recordedAt": "2026-11-23T12:08:11.913Z",
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.2"
+      },
+      "ok": true,
+      "findings": [],
+      "mode": "standard",
+      "paramsVersion": 1,
+      "params": {
+        "activeFromEpoch": "0",
+        "budgetBase": "1000000000000000000000",
+        "halvingInterval": "8",
+        "splitG0Bps": "7000",
+        "workerCapBps": "2500",
+        "minBountyWei": "1000000000000000",
+        "maxSubsidizedPerDemander": "3",
+        "maxSubsidizedPerPair": "1",
+        "subsidizeDeclaredRelated": false
+      },
+      "budget": "1000000000000000000000",
+      "pools": {
+        "g0": "700000000000000000000",
+        "g1": "300000000000000000000"
+      },
+      "seed": "0xb3e36530efee72e3481e693a62d45c1d106be65254cdbc9b7c9f3813f422a097",
+      "digest": "0x44ba9eef01ffaf899363334360b8813517e84c34ca5d2a5337d136a1e613372c",
+      "receiptCount": "5",
+      "measured": {
+        "g0": "30",
+        "g1": "100"
+      },
+      "subsidized": {
+        "g0": "20",
+        "g1": "50"
+      },
+      "subject": "0x2b26fe270311fff6637d2224c79a626784993c4d22e1d43d470eedd3bf7fc6d3",
+      "sealed": true,
+      "allocated": "425000000000000000000",
+      "unallocated": "575000000000000000000",
+      "tableHash": "0x7ce169c05c34951e42315ee5ee7a1e8ed7123f108b8d8ff3f79d032655bba7ac",
+      "table": [
+        {
+          "worker": "0x1F10B18cB8Af87DDF71028674383B5742E381DB9",
+          "operator": 0,
+          "admitted": false,
+          "receipts": 1,
+          "measured": {
+            "g0": "10",
+            "g1": "0"
+          },
+          "subsidized": {
+            "g0": "0",
+            "g1": "0"
+          },
+          "allocation": "0",
+          "allocationG0": "0",
+          "allocationG1": "0"
+        },
+        {
+          "worker": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+          "operator": 1,
+          "admitted": true,
+          "receipts": 1,
+          "measured": {
+            "g0": "10",
+            "g1": "0"
+          },
+          "subsidized": {
+            "g0": "10",
+            "g1": "0"
+          },
+          "allocation": "175000000000000000000",
+          "allocationG0": "175000000000000000000",
+          "allocationG1": "0"
+        },
+        {
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "operator": 2,
+          "admitted": true,
+          "receipts": 3,
+          "measured": {
+            "g0": "10",
+            "g1": "100"
+          },
+          "subsidized": {
+            "g0": "10",
+            "g1": "50"
+          },
+          "allocation": "250000000000000000000",
+          "allocationG0": "175000000000000000000",
+          "allocationG1": "75000000000000000000"
+        }
+      ],
+      "operators": [
+        {
+          "operator": 1,
+          "addresses": [
+            "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02"
+          ],
+          "allocation": "175000000000000000000"
+        },
+        {
+          "operator": 2,
+          "addresses": [
+            "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76"
+          ],
+          "allocation": "250000000000000000000"
+        }
+      ],
+      "undeclaredAddresses": 1,
+      "g1": {
+        "receipts": 2,
+        "subsidized": 1,
+        "byRelation": {
+          "none-found": 1,
+          "declared-related": 1
+        },
+        "bySettlement": {
+          "judged": 2
+        },
+        "subsidizedByRelation": {
+          "none-found": 1
+        },
+        "subsidizedBySettlement": {
+          "judged": 1
+        }
+      },
+      "receipts": [
+        {
+          "id": "1",
+          "pool": "g0",
+          "worker": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+          "counterparty": "0x0000000000000000000000000000000000000000",
+          "contributionId": "0x28ed881d8d35077b40e9a57328cd803d59d8ca82cf375ec276d5beb5d11e86ca",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "blockNumber": 25,
+          "txHash": "0x24d2c71b24ebc949d728ba26783440e2094572eef63387f2eb86873f048b9565"
+        },
+        {
+          "id": "2",
+          "pool": "g0",
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "counterparty": "0x0000000000000000000000000000000000000000",
+          "contributionId": "0x25dd92e1e418ff312dc1b09b4e44ee0e0c3ad544089b8cc766ac075a28e30c2f",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "blockNumber": 26,
+          "txHash": "0x4a21fefd518a485df05127495dd2aa6fe1238aa5ba09e65fc1b502719c2b9af2"
+        },
+        {
+          "id": "3",
+          "pool": "g0",
+          "worker": "0x1F10B18cB8Af87DDF71028674383B5742E381DB9",
+          "counterparty": "0x0000000000000000000000000000000000000000",
+          "contributionId": "0x9f772e5ed205420c772cfaf2dbeaf6f2efd900e05ca381661a4b365227cf9f0f",
+          "verdict": "accepted",
+          "eligibility": "worker-not-admitted",
+          "relation": "none-found",
+          "gmuMeasured": "10",
+          "gmuSubsidized": "0",
+          "blockNumber": 27,
+          "txHash": "0x0a71eb06513ce407d9bc929887e84d60b2001e27251abf4950020826db048fbb"
+        },
+        {
+          "id": "4",
+          "pool": "g1",
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "counterparty": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+          "contributionId": "0x0761fbb94379e2088ff5a27aa02c53f5d2e0ab2e77f20f45dc21554ca1285c77",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "50",
+          "gmuSubsidized": "50",
+          "blockNumber": 32,
+          "txHash": "0x80b5fc5cb6cd175d7a7b77b2c27d4dab91be25acc8741efe7731d048ee2c3144",
+          "tender": {
+            "source": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "tokenId": "1",
+            "submissionId": "1",
+            "demander": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+            "judge": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+            "asset": "0x0000000000000000000000000000000000000000",
+            "reward": "2000000000000000",
+            "settlement": "judged"
+          }
+        },
+        {
+          "id": "5",
+          "pool": "g1",
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "counterparty": "0x6bB5A782c5cEcD3162f13C8bffada503Cc561aaB",
+          "contributionId": "0xe55a54990e23de26271d03e6c044494309ed5d23f356f7480e24701a99064c04",
+          "verdict": "accepted",
+          "eligibility": "declared-related-not-subsidized",
+          "relation": "declared-related",
+          "gmuMeasured": "50",
+          "gmuSubsidized": "0",
+          "blockNumber": 37,
+          "txHash": "0x7738f1b9ed4d25ae081bb85f809b95c33d1a33a48039c5490bd48692133bc2b3",
+          "tender": {
+            "source": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "tokenId": "2",
+            "submissionId": "1",
+            "demander": "0x6bB5A782c5cEcD3162f13C8bffada503Cc561aaB",
+            "judge": "0x6bB5A782c5cEcD3162f13C8bffada503Cc561aaB",
+            "asset": "0x0000000000000000000000000000000000000000",
+            "reward": "2000000000000000",
+            "settlement": "judged"
+          }
+        }
+      ],
+      "reading": [
+        "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+        "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+        "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+        "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand."
+      ]
+    },
+    {
+      "schema": "finchain-pouw.audit/1",
+      "environment": "local-devnet",
+      "deployment": "local-run",
+      "chainId": "31337",
+      "ledger": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "domain": "0x3dafcb3abb82561c6914efd9b9c0b0483ae2c7b2bec138a331bfb1fa9ac3d445",
+      "epoch": "1",
+      "epochStart": "1795436588",
+      "epochEnd": "1795437188",
+      "settledTag": "finalized",
+      "settledBlock": 50,
+      "endpointHost": "127.0.0.1:18545",
+      "recordedAt": "2026-11-23T12:08:12.568Z",
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.2"
+      },
+      "ok": true,
+      "findings": [],
+      "mode": "standard",
+      "paramsVersion": 1,
+      "params": {
+        "activeFromEpoch": "0",
+        "budgetBase": "1000000000000000000000",
+        "halvingInterval": "8",
+        "splitG0Bps": "7000",
+        "workerCapBps": "2500",
+        "minBountyWei": "1000000000000000",
+        "maxSubsidizedPerDemander": "3",
+        "maxSubsidizedPerPair": "1",
+        "subsidizeDeclaredRelated": false
+      },
+      "budget": "1000000000000000000000",
+      "pools": {
+        "g0": "700000000000000000000",
+        "g1": "300000000000000000000"
+      },
+      "seed": "0x1811294cca74d28ab878e3998047b72d87849422af28b5c8f9912200dc915725",
+      "digest": "0x164350933a28461ca866ac98acadbd4414f0a29a7f70a99044083f2968f709ff",
+      "receiptCount": "3",
+      "measured": {
+        "g0": "20",
+        "g1": "50"
+      },
+      "subsidized": {
+        "g0": "20",
+        "g1": "50"
+      },
+      "subject": "0xef31e737e96a43e737657b956590cec2596e302a1ec30c4e561b17f9fa6d6848",
+      "sealed": true,
+      "allocated": "425000000000000000000",
+      "unallocated": "575000000000000000000",
+      "tableHash": "0x30ca0b3ff63162c454c3211f26740ad0e098ccec5df2701b453599f003b356a8",
+      "table": [
+        {
+          "worker": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+          "operator": 1,
+          "admitted": true,
+          "receipts": 2,
+          "measured": {
+            "g0": "10",
+            "g1": "50"
+          },
+          "subsidized": {
+            "g0": "10",
+            "g1": "50"
+          },
+          "allocation": "250000000000000000000",
+          "allocationG0": "175000000000000000000",
+          "allocationG1": "75000000000000000000"
+        },
+        {
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "operator": 2,
+          "admitted": true,
+          "receipts": 1,
+          "measured": {
+            "g0": "10",
+            "g1": "0"
+          },
+          "subsidized": {
+            "g0": "10",
+            "g1": "0"
+          },
+          "allocation": "175000000000000000000",
+          "allocationG0": "175000000000000000000",
+          "allocationG1": "0"
+        }
+      ],
+      "operators": [
+        {
+          "operator": 1,
+          "addresses": [
+            "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02"
+          ],
+          "allocation": "250000000000000000000"
+        },
+        {
+          "operator": 2,
+          "addresses": [
+            "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76"
+          ],
+          "allocation": "175000000000000000000"
+        }
+      ],
+      "undeclaredAddresses": 0,
+      "g1": {
+        "receipts": 1,
+        "subsidized": 1,
+        "byRelation": {
+          "none-found": 1
+        },
+        "bySettlement": {
+          "judged": 1
+        },
+        "subsidizedByRelation": {
+          "none-found": 1
+        },
+        "subsidizedBySettlement": {
+          "judged": 1
+        }
+      },
+      "receipts": [
+        {
+          "id": "6",
+          "pool": "g0",
+          "worker": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+          "counterparty": "0x0000000000000000000000000000000000000000",
+          "contributionId": "0xfcf50e512da5afa2d02892419010b702af645fe158c579212b5013f7a1fb973a",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "blockNumber": 44,
+          "txHash": "0xa172930037d86ec3061f18225f494036a001c7ab522f3f55b636043d20a03f76"
+        },
+        {
+          "id": "7",
+          "pool": "g0",
+          "worker": "0xb8Ca818e4F4388755eaA9733b50e358C5cFEfB76",
+          "counterparty": "0x0000000000000000000000000000000000000000",
+          "contributionId": "0x9019ac146e18ee64b554d88f64952ab04e98d17c816b1a0bee80d4f02962afab",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "blockNumber": 45,
+          "txHash": "0xa8d425ba0f669c140ea6434d5c9653033b321edec604aa635206acc94f5c432b"
+        },
+        {
+          "id": "8",
+          "pool": "g1",
+          "worker": "0x64b8CEf9174D811D846b00F74eC2E92d4E423b02",
+          "counterparty": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+          "contributionId": "0xcc87835a7686216b429d83a031f7e002c947dc84eac830b427ed577eae41f9b2",
+          "verdict": "accepted",
+          "eligibility": "eligible",
+          "relation": "none-found",
+          "gmuMeasured": "50",
+          "gmuSubsidized": "50",
+          "blockNumber": 46,
+          "txHash": "0x8ed01ecda2276d0253f0efbd2276dccac7f9e61f5f5212bd08f8da7671f754b9",
+          "tender": {
+            "source": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "tokenId": "3",
+            "submissionId": "1",
+            "demander": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+            "judge": "0xe833ECc7d4d439Ea587dddBFE5c5A3a1a8840958",
+            "asset": "0x0000000000000000000000000000000000000000",
+            "reward": "2000000000000000",
+            "settlement": "judged"
+          }
+        }
+      ],
+      "reading": [
+        "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+        "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+        "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+        "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand."
+      ]
+    }
+  ],
+  "notes": [
+    "Every party's key was generated for this run and deleted after it; all parties belong to whoever ran the script, and the operator numbers stand in for distinct parties so that the rules can be exercised.",
+    "The record is evidence that the mechanism works end to end and that an independent recomputation agrees with the ledger. It is not evidence of independent participation, of demand, or of any amount of computation.",
+    "Workers, demanders and the third party acted through the reference client as separate processes; the ERC-8414 tenders were made with the standard's own calls.",
+    "Time was moved by the development node's own controls; epochs are 600 seconds of the node's clock.",
+    "The development node answers the finalized tag with its latest block, so the settlement rule is exercised by the test suite, not by this run."
+  ]
+}

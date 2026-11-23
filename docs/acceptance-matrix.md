@@ -1,92 +1,160 @@
 # Acceptance and Failure Matrix
 
-Round 1 design, revised after the first review (v0.1.1). Each row is a test the reference
-implementation and the Finchain Sepolia deployment must pass before the Genesis Mining MVP is
-called done. The R1 unit is: two independent workers -> one round of G0 and G1 work -> GMU ->
-epoch closed on chain -> a third party recomputes the same table. "Local" rows run on Anvil in
-R1; "Sepolia" rows run on the public testnet in R2 and R3 (`roadmap.md`). Evidence is a
-schema-tagged JSON record with `environment` (`local-devnet` or `public-testnet`), the way
-`finchain` records its acceptances.
+Design revision v0.1.2. Following the formal review (A28), a row is accepted in round R1 only if
+R1 implements what it tests. Every row therefore carries a state:
+
+- **passes** - implemented, and covered by the named test of this repository (`npm test`) or by a
+  check of the local run (`npm run local-run`);
+- **Sepolia** - belongs to the deployment on Finchain Sepolia (rounds R2 and R3 of `roadmap.md`),
+  where the same behaviour is shown on a public chain or needs a second party;
+- **deferred** - belongs to something R1 does not implement (`decisions.md` A19, A23, A30).
+
+Row ids are stable across revisions: a row that was revised keeps its id, a row that no longer
+applies stays in the table with its state. The recovery rows are numbered R1 to R10; to keep them
+apart from the rounds, this document always writes "round R1".
+
+The unit of round R1 (A30): two local workers -> G0 and G1 -> GMU -> epoch close -> independent
+recomputation. Evidence is a record with `schema`, `environment` and `recordedAt`, as in
+`finchain`; the local run writes `evidence/local-run-<time>.json` with `environment:
+local-devnet`.
+
+Tests are named by file: `policy`, `g0`, `g1`, `epoch`, `audit`, `boundaries` stand for
+`test/<name>.test.js`.
 
 ## 1. Normal operation
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| N0 | Anyone opens the epoch | the seed is captured from the manifest's source; instances derived before the opening transaction do not validate | `EpochOpened`, a rejected early submission | local |
-| N1 | Two workers submit `g0.ref` receipts for their own instances of the epoch's job indices | every receipt Accepted by recomputation of the instance, GMU per the formula, counted in the epoch's G0 pool; the two workers' instances differ for the same index | receipts, verdict events | local, Sepolia |
-| N2 | A G1 tender between the two cells (one demands, the other delivers, acceptance paid) | the tender pays the bounty from its escrow; the bridge writes one G1 receipt, eligible when the rules of section 7.3 hold; no second payment anywhere | tender events, the receipt, balances of both cells | local, Sepolia |
-| N3 | Finalization by a third account from `finalizableAt`, in pages | allocations per pool pro rata to capped, eligible contributions computed by the contract, `resultHash` set, `finalized = true` after the last page | `EpochFinalized` event, the table | local, Sepolia |
-| N4 | Test points read back | a worker's points are the sum of its allocations over finalized epochs; the same figure from the contract, the events and the audit | the three readings | local, Sepolia |
-| N5 | Audit from the chain alone | `pouw audit <epoch>` on a machine that runs no node recomputes the allocations and matches `resultHash` | the audit record with the RPC used and the finalized block | Sepolia |
-| N6 | `g0.cal` declaration re-measured by a sampled `g0.ver` worker under commit-reveal | the calibration job Accepted with the fixed GMU, the record Confirmed, the finding Accepted; the record's figures change no GMU | receipts, the calibration record | local |
-| N7 | A receipt overturned late and re-windowed past `finalizableAt` | counted in the next epoch; the closed epoch's table is unchanged | two epochs' tables | local |
-| N8 | A `g0.ver` finding that contradicts a verdict and leads to its overturn | the finding is Accepted with the overturn bonus, the overturned receipt is Rejected | both receipts | local |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| N0 | An epoch is used for the first time | its seed is captured from the deployment's source, once, by whoever comes first; `seed = keccak256(domain, epoch, material)` | passes: `g0` |
+| N1 | Two admitted workers do the `g0.ref` job | each on its own instance; both accepted, GMU measured and subsidized, counted in the epoch's G0 pool | passes: `g0`, `audit`; local run |
+| N2 | A tender between two admitted parties is settled and bridged by its owner | the tender pays the bounty from its own vault; one G1 receipt, eligible; the kernel pays and holds nothing | passes: `g1`; local run |
+| N3 | The epoch ends | its figures are frozen by time; a third account writes the close record without supplying a figure; the allocation is per pool, pro rata to subsidized GMU, capped per address | passes: `epoch`; local run |
+| N4 | Test points read back | the same figure from the ledger's view, from the stored contributions with the client's arithmetic, and from the audit | passes: `epoch`, `audit` |
+| N5 | An audit from the chain alone | a process given the manifest and the endpoint only re-decides every receipt and matches the ledger on every figure | passes: `audit`; local run (separate process). Sepolia, round R2: from a machine that runs no node |
+| N6 | `g0.cal` re-measured by a sampled verifier | - | deferred |
+| N7 | A receipt overturned late and counted in the next epoch | - | deferred with the challenge window; R1's rule for lateness is row R9 |
+| N8 | A `g0.ver` finding that leads to an overturn | - | deferred |
 
-## 2. Third-party participation
+## 2. Participation
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| T1 | A worker with the reference client, a fresh key, a public RPC endpoint and no Finchain node joins mid-epoch | submits, is verified and is allocated like the cells | the worker's receipts and allocation; a statement of its setup (no node) | Sepolia |
-| T2 | A worker that is not a FOGA cell (its own code against the published interface) | same as T1 | same | Sepolia (R3) |
-| T3 | A worker without any identity binding | treated as Unrated (tier factor 5000), nothing refused | receipts with `tierFactor` | local, Sepolia |
-| T4 | A chain node and a worker on one machine with separated keys (the Finchain AI Node form) | the worker side behaves as any worker; running the node changes nothing in the ledger | the host's two processes and the ledger | Sepolia (E05: node-b beside cell-b) |
-| T5 | A third party recomputes an epoch | matches N5 | its own audit record | Sepolia (R3) |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| T1 | A worker with the reference client, its own key and a public endpoint, running no node | its work is recorded and measured from the first receipt; it is subsidized from the epoch after its admission | Sepolia, round R3. Local run: every party acts through the client as a separate process with its own key file |
+| T2 | A worker that is not a FOGA cell, with its own code against the published interface | same as T1 | Sepolia, round R3 |
+| T3 | An address that is not admitted does work | recorded, accepted, measured; subsidized nothing; an admission made during an epoch applies from the next (revised: the tier factor of v0.1.1 is gone, A20) | passes: `g0`, `g1`; local run |
+| T4 | A chain node and a worker on one machine with separate keys | the worker side behaves as any worker; running the node changes nothing in the ledger | Sepolia, round R2 |
+| T5 | A party with no role recomputes an epoch | its table equals the ledger's and any other auditor's (`tableHash`) | passes: `audit`; local run. Sepolia, round R3: by a third party |
 
-## 3. Duplicate and replayed rewards
+## 3. Duplicate rewards and demand that is not real
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| D1 | The same receipt submitted twice (same dedup key) | the second submission reverts; one receipt exists | the revert, `dedup(key)` | local |
-| D2 | The same instance delivered under two profiles, or the same tender bridged twice | the dedup key includes the profile; the bridge's receipt is keyed on the tender, so the second call returns the existing receipt id | receipts | local |
-| D3 | A receipt transaction replayed against another deployment or chain | the domain separator differs; the receipt does not exist there | the revert | local (two Anvil deployments) |
-| D4 | A worker submits another worker's correct output for the same job index | the instance is per worker, so the copied output does not match this worker's instance: Rejected | the receipt | local |
-| D5 | Self-dealing: one address demands and delivers its own G1 tender; two addresses bound to one identity do the same | the bounty moves within the party; both receipts exist with `subsidyEligible = false`; no test points | receipts, allocation | local |
-| D6 | Sybil: one operator splits work across many addresses | each address is capped; the pool budget is fixed, so splitting changes who holds the points, not how many exist | allocations summing to at most the budget | local |
-| D7 | A `g0.ver` worker reveals a finding committed after the verified receipt's verdict was final, or copies the verdict without a commitment | Rejected; no GMU | the receipt | local |
-| D8 | Wash tenders: a demander settles many small tenders with one worker in an epoch | eligibility stops at the per-pair and per-demander caps and below the minimum bounty; the rest are recorded, not subsidized | receipts, allocation | local |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| D1 | The same G0 instance submitted twice | the second reverts; one receipt | passes: `g0`; local run |
+| D2 | The same settled submission bridged twice, in the same or a later epoch | the existing receipt is returned; nothing is added | passes: `g1`; local run |
+| D3 | A transaction replayed against another deployment or chain | another domain: another instance, another contribution id; the replayed output is rejected | passes: `epoch` |
+| D4 | A worker submits another worker's correct output | not its own instance: rejected, and the attempt is spent | passes: `g0` |
+| D5 | Self-dealing: the worker is the tender's owner or its judge | recorded, measured, never subsidized, in any epoch | passes: `g1` |
+| D6 | One controller splits across several admitted addresses (revised: v0.1.1 presented the cap as a defence) | not prevented: the share cap binds an address. Four addresses take 80 percent of a pool beside one other worker and all of it alone, against a 25 percent cap. Declared under one operator, the audit report adds them up; undeclared, nothing shows | passes: `epoch`, `audit` - the tests assert the bypass |
+| D7 | A `g0.ver` finding committed after the verdict, or copied | - | deferred |
+| D8 | Wash tenders: many tenders between the same parties in one epoch | subsidized up to the per-pair and per-demander caps; the rest recorded with the reason; what is refused uses up nothing | passes: `g1` |
+| D9 | A tender between declared-related parties: one operator on both sides, or the judge under the worker's operator | recorded, classed `declared-related`, not subsidized. Two addresses with nothing declared are classed `none-found`, which is not a finding of independence | passes: `g1`; local run |
+| D10 | A controlled self-test: an epoch whose parameters subsidize declared-related parties | subsidized, the class stays on the receipt, and every audit of the epoch is labelled `controlled-self-test`; self-dealing is refused even then | passes: `g1`, `audit` |
+| D11 | Demand pushed onto another party: a worker settles a tender of its own and hands the tender and its judgment to an admitted address | only the owner can bridge: the worker and a bystander are refused. Not detected: an owner who chooses to confirm a tender that was handed to it | passes: `g1`; local run |
+| D12 | A fresh address as the demander | recorded and measured; not subsidized (`demander-not-admitted`) | passes: `g1` |
+| D13 | A bounty in a token, or below the minimum | recorded and measured; not subsidized | passes: `g1` |
+| D14 | A worker beyond its GMU cap under a profile | the last unit is subsidized in part, later ones not at all | passes: `g1` |
+| D15 | Work delivered before the deployment's genesis | recorded and measured; not subsidized | passes: `g1` |
+| D16 | A tender settled by default, the judge having said nothing | the worker has the bounty and cannot bridge by itself; subsidized once the demander confirms it; the audit reports the settlement as `default` | passes: `g1`, `audit` |
 
-## 4. Disconnection, restart and recovery
+## 4. Disconnection, restart, lateness and recovery
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| R1 | A worker is killed mid-job and restarted | it resubmits the job; if the first submission landed, the repeat reverts and the state is unchanged; no double count | receipts | local, Sepolia (restart cell-b's unit) |
-| R2 | The keeper that was going to finalize is down at epoch end | any other account finalizes later; the table is identical because the contract computes it | `EpochFinalized` by a different sender; audit match | local |
-| R7 | Finalization attempted before `finalizableAt`, or before the previous epoch is finalized | reverts | the revert | local |
-| R8 | An epoch nobody opens on time | `openEpoch` later captures the seed of that moment; the schedule's `end` is unchanged | `EpochOpened` | local |
-| R3 | The RPC endpoint rate-limits or drops during submission | the client retries with the same payload; at most one receipt exists | client log, receipts | Sepolia |
-| R4 | A reorg drops a receipt's block before finality | the client reads finalized blocks for settlement; the receipt is resubmitted if it is gone | client log | local (forced reorg on Anvil) |
-| R5 | The steward key is lost after deployment | submission, verification and finalization continue; only new profiles and parameter sets cannot be registered; the schedule already pinned runs to its end | a run with the steward unavailable | local |
-| R6 | A verifier module reverts for one receipt | that receipt stays Pending and is never counted; others proceed | receipts | local |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| R1 | A worker is stopped and started again | it runs the job again: accepted once, refused afterwards; nothing is counted twice | passes: `g0`, `audit`; local run. Sepolia, round R2: a cell's unit restarted |
+| R2 | Nobody writes the close record (revised: there is no keeper) | nothing depends on it: the allocation is final when the epoch has ended; the next epoch's first use, or anyone, writes the record later | passes: `epoch` |
+| R3 | The endpoint drops or rate-limits during a submission | the client is run again; at most one receipt exists | Sepolia, round R2 |
+| R4 | A reorganization before finality | the client reads logs up to the settled block; it neither audits an epoch nor does the audit job on top of it before that block has passed the epoch's end | passes: `audit` |
+| R5 | The steward is gone | recording, sealing and auditing continue under the versions in force; the budget follows the schedule already registered | passes: `epoch` |
+| R6 | A profile's module fails | no receipt under that profile; other profiles proceed (revised: no pending state exists) | passes: `epoch` |
+| R7 | A final figure or a close record is asked for while the epoch runs | both revert; a provisional figure is available and says what it is | passes: `epoch`; local run |
+| R8 | An epoch nobody opens, or nobody uses | the first receipt captures the seed; an unused epoch is empty, allocates nothing and can be sealed | passes: `epoch` |
+| R9 | Late acceptance: delivered in one epoch, accepted in a second, bridged in a third | one receipt, in the epoch it is recorded in, under that epoch's rules; the earlier epochs do not move | passes: `epoch`; local run |
+| R10 | A G0 submission that lands after its epoch, or an old epoch's output submitted for the current one | the first reverts and spends nothing; the second is recorded as rejected | passes: `g0` |
 
-## 5. Version upgrades
+## 5. Versions
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| V1 | A new parameter set is registered while an epoch is open | the open epoch keeps its pinned set; the new set applies from the next epoch | `params(epoch)` of both epochs | local |
-| V2 | A profile version is retired while receipts under it are Pending | existing receipts finish under the old version; new submissions under it revert | receipts, reverts | local |
-| V3 | A new profile version with a changed verifier | receipts carry the version they were verified under; an audit of an old epoch uses the old version | receipts, audit | local |
-| V4 | A new protocol deployment (new contracts) beside the old one | the old deployment keeps its history and tables; the manifest names both; the client refuses a profile version it does not know | two manifests | local |
-| V5 | The reference client is upgraded while the cells keep the old version | the old client keeps working against the same contracts (the interface is versioned, additive) | a mixed-version epoch | Sepolia |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| V1 | A parameter version registered during an epoch | the running epoch keeps the set it started with; the new set applies from the epoch it names | passes: `policy`, `epoch` |
+| V2 | A profile retired | from its epoch on, submissions under it revert; receipts recorded before stay as they are; a retirement in force is final | passes: `policy`, `epoch` |
+| V3 | A new profile version | each receipt is measured under the version of its epoch, and an audit of an old epoch uses the old version | passes: `policy`, `epoch`, `audit` |
+| V4 | A second deployment beside the first | separate ledgers, separate domains; the manifest names the one in force | passes: `epoch` |
+| V5 | An upgraded client beside an old one against the same contracts | both work | Sepolia, round R3 |
+| V6 | Cross-version recovery: a contribution recorded under one adapter version, another left behind | under the next version the first is found and not recorded again; the second is bridged once and measured under the version in force; the old adapter is refused | passes: `epoch`, `audit` |
+| V7 | A version registered and then corrected before its epoch begins; changes made twice in one epoch | the last registration before the epoch applies; nothing can be changed once the epoch has begun; the client replays the policy exactly as the contract applied it | passes: `policy`, `audit` |
 
 ## 6. Adversarial and boundary cases
 
-| Id | Scenario | Expected outcome | Evidence | Where |
-| --- | --- | --- | --- | --- |
-| X1 | A false Accepted verdict by an attested verifier, overturned within the window | the overturn stands, the receipt is Rejected and not counted; the overturning `g0.ver` receipt is Accepted | both receipts | local |
-| X2 | An overturn attempted after the window | reverts; the verdict is final | the revert | local |
-| X3 | An epoch with no contribution in one pool | that pool's budget follows `unclaimedPolicy` (retire by default); the other pool pays normally | result | local |
-| X4 | A job set with one job and many workers | each worker's share is capped; the dust stays unallocated | result | local |
-| X5 | The steward pauses submission | no new receipts; verification and finalization continue | reverts and continuing events | local |
-| X6 | The steward, a keeper or anyone tries to edit a verdict, supply an epoch summary or change a table | no such function exists; `finalize` takes only an epoch and a page | the ABI | local |
-| X8 | A `g0.cal` record with inflated figures | the job earns the fixed GMU at most; a sampled re-measurement contradicts the record and rejects the job; no figure of the record ever enters an allocation | receipts, the calibration record | local |
-| X7 | Gas price spikes on the chain | the client waits and retries; the epoch clock does not depend on the client | client log | Sepolia |
+| Id | Scenario | Expected outcome | State |
+| --- | --- | --- | --- |
+| X1 | A false verdict overturned within the window | - | deferred |
+| X2 | An overturn attempted after the window | - | deferred |
+| X3 | A pool nobody worked in | its budget is allocated to nobody; the other pool is unaffected | passes: `epoch` |
+| X4 | Shares that do not divide evenly, shares above the cap | rounded down; what rounding and the cap leave is allocated to nobody | passes: `epoch` |
+| X5 | The steward pauses | no receipt is recorded while paused; recording resumes afterwards | passes: `g0`, `g1` |
+| X6 | Somebody tries to edit a receipt, a status, a total or a table | no such function exists: the state-changing functions are four on the ledger, eight on the policy (the steward's), one on the adapter | passes: `boundaries` |
+| X7 | Gas prices spike | the client is run again later; the epoch clock does not depend on it | Sepolia, round R2 |
+| X8 | A calibration record with inflated figures | - | deferred |
+| X9 | Seed predictability and timing | shown, not prevented: the material is public before it is captured, whoever opens picks the moment, and the first submitter of an epoch computes the seed before anyone else. Nothing in R1 claims otherwise | passes: `g0`, `epoch` |
+| X10 | Order: allocations read in different orders and in pages, epochs sealed in different orders, before or after reading | one table | passes: `epoch` |
+| X11 | Balance, claim, token | the kernel's contracts have no payable function and no function that issues, transfers, approves or claims; they cannot be sent value | passes: `boundaries` |
+| X12 | A ledger whose figures differ from the rules: a wrong allocation, a total that is not the sum of its receipts, a rejected output recorded as accepted | the audit reports each difference by name; the reference worker submits nothing on top of a difference | passes: `audit` |
+| X13 | A tender changes owner, judge and task after it was bridged | the audit reads the tender's history from its log, as of the bridging: the same result | passes: `audit` |
+| X14 | A manifest that names the wrong chain, policy or seed source | the client refuses it | passes: `audit` |
+| X15 | Chain neutrality and the absence of an upgrade path | no chain id and no address in the kernel's code, except the OP Stack predeploy inside the OP Stack seed source; no proxy, no delegatecall, no self-destruct | passes: `boundaries` |
+| X16 | Epochs built at random: parties, admissions, operators, parameters, G0 work right and wrong, tenders of every kind, some bridged an epoch late | the audit agrees with the ledger on every figure of every epoch; the generator is fixed, so a failure can be reproduced | passes: `audit` |
 
-## 7. What the MVP does not claim
+The five tests the review asked for: seed predictability and timing (X9), order of pages (X10),
+late acceptance (R9), the multi-wallet split with its bypass (D6), cross-version recovery (V6).
 
-The matrix does not test, and the MVP does not claim: that GMU measures intelligence (it measures
-verified work under declared factors; SIG comes later), that test points have value (they have
-none by construction, A5), that a chain node earns anything (A8), that Finchain is required (a
-second manifest on another EVM chain is the test of A13, scheduled with P2), or anything about
-sequencing or consensus (A1). Passing every row proves the technical loop; it does not prove a
-PoUW economy. Economic sustainability - a funding source, participation beyond the first workers,
-the decreasing schedule, FCT - is a separate acceptance at P4 with its own evidence (P18).
+## 7. The local run
+
+`npm run local-run` starts a development network, deploys the kernel beside the ERC-8414 reference
+contract and takes six parties through two epochs. Workers, demanders and the third party act
+through the reference client as separate processes, each with a key made for the run and deleted
+after it. Its checks, all of which must hold for the record to say `ok`:
+
+| Check | Rows |
+| --- | --- |
+| the worker cannot bridge a tender by itself | D11 |
+| an audit of an epoch that has not ended is refused; so is its close record | R4, R7 |
+| a second submission for the same instance is refused | D1, R1 |
+| bridging the same submission again adds nothing | D2 |
+| per epoch: the audit, as a separate process with the manifest and the endpoint only, agrees with the ledger on every figure, and every row of its table equals the ledger's view | N3, N4, N5, T5 |
+| both workers are allocated the capped share of each pool they worked in, in both epochs | N1, N2, N3 |
+| the address that is not admitted is measured and allocated nothing | T3 |
+| the tender between declared-related parties is recorded, classed and not subsidized | D9 |
+| the tender confirmed late counts in the later epoch, and the earlier epoch did not move | R9 |
+| no contract of the kernel holds funds | X11 |
+| each epoch's allocations and its unallocated remainder add up to its budget | X3, X4 |
+
+## 8. What round R1 proves, and what it does not
+
+Proves, on a local network: the loop Work -> Verify -> GMU -> Epoch -> Test Reward runs end to
+end; an epoch closes without anyone's figures; every receipt, total and allocation can be
+recomputed from the chain alone by a party with no role, and a ledger that differed would be
+caught; duplicates, lateness and version changes follow written rules; settlement and subsidy are
+separate; nothing can be claimed.
+
+Does not prove, and does not claim:
+
+- computation: an accepted `g0.ref` receipt shows presence and a conforming submission (A19);
+- demand: a settled tender shows a settlement confirmed by its owner; all parties of a local run,
+  and the OG cell and cell-b on Sepolia, are one party (A24);
+- resistance to one party holding many addresses, or to two admitted parties who conceal their
+  relation (A25);
+- an unpredictable seed (A22);
+- operation on a public chain (round R2) or participation by anyone else (round R3);
+- an economy: that test points mean anything, that GMU measures intelligence, that anyone will
+  take part. Economic sustainability - a funding source, participation, the decreasing schedule,
+  FCT - is a separate acceptance at P4 with its own evidence (P18).
