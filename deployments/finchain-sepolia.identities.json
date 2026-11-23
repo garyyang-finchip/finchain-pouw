@@ -1,0 +1,37 @@
+{
+  "schema": "finchain-pouw.identity-config/1",
+  "name": "finchain-sepolia",
+  "chainId": 85422,
+  "rpc": "https://rpc.finchain.one",
+  "taskToken8414": {
+    "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908"
+  },
+  "contracts": [
+    {
+      "name": "the World's hashlock verifier",
+      "address": "0xb90d0a7Bb619255C0f8fa796DbBA2421abbd96De"
+    }
+  ],
+  "parties": [
+    {
+      "name": "OG",
+      "account": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "wallet": "0x5Fee42D697975f6154164b29371c1c447F56fb4E"
+    },
+    {
+      "name": "cell-b",
+      "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "wallet": "0x7dCE041276791F2371EA2e77F99119f22D32cd81"
+    }
+  ],
+  "tenders": [
+    {
+      "tokenId": "5",
+      "submissionId": "1"
+    }
+  ],
+  "source": [
+    "The addresses and the tender are those of the two-agent business loop recorded on 2026-11-13 in the finchain repository (manifests/evidence/business-loop-2026-11-13.json, og-finchain-2026-11-13.json): the OG minted tender 5 through its account, cell-b delivered through its account, a hashlock verifier settled it.",
+    "This file holds public addresses only. The check reads the chain and compares; it does not rely on the recorded description."
+  ]
+}

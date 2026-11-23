@@ -1,8 +1,10 @@
 # PoUW Architecture
 
-Design revision v0.1.2, after the formal review of v0.1.1. The layers of the first design stand;
-the modules were reduced to what round R1 needs (`decisions.md` A30). Rulings are referred to by
-id: Approved A1-A30, Proposed P1-P31.
+Design revision v0.1.3. The layers of the first design stand; the modules were reduced to what
+round R1 needs (`decisions.md` A30), and the review of round R1 changed none of them (A31). This
+revision corrects who a participant is when its identity is a contract account (section 4) and
+what the self-dealing check reads (section 7). Rulings are referred to by id: Approved A1-A39,
+Proposed P1-P41.
 
 ## 1. Purpose and position
 
@@ -51,8 +53,8 @@ its first reference chain; the protocol names no chain (A13).
 
 | Actor | What it does | In the first deployment |
 | --- | --- | --- |
-| Worker | Does work from an EVM address: submits its G0 output, delivers G1 tenders through ERC-8414 | the OG cell and cell-b (FOGA), then a third party |
-| Demander | Tenders real demand through ERC-8414 with an escrowed bounty, has the delivery judged, and confirms the settled submission to the ledger | the OG cell, later any admitted party |
+| Worker | Does work from an EVM address - a key, or a contract account: submits its G0 output, delivers G1 tenders through ERC-8414 | round R2a: two wallets an operator holds. Round R2b: the Cell Accounts of the OG and cell-b (FOGA). Then a third party |
+| Demander | Tenders real demand through ERC-8414 with an escrowed bounty, has the delivery judged, and confirms the settled submission to the ledger | the same parties in R2a and R2b, later any admitted party |
 | Module | A contract a profile names: a G0 function that the ledger calls to verify an output, or the G1 adapter that reports a settlement | `AuditV1`, `TenderAdapter8414` |
 | Steward | Registers profile and parameter versions, admits addresses to the early subsidy, declares operators, can pause recording. Cannot touch a receipt, a status, a total or an allocation | the owner's account at first; a Safe or a decision body later |
 | Auditor | Recomputes an epoch from the chain alone | anyone; `pouw audit` |
@@ -73,7 +75,8 @@ protocol sees only the worker's address.
 | `AuditV1` | The first G0 function: the audit of the previous epoch (`IG0Function`) | the `g0.ref` profile |
 | `PrevBlockSeedSource`, `L1BlockSeedSource` | Where seed material comes from: any EVM chain, or an OP Stack chain (`ISeedSource`) | - |
 | `TenderAdapter8414` | Reads one ERC-8414 contract and reports a settled submission to the ledger; only the tender's owner can call it | the ERC-8414 adapter |
-| `client/pouw.js`, `client/lib/` | `status`, `work`, `bridge`, `seal`, `audit`; JSON-RPC only | Reference client and audit |
+| `client/pouw.js`, `client/lib/` | `status`, `work`, `bridge`, `seal`, `audit`, `verify`; as a key or through a contract account; JSON-RPC only | Reference client and audit |
+| `build/`, `scripts/` | The builds a deployment is made from; the deployment from a configuration file; keys; an operator's round; the identity check; the rehearsal. Tooling of round R2, none of it part of the protocol | - |
 
 Receipts and rewards are one contract because they share every figure: the allocation reads the
 totals that recording a receipt writes. Two contracts would add a trust boundary between them and
@@ -89,6 +92,14 @@ independent of the size of the work and the protocol usable from an ordinary end
 
 A worker is an EVM address, and so is a demander (P1). No identity binding is read by the
 contracts, and none raises GMU (A20).
+
+The address is the sender of the call, and that decides who took part (A37). A participant that
+is a key is that key's address. An agent whose identity on chain is a contract account - a FOGA
+cell is one: its Cell Account owns what it mints and is the fulfiller of record of what it
+delivers - takes part as itself only when the account is the sender. The key that drives the
+account is another address: its audit job is recorded as another worker's, and it cannot confirm
+a tender the account owns. Work done with such keys alone is an operator-wallet integration and
+is labelled so; it shows the protocol and not the agent (`genesis-mining-mvp.md` 5.5).
 
 Two things are recorded about an address, both by the steward and both in force from the next
 epoch:
@@ -124,9 +135,13 @@ party attests it. The protocol never claims that every related party or every Sy
 - `finchain` provides the chain, its public RPC and the World address book, in which the ERC-8414
   TaskToken already exists. The protocol's deployment on Finchain is recorded here under
   `deployments/` and, as a verified version with its evidence, in `finchain`'s manifests (A12).
-- `foga` will add, in its own repository and release cycle, an optional adapter that lets a cell
-  do the G0 job and bridge the tenders it issued. Until then the reference client does both with
-  the cell's key on the cell's host. `foga` builds and runs without this repository (A10, P11).
+- `foga` builds and runs without this repository (A10). A cell takes part as its Cell Account,
+  and the reference client beside a cell, holding the cell's key, is not that: the key is another
+  address, a running node's key cannot be shared with a second program, and a program that holds
+  a cell's key goes around the cell's own authorization and budget (A37). The route proposed here
+  is a delegation the account signs once, naming a key that submits work in the account's name
+  (`decisions.md` P35; `genesis-mining-mvp.md` 13.9); a capability inside FOGA is FOGA's own
+  decision, on its own cycle.
 - An external participant needs an endpoint, a funded key for gas and the reference client or its
   own code. It runs no Finchain node (A8).
 
@@ -168,7 +183,7 @@ once, in one epoch; and nothing is paid.
 | A wrong epoch summary by whoever closes | nobody closes: the allocation is a function of totals fixed by time; `seal` takes no figures (A21) | - |
 | Duplicate reward for the same work | one receipt per contribution, across epochs and profile versions; nothing to claim, so nothing claimed twice | - |
 | Replay from another chain or deployment | the domain is in every seed and contribution id | - |
-| Non-real demand: self-dealing | the worker is neither owner nor judge of the tender | see the next three rows |
+| Non-real demand: self-dealing | the worker is neither the owner nor the judge of the tender, as the tender stands when it is bridged | catch a worker that judged its own delivery and handed the right to judge on before the bridge: the standard keeps no state of the past judge. The audit reads the tender's log and reports the case; eligibility does not yet depend on it (A38, `genesis-mining-mvp.md` 13.8). And see the next three rows |
 | Non-real demand: a fresh address as demander | the demander must be admitted (P22) | - |
 | Non-real demand: a settled tender pushed onto an admitted party | only the tender's owner bridges (P24) | stop an owner who confirms what was handed to it |
 | Non-real demand: two admitted parties who conceal their relation | declared relations are classed and not subsidized; minimum bounty; caps per demander, per pair and per worker; a fixed pool | detect it. Not claimed (A25) |
@@ -177,7 +192,9 @@ once, in one epoch; and nothing is paid.
 | Receipts sent only to fill the ledger | anyone may submit one G0 output per epoch, and it is recorded whether or not the sender is admitted; each costs its sender gas and earns nothing | bound the number of such receipts, which an audit has to read. A limit or a fee per epoch is the later option, to be weighed against open participation |
 | Parameter changes during an epoch | impossible: every version applies from a later epoch | - |
 | A steward who abuses its powers | it can register a bad version, admit its own addresses or pause; all of it is on chain before it takes effect, and none of it reaches a recorded figure | prevent it. A Safe or a decision body is the later answer |
-| A module that lies | the audit re-decides G0 from the published function and G1 from the tender's own log | verify that a deployed module is the published source: a deployment check, done in round R2 |
+| A module that lies | the audit re-decides G0 from the published function and G1 from the tender's own log. `pouw verify` compares the code at a deployment's addresses with the builds committed here, and the manifest records each code hash | - |
+| A participant taken for another: a key recorded where an agent is meant | the kernel records the sender and nothing else; the documents, the labels on every record and the identity check say which of the two a party is | bind a key to an agent. A key beside an agent is the operator's wallet (A37) |
+| A key file read by another user of the host, or committed by accident | keys are made outside the checkout, with a mode that only their owner can read; the client refuses a key file others can read | protect a host that is itself compromised |
 | The ERC-8414 contract itself | the adapter is pointed at one contract, immutably, and the manifest names it | audit that contract: the standard's own business |
 | Loss of history | receipts are never edited; every figure can be recomputed from the log | - |
 
@@ -199,8 +216,10 @@ public endpoint of an ordinary full node is enough (P27).
 | Module | When | Depends on |
 | --- | --- | --- |
 | `g0.ver` verification work, `g0.cal` calibration with its records, challenge and overturn | after a ruling on the kept design (`genesis-mining-mvp.md` 13.1, 13.2) | a seed fit for it (13.6) |
-| A cap per declared operator; a freshness window for bridging | before round R3, if ruled (Q11) | - |
-| The FOGA adapter | on FOGA's own cycle, after round R2 | the published ABI |
+| A cap per declared operator; receipts without the demander | before round R3, in a new version of the ledger (A35, A33) | the ruling on its content (Q16) |
+| A delegation signed by a contract account | with that version, if ruled (Q13) | - |
+| The authority as it was at settlement, deciding eligibility; a freshness window for bridging | before any subsidy of value (A38) | the verification work |
+| A capability inside FOGA | on FOGA's own cycle; not required by this protocol | the published ABI |
 | Node attestations (FPM01-N) | P2 Genesis Network | a node identity and an attestation format |
 | SIG: the standardized measurement of intelligence-production capability | P3 | a body of measured receipts |
 | IPC, the router | P3 | SIG |

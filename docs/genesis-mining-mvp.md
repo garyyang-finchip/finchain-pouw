@@ -8,11 +8,14 @@ Work  ->  Verify  ->  GMU  ->  Epoch  ->  Test Reward
              deterministic per receipt  nothing to submit  a function, recomputable by anyone
 ```
 
-Design revision v0.1.2, written after the formal review of v0.1.1 (`decisions.md`, A19-A30) and
-implemented as round R1 in this repository: the contracts under `contracts/`, the reference client
-under `client/`, the tests under `test/`. This document describes what is built. Where it and the
-code differ, the code and its tests are right and this document is to be corrected. Figures marked
-*illustrative* are examples (`decisions.md`, last section).
+Design revision v0.1.3. The specification was written after the formal review of v0.1.1
+(`decisions.md`, A19-A30) and implemented as round R1 in this repository: the contracts under
+`contracts/`, the reference client under `client/`, the tests under `test/`. The review of v0.1.2
+and of round R1 (A31-A39) changed no rule; this revision states two boundaries more exactly - who
+a participant is when its identity is a contract account (section 5.5), and what the self-dealing
+rule reads (section 7.5) - and adds three kept designs (13.7 to 13.9). This document describes
+what is built. Where it and the code differ, the code and its tests are right and this document
+is to be corrected. Figures marked *illustrative* are examples (`decisions.md`, last section).
 
 The three errors the MVP is built to prevent, in the review's words: fake compute earning a
 reward, non-real demand drawing the subsidy, over-engineering blocking the MVP. The third one
@@ -29,7 +32,8 @@ the ledger; the reference client with a worker's job and an independent audit.
 
 Deferred, with the designs kept (section 13): `g0.cal` and calibration records, `g0.ver` and its
 commit-reveal, challenge windows and overturns, any tier or quality factor, paging, a cap per
-operator, node attestations, the FOGA adapter.
+operator, receipts without the demander, the binding of the authority at settlement, a delegation
+signed by an account, node attestations, the FOGA adapter.
 
 Out (later milestones, A9): SIG, IPC, routing, FCT, any balance, claim or token.
 
@@ -222,7 +226,9 @@ a submission is `Accepted` the standard never changes it.
 - it reverts unless the submission is `Accepted`;
 - the facts it reports are read from the tender in the same call: fulfiller, owner (the demander
   of record), acceptance authority (the judge of record), the task hash the submission cites,
-  the result hash, the bounty asset and amount, the time of delivery;
+  the result hash, the bounty asset and amount, the time of delivery. The owner and the judge are
+  therefore those of the moment of bridging. The standard keeps no state of who held either when
+  the submission settled, and both can be handed on in between (section 7.5);
 - a second call for the same submission returns the receipt that exists.
 
 A default settlement is a settlement: it is counted like an acceptance once the demander confirms
@@ -231,6 +237,29 @@ it by bridging, and the audit reports how each tender settled (`judged`, `verifi
 What a G1 receipt shows: a settlement, confirmed by the tender's owner. It is not evidence that
 the demand was independent of the worker (A24): two parties who agree to pretend are not detected,
 and section 7.5 says what is and is not checked.
+
+### 5.5 Who a participant is: keys and contract accounts (A37)
+
+To the kernel a party is an address, and the address is the sender of the call: the worker of a
+G0 receipt is whoever called `submitG0`; the demander of a G1 receipt is the tender's owner, who
+must be the caller of `bridge`; the worker of a G1 receipt is the fulfiller the tender recorded.
+Nothing else is read.
+
+For a participant that is a key, that is the whole of it. For an agent whose identity on chain is
+a contract account - a FOGA cell, any smart account - there are two addresses, and they are two
+parties to the kernel:
+
+| The call is sent | Worker of record of a G0 receipt | Can confirm a tender the account owns |
+| --- | --- | --- |
+| by the account, through its `execute(target, value, data)` | the account | yes |
+| by the account's key, by itself | the key's address - another worker, with another instance, admitted or not on its own | no: `NotDemander` |
+
+The reference client can send either way (`--account`), for an account whose key it may use. Work
+done with keys alone is an operator-wallet integration: it shows the protocol working and says
+nothing about the agent, whose account does not appear. An agent takes part as itself only when
+its account is the sender - through the agent's own software, or through a delegation the account
+has signed (section 13.9). The tests show both columns of the table (`test/account.test.js`), and
+`scripts/identity-check.js` reads from a chain which of the two a given party is.
 
 ## 6. GMU
 
@@ -313,7 +342,7 @@ subsidized is decided by these rules, in this order; the first that fails is the
 
 | # | Rule | What it does not establish |
 | --- | --- | --- |
-| 1 | the worker is neither the tender's owner nor its acceptance authority | that the worker does not control them through another address |
+| 1 | the worker is neither the tender's owner nor its acceptance authority, as the tender stands when it is bridged | that the worker does not control them through another address; and that the worker was not the judge when the submission settled - a worker that judged its own delivery and then handed the right to judge to somebody else passes this rule |
 | 2 | the work was delivered at or after the deployment's genesis | - |
 | 3 | the worker is admitted for the epoch | - |
 | 4 | the demander is admitted for the epoch | that an admitted demander has demand of its own |
@@ -330,6 +359,21 @@ fresh address as the demander, or a settled tender pushed onto an admitted one. 
 manufacturing demand takes two admitted parties who conceal their relation. That case is not
 detected and is not claimed to be (A25); what bounds it is the fixed pool, the share cap and the
 per-worker, per-demander and per-pair caps, and what guards it is the admission itself.
+
+What rule 1 reads (A38). The owner and the judge are read when the tender is bridged, because
+that is all the standard's state offers: ERC-8414 keeps no record of who held either at the
+moment of settlement, and both can be transferred without the receiver agreeing. So the rule
+catches a worker that still is the owner or the judge, and misses one that was the judge when it
+accepted its own delivery and has handed that right on since; the tender's owner, another
+admitted address, then confirms it. The test of row D17 shows that receipt being subsidized. What
+bounds the case is what bounds any two parties who agree to pretend: the owner had to make the
+worker the judge and had to confirm the tender, both have to be admitted, and the caps apply. The
+tender's log has the whole history, and the audit reads it: for every G1 receipt
+it reports who owned and who judged the tender when the submission settled, and lists as an
+observation each receipt whose worker was that judge or that owner, or for which either changed
+before the bridge (section 12). An observation changes no figure. With test points that cannot be
+redeemed this is a stated boundary; before any subsidy of value the authority as it was at
+settlement has to decide eligibility (section 13.8).
 
 ### 7.6 What the caps bind, and what they do not
 
@@ -437,15 +481,36 @@ epoch it:
 5. compares each figure with the ledger and reports every difference. `ok` means none.
 
 The report also says what the figures alone do not: the epoch's mode (`standard` or
-`controlled-self-test`), the table added up per declared operator, and the G1 receipts by relation
-class and by the way they settled.
+`controlled-self-test`), the table added up per declared operator, the G1 receipts by relation
+class and by the way they settled, and its observations. An observation is something the tender's
+log shows and the ledger's rules cannot read (section 7.5): the worker judged its own delivery,
+the worker owned the tender when it settled, or the judge or the owner changed between the
+settlement and the bridge. Observations are listed per receipt, with whether the receipt was
+subsidized; they are not differences and do not change `ok`.
+
+A record names what it is in three fields that are kept apart: `environment` - `local-devnet`,
+`public-testnet` or `mainnet`; `labels`, taken from the manifest, which say what kind of exercise
+the deployment is (`controlled-self-test`, `operator-wallet-integration`); and the epoch's `mode`.
+A standard epoch on a deployment whose parties all belong to one operator is still part of a
+controlled self-test, and its record says both.
+
+`pouw verify` is the check that comes before any audit means anything: that the contracts at the
+manifest's addresses are this repository's code. For each of the deployment's five contracts it
+compares the code on chain with the committed build (`build/`), the immutable values aside, and
+with the code hash the manifest records; a manifest that leaves one of them out fails. It checks
+that the contracts point at one another and at the manifest's ERC-8414 contract, that the clock is
+the manifest's, and that the profiles in force name the manifest's two modules - so a module
+registered later needs a manifest of its own. It reports, without judging it, who the steward is
+and whether recording is paused. It needs no key.
 
 How the chain is read. An epoch's figures can only be changed by transactions in blocks whose
 timestamp lies inside the epoch. The client therefore asks one thing of finality: the settled
 block - `finalized` by default - must be at or past the epoch's end; until then it stops with
 "not settled yet". Logs are read up to that block. State is read at the latest block, and only
 values the settled history has frozen. No call asks for an old state, so an ordinary full node is
-enough.
+enough. A public endpoint serves a log query over a limited range of blocks: the client reads in
+ranges of the size the manifest names for its endpoint (`logChunk`), and reads a tender's history
+from the block the tender was minted in, which it finds from the newest range backwards.
 
 Two auditors who agree hold the same `tableHash`. The audit is a check: the ledger's view is the
 source, and an audit that differs is a finding about the ledger or about the auditor's endpoint.
@@ -480,12 +545,18 @@ fixed at the boundary, each worker's figure is a pure function of them, and writ
 figure can never change another's; a written-once marker per worker is all a paged procedure
 would add.
 
-### 13.4 A cap per declared operator
+### 13.4 A cap per declared operator (A35)
 
-Keep, at accrual, the subsidized GMU per (epoch, pool, operator) for addresses with a declared
-operator. Allocation: the operator's share is capped as an address's is today, and divided among
-its addresses in proportion to their contributions. It stays a pure function, O(1) per reading.
-It binds declared operators only.
+Ruled: before round R3. Keep, at accrual, the subsidized GMU per (epoch, pool, operator) for
+addresses with a declared operator. Allocation: the operator's share is capped as an address's is
+today, and divided among its addresses in proportion to their contributions. It stays a pure
+function, O(1) per reading. It binds declared operators only: addresses of one party that are not
+declared under one operator are not identified, by this cap or by anything else in the protocol.
+
+The ledger cannot be upgraded, so the cap arrives with a new version of the contracts, deployed
+beside the old ones: a new ledger with a new domain, its own manifest, and in that manifest the
+name of the deployment it supersedes. The old ledger and every record made from it stay as they
+are and stay auditable; nothing is migrated, because nothing is held.
 
 ### 13.5 A freshness window for bridging
 
@@ -500,3 +571,51 @@ including the block producer - can know or choose before the work is committed (
 on chain, or a commit-reveal among the participants); a capture time set by rule rather than by
 whoever sends first; work that cannot be done before the capture; and an answer to one party
 holding many addresses that does not rest on the admission list alone.
+
+### 13.7 Receipts without the demander (A33)
+
+In R1 and R2 a settled submission becomes a receipt only when the tender's owner confirms it. The
+reservation of the ruling: work that has settled should be able to leave a receipt even when the
+demander does nothing. The kept design gives the adapter a second entry, open to anyone, that
+records a settled submission as a receipt which is measured and can never be subsidized, under an
+eligibility code of its own; the owner's confirmation stays the only way to the subsidy. One
+contribution still has one receipt: a receipt recorded without the demander is the receipt of that
+submission, so the design has to say whether a later confirmation may raise its eligibility - the
+one place where a recorded status would change - or whether an unconfirmed receipt is final as it
+stands. That choice is the ruling to ask for.
+
+### 13.8 The authority as it was at settlement (A38)
+
+Before any subsidy of value, eligibility has to rest on who owned and who judged a tender when the
+submission settled. State on chain cannot supply it: the standard keeps the present owner and
+judge only. The evidence is the tender's own log, which has every change in order and which the
+audit already reads (section 7.5). Two designs are kept. In the first, the confirmation states the
+judge and the owner at settlement, the verification work of the following epoch checks every such
+statement against the log, and a false statement loses the subsidy: it needs the verification
+work of 13.1, and a verdict that is not final when recorded. In the second, only submissions
+settled by a verifier contract from a registered set are subsidized: the submission's own record
+says that it was machine-settled, which is fixed at delivery, but not by which contract, so this
+too needs the log for the identity of the verifier. Neither is a rule a contract can apply by
+itself; the first is the general one.
+
+### 13.9 A delegation signed by an account (A37)
+
+How an agent whose identity is a contract account takes part as itself without its key being
+given to a second program. The account's owner signs one typed statement (EIP-712, bound to the
+chain, the ledger and the account): this key may, until this epoch, submit my G0 work and confirm
+my settled tenders. Anyone may register the statement; the ledger checks the signature - by
+ERC-1271 when the account is a contract - and from then on a G0 submission and a confirmation
+sent by the delegated key are recorded with the account as the worker and as the demander. The
+delegated key can do those two things and nothing else: it holds none of the account's assets,
+cannot make the account call anything, and pays its own gas. The delegation ends at its epoch and
+can be ended earlier by the account or by a second signed statement. The one signature is the
+owner's act: it is made once, offline, with whatever signs typed data for that key, and the key
+is used for nothing else here - no transaction, so no nonce of a running node is touched.
+
+What it does not change: an admission is still an address's, and the address is the account; a
+relation is still declared per address; one instance per worker per epoch is the account's
+instance, whoever sends. What it is not: a statement about the agent's software. The receipt says
+that the account's owner authorized the work to be submitted in the account's name, not that the
+agent's node did it. The fullest form - the agent's own software sending through the account,
+within its own authorization and budget - needs nothing from this protocol and remains open to
+any agent that builds it.

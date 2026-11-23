@@ -6,9 +6,10 @@ force only after a ruling, and those that round R1 implements are marked so that
 confirmed or vetoed one by one. **Illustrative** entries are figures used to explain a mechanism;
 none of them is a protocol parameter, and the kernel runs with any value in their place.
 
-Design revision v0.1.2. Section 2 records the formal review of v0.1.1 and how each ruling was
-applied; section 3 gives the state of every earlier proposal; section 4 lists what this revision
-adds on its own judgment.
+Design revision v0.1.3. Sections 2 and 3 record the two reviews - of v0.1.1, and of v0.1.2 with
+round R1 - and how each ruling was applied; sections 4 and 5 give the state of the earlier
+proposals; section 6 lists what this revision adds on its own judgment; section 7 holds the
+questions for the next ruling.
 
 ## 1. Approved
 
@@ -45,8 +46,18 @@ adds on its own judgment.
 | A29 | PoUW protocol independent, Finchain chain-native integration. Finchain M5, the FOGA main program and the existing ERC-8414 business loop are not modified. The work waits neither for the FPM01 record nor for FCT Tokenomics. | formal review of v0.1.1 |
 | A30 | The design revision v0.1.2 comes first, without a new architecture and without large new functions; R1 may then start. R1 scope: Profile and Policy, Work Receipts, Epoch Rewards, the ERC-8414 adapter, the reference client with its audit. Not in R1: calibration records, the agreement verifier, commit-reveal, multi-level challenges, complex paging, SIG, IPC, FCT, node attestations, the full FOGA adapter. The R1 unit: two local workers -> G0 and G1 -> GMU -> epoch close -> independent recomputation. | formal review of v0.1.1 |
 
-The review's rulings are recorded here in condensed form from the owner's relay of it; the
-review's own text governs wherever a wording here falls short of it.
+| A31 | Round R1 passes, with conditions. The work goes on to round R2 on Finchain Sepolia without another restructuring of the architecture and without rebuilding R1. The first things to settle are the matching of accounts (A37) and the boundary of the test (A38); R2 follows at once. | review of v0.1.2 and round R1 (FPM01-G), relayed by the owner, 2026-11-23 |
+| A32 | The proposals P19 to P31 are approved. With these notes: P22 is limited to eligibility for the public subsidy; P24 holds for R2, and a later channel for receipts that are not subsidized is kept open (A33); P26 is accepted as test work, not as proof of compute; P29 in full; P31 continues to pin the upstream commit and the hashes of the files. | review of v0.1.2 and round R1 |
+| A33 | Q9: the two additions to the G1 subsidy rules (an admitted demander; bridging by the tender's owner) are confirmed for R2. Reservation: later, work that has settled must be able to leave a receipt that is not subsidized even when the demander does not bridge it. | review of v0.1.2 and round R1 |
+| A34 | Q10: on Finchain Sepolia, epochs of two hours, the pools split 10 percent G0 and 90 percent G1, and two rounds: one epoch as a controlled self-test, in which the OG and cell-b may be given simulated G1 points under that label, and one standard epoch, in which the subsidy of related parties is off and only measured GMU remains. `genesisTime` and `epochDuration` are immutable, so two hours is the parameter of this test deployment and of nothing else. | review of v0.1.2 and round R1 |
+| A35 | Q11: before R3, a cap on the aggregate of a declared operator; and the plain statement that related addresses which are not declared are not identified. `GenesisLedger` cannot be upgraded, so R3 needs a new version of the contracts: the old ledger and its audit records are kept, and the switch is made by a versioned manifest. | review of v0.1.2 and round R1 |
+| A36 | Q12: Hardhat stays. Hardhat, solc-js and the dependency lock file are pinned. | review of v0.1.2 and round R1 |
+| A37 | The identity of a participant. The reference client signs with an externally owned key, so the ledger records that key's address. A FOGA cell has two addresses - its Cell Account and the key of its owner and operator - and a tender held by the account cannot be bridged by the key. The statement that FOGA 1.0.9 takes part unchanged, with the reference client and the cell's key, is therefore not proven. Before the R2 deployment a short check compares the tender's owner, the Cell Account, the operator key and the sender the client's transactions would have. If they differ, the protocol-level test may be run with externally owned keys, and must then be labelled, truthfully, an operator-wallet integration; mining by the Cell Account itself follows, through the account execution interface FOGA already has or through an optional adapter. The two identities are not to be confused for the sake of reaching R2, and an external reference program must not go around FOGA's authorization of operations and its budget control. Where needed, the test and the Cell Account integration are accepted separately. | review of v0.1.2 and round R1 |
+| A38 | The boundary of the self-dealing check. The adapter reads the acceptance authority when a tender is bridged, and that authority can be handed on: a worker that judged its own delivery and then transferred the right to judge is not caught by `worker == judge`. A regression test for "settle, transfer the judge, then bridge" is added and states the boundary; the absolute wording in the documents is corrected. R2 may go on with controlled test points that cannot be redeemed. Before any subsidy of value, the authority as it was at settlement, and the evidence for it, must be bound. | review of v0.1.2 and round R1 |
+| A39 | The route of R2: (1) the current contracts are deployed on Finchain Sepolia, with a manifest that holds the addresses, the code hashes and the deployment block; (2) the relation between a FOGA Cell Account and the account that executes for PoUW is confirmed; (3) the OG and cell-b do G0 and G1 work in both kinds of epoch; (4) after the epochs, every receipt, the GMU and the test points are verified again on an independent machine, at finalized state; (5) the result is submitted as independent evidence labelled `public-testnet` and `controlled-self-test`, claiming neither compute nor independent commercial demand. When R2 has passed and the complete independent audit evidence is in, R3 begins with real third-party miners. The mainnet's M5 runs on independently and is not affected. | review of v0.1.2 and round R1 |
+
+The rulings of both reviews are recorded here in condensed form from the owner's relay of them;
+a review's own text governs wherever a wording here falls short of it.
 
 ## 2. The formal review of v0.1.1 and how it was applied
 
@@ -95,7 +106,71 @@ review's own text governs wherever a wording here falls short of it.
 | Q7 The first miners | The OG cell and cell-b, as a controlled self-test: A24 |
 | Q8 The seed source per chain and the first `g0.ref` functions | The seed stays, described as what it is: A22. The first function is the audit of the previous epoch |
 
-## 3. The proposals of v0.1.0 and v0.1.1, and their state
+## 3. The review of v0.1.2 and of round R1, and how it was applied
+
+The reviewer read the code of round R1 and ruled on it without running the tests again: the
+dependencies could not be installed in the reviewer's environment in time. From this revision on
+the tests and the rehearsal can be run on a hosted runner, from a clean checkout, by starting one
+job (`.github/workflows/ci.yml`), and are run so for each version: a reader does not depend on an
+installation of their own.
+
+### 3.1 The rulings
+
+| Ruling | Applied as | Where |
+| --- | --- | --- |
+| A31 | No contract was rebuilt. The six deployable contracts compile to the code of v0.1.2, the metadata hash aside: two comments changed (A38), and the interfaces are identical. What is new is the tooling of round R2 | `build/`; section 6 |
+| A32 | P19 to P31 are in force by ruling, with the notes of the ruling | section 5 |
+| A33 | Unchanged for R2. A channel for receipts that are not subsidized is proposed for the next version of the ledger (P40) | `genesis-mining-mvp.md` 13.7 |
+| A34 | The R2 configuration: epochs of 7200 seconds, `splitG0Bps` 1000, a parameter version for epoch 0 that subsidizes declared-related parties and one from epoch 1 that does not. The rehearsal runs this configuration. In round R2a the parties of the two epochs are the operator's two wallets, as A37 allows; the OG and cell-b themselves are round R2b | `deployments/finchain-sepolia-r2.config.json`; `scripts/local-run.js` |
+| A35 | Not in R2. The cap per declared operator and the versioned switch are proposed content of the next ledger version (P41); wherever the cap is described, the documents say that it binds an address and that undeclared relations are not identified | `genesis-mining-mvp.md` 7.6, 13.4 |
+| A36 | As it was: exact versions in `package.json`, the lock file committed, the compiler the pinned solc-js. The builds a deployment is made from are committed as well, with a test that they are what the sources compile to | `package.json`; `build/`; `test/boundaries.test.js` |
+| A37 | The check exists and what it establishes is recorded (3.2); the statement is withdrawn (3.4); R2 is two acceptances (P32, P33); the kernel and the client are shown to treat a contract account as the party (P34); how a Cell Account mines as itself is put up for a ruling (P35) | `scripts/identity-check.js`; `roadmap.md` 3; `test/account.test.js` |
+| A38 | The regression test is there. The audit now also reads, from the tender's own log, who owned and who judged a tender when it settled, and reports every receipt for which that differs from what the ledger read. The wording is corrected in the contracts' comments and in the documents. The binding required before a subsidy of value is a kept design (P36) | `test/g1.test.js` and `test/audit.test.js` (row D17); `genesis-mining-mvp.md` 7.5, 12, 13.8 |
+| A39 | (1) `scripts/deploy.js` deploys from the committed builds and writes the manifest with code hashes and blocks; `pouw verify` checks a deployment against the builds (P37). (2) is 3.2. (3) `scripts/round.js`, for the operator's wallets, in round R2a: the protocol-level test A37 allows with keys. The OG and cell-b doing the same as their accounts is round R2b, which is not accepted by R2a. (4) `pouw audit`, run by a hosted runner that holds no key (P38). (5) the labels on every record (P39) | `docs/r2-runbook.md` |
+
+### 3.2 A FOGA cell's identity and the sender of the client's transactions (A37)
+
+Established from the source of FOGA 1.0.9 and from the business loop recorded on Finchain Sepolia
+on 2026-11-13 (`finchain`, `manifests/evidence/business-loop-2026-11-13.json`).
+`scripts/identity-check.js` reads the same facts from the chain; its record belongs to the
+evidence of round R2.
+
+| | The OG | cell-b |
+| --- | --- | --- |
+| Cell Account: a contract - the cell's identity, the owner of what the cell mints, the fulfiller of record of what it delivers | `0x9F76...7aD1` | `0x2Dd0...15BB` |
+| The cell's key: one key in the roles of owner, operator and guardian; it signs, and pays the gas | `0x5Fee...fb4E` | `0x7dCE...cd81` |
+
+| Question | Answer |
+| --- | --- |
+| Who owns a tender that a cell mints | the cell's account: the node mints to the account, through the account's `execute`. Tender 5 is the OG's account's |
+| Who is the fulfiller of record | the delivering cell's account. For tender 5, cell-b's account |
+| Who judges | the World's hashlock verifier, a contract; the settlement path is `verified` |
+| What is the sender of a transaction the reference client sends with a key | the key's own address |
+| `pouw work` with a cell's key | records the key's address as the worker. The cell does not appear, and the address is not the one under which the cell's G1 work is recorded |
+| `pouw bridge` of a cell's tender with the cell's key | refused by the adapter: `NotDemander(key, account)` |
+| Running the client with the key of a cell whose node is running | two programs sending from one key collide on nonces; a FOGA node that finds a nonce of its own used by another program stops the operation as ambiguous and leaves it to be resolved by hand. And the key of a one-key cell is its owner key: giving it to a second program is the way around FOGA's authorization that A37 forbids |
+
+The result: the identities differ. Work done with keys alone is an operator-wallet integration and
+is labelled so; a cell mining as its account is another acceptance (P32).
+
+### 3.3 The four questions of v0.1.2
+
+| Question | Ruling |
+| --- | --- |
+| Q9 An admitted demander and bridging by the tender's owner | Confirmed for R2, with a reservation: A33 |
+| Q10 Epoch duration, kinds of epoch and the pool split on Sepolia | Two hours; one controlled self-test and one standard epoch; 10 / 90: A34 |
+| Q11 A cap per declared operator | Before R3, in a new version of the contracts: A35 |
+| Q12 Hardhat instead of Foundry | Hardhat stays, pinned: A36 |
+
+### 3.4 Corrections the review required
+
+| What v0.1.2 said | Correction |
+| --- | --- |
+| Roadmap, sections 1 and 4, and architecture, section 5: nothing needs to change for round R2, "the reference client runs beside each cell with the cell's key" | Withdrawn (A37). A key is not the cell, and a cell's tender cannot be bridged by the key. Round R2a is worked by wallets the operator holds; no FOGA cell takes part in it; a Cell Account mining as itself is round R2b |
+| The specification 7.5 rule 1, matrix row D5, architecture 7: self-dealing is "never subsidized, in any epoch" | True of a tender as it stands when it is bridged, not of its past. The rule now says so; row D17 and its test show the case it misses; the audit reports that case (A38) |
+| Roadmap R2, matrix rows T4 and R1: the kernel "driven by two cells", "a cell's unit restarted" | Reworded for what R2a is; what needs a cell is moved to R2b |
+
+## 4. The proposals of v0.1.0 and v0.1.1, and their state
 
 | Id | Proposal (short) | State after the review |
 | --- | --- | --- |
@@ -109,8 +184,8 @@ review's own text governs wherever a wording here falls short of it.
 | P8 | Budget that is not allocated is not redistributed | In force: it is allocated to nobody. The carry-forward option is dropped |
 | P9 | A challenge window with one overturn | Deferred with `g0.ver` (A23) |
 | P10 | The manifest is the only place a chain is named | In force (`deployments/README.md`) |
-| P11 | The reference client speaks JSON-RPC only; FOGA takes part through an optional adapter in its own repository | In force for the client; the FOGA adapter is not in R1 (A30) |
-| P12 | First miners: the OG cell and cell-b, then a third party | In force as a controlled self-test (A24) |
+| P11 | The reference client speaks JSON-RPC only; FOGA takes part through an optional adapter in its own repository | In force for the client. How a cell takes part is reopened by A37: a key beside the cell is not the cell (P35) |
+| P12 | First miners: the OG cell and cell-b, then a third party | Revised (A37): the first round on Sepolia is worked by two wallets the operator holds, as a controlled self-test (R2a); the two cells take part as their accounts in R2b; then a third party |
 | P13 | Settlement and audit read the chain's finalized state | In force (P27) |
 | P14 | Node attestations are a later module | Confirmed (A30) |
 | P15 | Paged on-chain finalization from `finalizableAt` | Replaced (A21, P19, P20) |
@@ -118,11 +193,13 @@ review's own text governs wherever a wording here falls short of it.
 | P17 | Instances derive from a seed captured at epoch open | In force, with the claim about unpredictability withdrawn (A22) |
 | P18 | The technical loop and the economics are separate acceptances | In force (`acceptance-matrix.md`, last section) |
 
-## 4. Proposed in this revision
+## 5. Proposed in v0.1.2, and ruled on
 
-Implemented in R1 on this repository's own judgment, in order to carry out the rulings above
-completely. Each is in force unless vetoed; a veto changes the code, its tests and these documents
-together.
+Implemented in R1 on this repository's own judgment, and approved since by the review of v0.1.2
+and round R1 (A32). The notes of that ruling: P22 is limited to eligibility for the public
+subsidy; P24 holds for R2, with a later channel for receipts that are not subsidized kept open
+(A33, P40); P26 is test work and no proof of compute; P29 in full; P31 goes on pinning the
+upstream commit and the hashes of the files.
 
 | Id | Proposal | Why | Where |
 | --- | --- | --- | --- |
@@ -142,25 +219,48 @@ together.
 
 Kept for later rulings, not implemented (`genesis-mining-mvp.md` 13): the `g0.ver` state machine,
 `g0.cal`, the paging rule, a cap per declared operator, a freshness window for bridging, the
-conditions on a seed for a valuable subsidy.
+conditions on a seed for a valuable subsidy, receipts without the demander, the binding of the
+settlement-time authority, the delegation signed by an account.
 
-## 5. Open for the next ruling
+## 6. Proposed in this revision
+
+On this repository's own judgment, to carry out the rulings of section 3. P32, P33, P34, P37, P38
+and P39 are implemented and in force unless vetoed. P35, P36, P40 and P41 are designs put up for
+a ruling; nothing of them is built.
+
+| Id | Proposal | Why | Where |
+| --- | --- | --- | --- |
+| P32 | Round R2 is two acceptances. R2a, the operator-wallet integration: the kernel of R1 on Finchain Sepolia, worked by wallets an operator holds. R2b, the contract-account integration: agents take part as their accounts. A record of the one is never presented as the other | A37 | `roadmap.md` 3; `r2-runbook.md` |
+| P33 | The wallets of R2a are keys made for the round, on the host that uses them. No cell's key and no Cell Account is used, and no FOGA node is stopped, restarted or reconfigured for it | A key that a running node sends from cannot be shared with a second program, and the key of a one-key cell is its owner key (3.2) | `r2-runbook.md`; `scripts/keys.js` |
+| P34 | The client can act through a contract account of the common `execute(target, value, data)` shape (`--account`): the worker of record, and the owner that confirms a tender, is then the account. It is for an account whose key no other program sends from; for a running agent node it is not the route (P33) | The kernel always took any address as a party; the client did not. Tests and the rehearsal show an account working, and its key alone being somebody else | `client/`; `test/account.test.js`; `scripts/local-run.js` |
+| P35 | For ruling - how a Cell Account mines as itself: a delegation signed by the account. In the next version of the ledger, the owner of an account signs once (EIP-712; for a contract account checked through ERC-1271) that a named key may, until a named epoch, submit G0 work and confirm the account's settled tenders on its behalf. Receipts name the account. The cell's key sends no transaction and no other program keeps it: the one signature is the owner's act, made once and offline; the delegated key can do those two things and nothing else, spends its own gas only, and the delegation ends by itself and can be withdrawn | It needs no change to FOGA 1.0.9, whose account accepts its owner's signature; it touches neither the cell's nonces nor its budget; it serves any smart account. Weighed against it: the cell's own key driving `execute` from an outside program (P34 - it collides with a running node and is the way around FOGA that A37 forbids); the account's operator slot given to a mining key (the FOGA node keeps its own key in that slot and checks it); a capability inside FOGA - the fullest form, and FOGA's own decision and release, neither required by this protocol nor waited for (A29) | `genesis-mining-mvp.md` 13.9 |
+| P36 | For ruling - binding the authority as it was at settlement, before any subsidy of value. The evidence is the tender's own log, which has every change of owner and of judge in order; the audit reads it already. The kept design makes eligibility depend on it: the confirmation states who judged at settlement, the verification work of the following epoch checks the statement against the log, and a false one loses the subsidy | A38. State on chain cannot decide it: ERC-8414 keeps no record of a past authority. The design therefore needs the verification work that is deferred | `genesis-mining-mvp.md` 13.8 |
+| P37 | A deployment is made from the builds committed under `build/`, by one script driven by a configuration file. Its manifest records, for each contract, the build it came from, the code hash, the deployment transaction and the block, and the code hash of the ERC-8414 contract it points at. `pouw verify` compares the code on chain with the builds, immutable values aside, and checks the wiring | A39 (1). The host that deploys needs no compiler, and anyone can check that what is deployed is this repository's code | `scripts/deploy.js`; `deployments/README.md`; `test/deploy.test.js` |
+| P38 | The independent machine of R2 is a hosted CI runner: a job started by hand that installs the client only and runs `pouw verify` and `pouw audit` against the manifest's public endpoint. It holds no key and runs no node, and anyone can repeat it from a fork | A39 (4). It is none of the operator's machines, and the run is public | `.github/workflows/ci.yml` |
+| P39 | A record says what it is in three separate fields: `environment` (where it ran), the deployment's `labels` (what kind of exercise it is: `controlled-self-test`, `operator-wallet-integration`) and, for an epoch, its `mode` (whether its parameters subsidize declared-related parties). A standard epoch of a controlled self-test stays labelled a controlled self-test | A39 (5), A37 | `deployments/README.md`; `client/lib/report.js` |
+| P40 | For ruling, with the next ledger version - receipts without the demander: anyone may record a settled submission as a receipt that is measured and never subsidized. The subsidy still takes the owner's confirmation | A33 | `genesis-mining-mvp.md` 13.7 |
+| P41 | For ruling, with the next ledger version - the cap per declared operator of 13.4, and a manifest field that names the deployment a new one supersedes. The old ledger stays readable and auditable, as every ledger does | A35 | `genesis-mining-mvp.md` 13.4; `deployments/README.md` |
+
+## 7. Open for the next ruling
 
 | Id | Question | This repository's suggestion |
 | --- | --- | --- |
-| Q9 | P22 and P24 add two conditions to the G1 subsidy that the review did not name: an admitted demander, and bridging by the tender's owner. Confirm or veto | Confirm. The demander then has to send one transaction per settled submission (`pouw bridge`), which a cell's adapter does by itself later |
-| Q10 | R2 on Finchain Sepolia: the epoch duration; whether the first public epochs run as a controlled self-test (declared-related parties subsidized, labelled) or as standard epochs in which the tender between the OG cell and cell-b is recorded and not subsidized; and the pool split, now that `g0.ref` is understood to measure presence only | A short epoch for the drill; two epochs, one of each kind, so that both labels appear in public evidence; a G0 share well below the illustrative 70 percent |
-| Q11 | A cap per declared operator (`genesis-mining-mvp.md` 13.4) before a third party is admitted in R3 | Yes, before R3; not needed for R2 |
-| Q12 | P30: Hardhat instead of Foundry | Keep; the contracts do not depend on the choice |
+| Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA |
+| Q14 | Whether round R2b is run on the present kernel. That is possible only by driving a cell's `execute` with the cell's own key from the reference client, with the cell's node stopped for the duration | No. R2a now, on the present kernel; R2b on the next ledger version |
+| Q15 | The independent machine of R2: a hosted CI runner (P38) | Confirm. A further audit from any other machine costs nothing and can be added |
+| Q16 | The content of the next ledger version, before R3: the cap per declared operator (A35, P41), receipts without the demander (A33, P40), the delegation (P35), and what is decided about the authority at settlement (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value |
 
-## 6. Illustrative (figures used to explain, not parameters)
+## 8. Illustrative (figures used to explain, not parameters)
+
+The parameters of the R2 deployment are ruled (A34) and are that test deployment's own: epochs of
+two hours and a 10 / 90 split say nothing about any later deployment. The other figures of its
+configuration are the examples below.
 
 | Figure | Used where | Note |
 | --- | --- | --- |
-| 24-hour epoch | `roadmap.md` | an example duration; the policy takes any duration at deployment |
-| 600-second epoch | `scripts/local-run.js` | the local run's choice, so that two epochs pass in one run |
-| 1,000 test points as the first epoch's budget, halved every 8 epochs | tests, local run | an example of a decreasing schedule; a parameter version carries its own |
-| 70 / 30 split between the G0 and G1 pools | tests, local run | an example split |
-| 25 percent share cap per address | tests, local run | an example cap |
-| GMU bases: `g0.ref` 10, `g1.tender` 50; per-worker caps 10 and 200 | tests, local run | examples; set when a profile version is registered |
-| G1 rules: 0.001 ETH minimum bounty, 3 subsidized receipts per demander, 1 per pair, per epoch | tests, local run | examples; carried by the parameter version |
+| 24-hour epoch | tests | an example duration; the policy takes any duration at deployment |
+| 1,000 test points as the first epoch's budget, halved every 8 epochs | tests, the R2 configuration | an example of a decreasing schedule; a parameter version carries its own |
+| 70 / 30 split between the G0 and G1 pools | tests | an example split |
+| 25 percent share cap per address | tests, the R2 configuration | an example cap |
+| GMU bases: `g0.ref` 10, `g1.tender` 50; per-worker caps 10 and 200 | tests, the R2 configuration | examples; set when a profile version is registered |
+| G1 rules: a minimum bounty of 0.001 ETH in the tests and 0.0001 ETH in the R2 configuration, whose test tenders pay 0.0005 ETH; 3 subsidized receipts per demander and 1 per pair, per epoch | tests, the R2 configuration | examples; carried by the parameter version |

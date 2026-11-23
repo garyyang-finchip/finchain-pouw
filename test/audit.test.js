@@ -144,6 +144,62 @@ describe("The reference client: a worker's audit job and the independent audit o
     expect(d2.address).to.not.equal(d1.address);
   });
 
+  it("reads the log in ranges as small as an endpoint allows, with the same result (R3)", async () => {
+    const { d, tenders } = await mixedEpoch();
+    await h.toEpoch(d, 1);
+    const whole = await g.auditEpoch(d.ctx, 0);
+    expect(whole.ok, show(whole)).to.equal(true);
+    for (const logChunk of [1, 7, 1000]) {
+      const inRanges = await g.auditEpoch({ ...d.ctx, logChunk }, 0);
+      expect(inRanges.ok, show(inRanges)).to.equal(true);
+      expect(inRanges.tableHash).to.equal(whole.tableHash);
+      expect(inRanges.subject).to.equal(whole.subject);
+      expect(g.jsonable(inRanges.receipts)).to.deep.equal(g.jsonable(whole.receipts));
+    }
+    // a tender's history is read from its mint on, wherever the tender contract itself began
+    const head = (await ethers.provider.getBlock("latest")).number;
+    const mint = (await d.taskToken.queryFilter(d.taskToken.filters.Transfer(ethers.ZeroAddress, null, tenders.eligible.tokenId)))[0].blockNumber;
+    expect(await g.mintBlockOf({ ...d.ctx, logChunk: 3 }, d.taskToken, tenders.eligible.tokenId, head)).to.equal(mint);
+    expect(await g.mintBlockOf(d.ctx, d.taskToken, tenders.eligible.tokenId, head)).to.equal(mint);
+    // the manifest can carry the range its chain's endpoint serves; an explicit choice comes first
+    expect((await g.connect({ ...d.manifest, logChunk: 5000 }, ethers.provider)).logChunk).to.equal(5000);
+    expect((await g.connect({ ...d.manifest, logChunk: 5000 }, ethers.provider, { logChunk: 0 })).logChunk).to.equal(0);
+    expect((await g.connect(d.manifest, ethers.provider)).logChunk).to.equal(0);
+  });
+
+  it("reports what a tender's log shows and the ledger's rules cannot read: who owned and judged it when it settled (D11, D17)", async () => {
+    const [, a, b, c] = await ethers.getSigners();
+    const d = await h.deploy({ admit: [a, c], params: { maxSubsidizedPerPair: 5, maxSubsidizedPerDemander: 5 } });
+    const plain = await h.bridge(d, await h.tender(d, { owner: c, worker: a }));               // nothing to note
+    const selfJudged = await h.tender(d, { owner: c, judge: a, worker: a });                  // bridged as it settled
+    const kept = await h.bridge(d, selfJudged);
+    const moved = await h.tender(d, { owner: c, judge: a, worker: a });                       // judgment handed on, then bridged
+    await (await d.taskToken.connect(a).setAcceptanceAuthority(moved.tokenId, b.address)).wait();
+    const handedOn = await h.bridge(d, moved);
+    const pushed = await h.tender(d, { owner: a, worker: a });                                // settled by the worker alone,
+    await (await d.taskToken.connect(a).setAcceptanceAuthority(pushed.tokenId, c.address)).wait();
+    await (await d.taskToken.connect(a).transferFrom(a.address, c.address, pushed.tokenId)).wait(); // then handed to c, who confirms it
+    const confirmed = await h.bridge(d, { ...pushed, owner: c });
+    expect(kept.status.ineligible).to.equal(I.SELF_DEALING);
+    expect(handedOn.status.ineligible).to.equal(I.NONE);  // the rules read the tender as it stands at the bridge
+    expect(confirmed.status.ineligible).to.equal(I.NONE); // and an owner who confirms what was handed to it makes it count
+
+    await h.toEpoch(d, 1);
+    const report = await g.auditEpoch(d.ctx, 0);
+    expect(report.ok, show(report)).to.equal(true); // the ledger applied its rules; these are not differences
+    expect(report.observations).to.deep.equal([
+      { receiptId: kept.id, worker: a.address, subsidized: false, noted: ["worker-judged-its-own-delivery"] },
+      { receiptId: handedOn.id, worker: a.address, subsidized: true, noted: ["worker-judged-its-own-delivery", "judge-changed-between-settlement-and-bridge"] },
+      { receiptId: confirmed.id, worker: a.address, subsidized: true, noted: [
+        "worker-judged-its-own-delivery", "worker-owned-the-tender-when-it-settled", "judge-changed-between-settlement-and-bridge",
+        "owner-changed-between-settlement-and-bridge"] },
+    ]);
+    const item = report.receipts.find((it) => it.id === handedOn.id);
+    expect(item.tender.judgeAtSettlement).to.equal(a.address);
+    expect(item.tender.judge).to.equal(b.address);
+    expect(report.receipts.find((it) => it.id === plain.id).tender.judgeAtSettlement).to.equal(c.address);
+  });
+
   it("labels an epoch that subsidizes declared-related parties as a controlled self-test (D10)", async () => {
     const [, og, cellB] = await ethers.getSigners();
     const d = await h.deploy({

@@ -1,0 +1,59 @@
+{
+  "schema": "finchain-pouw.deploy-config/1",
+  "name": "finchain-sepolia-r2",
+  "environment": "public-testnet",
+  "labels": ["controlled-self-test", "operator-wallet-integration"],
+  "chainId": 85422,
+  "rpc": "https://rpc.finchain.one",
+  "logChunk": 50000,
+  "epochDuration": 7200,
+  "seedSource": "L1BlockSeedSource",
+  "taskToken8414": {
+    "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+    "deployBlock": 61392
+  },
+  "params": [
+    {
+      "activeFromEpoch": 0,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": true
+    },
+    {
+      "activeFromEpoch": 1,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": false
+    }
+  ],
+  "profiles": [
+    { "name": "g0.ref", "pool": "g0", "baseGmu": 10, "maxGmuPerWorkerPerEpoch": 10, "jobsPerEpoch": 1 },
+    { "name": "g1.tender", "pool": "g1", "baseGmu": 50, "maxGmuPerWorkerPerEpoch": 200 }
+  ],
+  "parties": [
+    { "key": "wallet-a", "admitted": true, "operator": 1, "fundEth": "0.005" },
+    { "key": "wallet-b", "admitted": true, "operator": 1, "fundEth": "0.005" }
+  ],
+  "round": {
+    "parties": ["wallet-a", "wallet-b"],
+    "epochs": 2,
+    "rewardEth": "0.0005",
+    "judgmentWindow": 3600
+  },
+  "notes": [
+    "Round R2a: the kernel of round R1 on Finchain Sepolia, worked by two wallets that one operator holds. Epoch 0 runs as a controlled self-test (declared-related parties are subsidized, under that label); from epoch 1 the parameters are the standard ones (declared-related parties are measured and not subsidized).",
+    "Both wallets are declared under one operator because one person holds them. The wallets are keys made for this round. No agent's contract account and no agent's own key takes part: this is an operator-wallet integration, and an agent mining as itself is a separate acceptance.",
+    "The tenders of the round are test tenders on the chain's ERC-8414 contract: they settle a fixed result and carry no task. The figures of this deployment are test points, the values of a view; nothing is issued, credited or claimable.",
+    "A deployment's genesis time and epoch length are fixed for its life: two-hour epochs are this test deployment's parameter and no statement about any later one."
+  ]
+}

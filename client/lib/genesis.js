@@ -139,26 +139,58 @@ function jsonable(v) {
 class AuditMismatch extends Error {}
 class NotFinalYet extends Error {}
 
+// The call shape of a contract account: the common `execute(target, value, data)`. An agent whose
+// on-chain identity is a contract (a FOGA cell account, any smart account of this shape) acts
+// through it, and what the ledger and a tender see is the account's address, not the key's.
+const ACCOUNT_ABI = [
+  "function execute(address target, uint256 value, bytes data) returns (bytes)",
+  "function owner() view returns (address)",
+  "function operator() view returns (address)",
+  "error CallFailed(bytes data)",
+];
+
 /// The contract error behind a failed call or transaction, by name, whichever contract of the
-/// kernel raised it; null when the failure carries no such error.
+/// kernel raised it - also when a contract account wrapped it; null when the failure carries none.
 function refusal(e) {
-  const data = [e?.data, e?.info?.error?.data, e?.error?.data, e?.info?.error?.data?.data].find((d) => typeof d === "string" && d.length >= 10);
+  const data = typeof e === "string" ? e
+    : [e?.data, e?.info?.error?.data, e?.error?.data, e?.info?.error?.data?.data].find((d) => typeof d === "string" && d.length >= 10);
   if (!data) return null;
-  for (const fragments of Object.values(abi)) {
-    try {
-      const parsed = new ethers.Interface(fragments).parseError(data);
-      if (parsed) return { name: parsed.name, args: parsed.args.map((a) => a.toString()) };
-    } catch { /* not this contract's error */ }
+  for (const fragments of [...Object.values(abi), ACCOUNT_ABI]) {
+    let parsed = null;
+    try { parsed = new ethers.Interface(fragments).parseError(data); } catch { parsed = null; }
+    if (!parsed) continue;
+    if (parsed.name === "CallFailed") return refusal(parsed.args[0]) ?? { name: "CallFailed", args: [parsed.args[0]] };
+    return { name: parsed.name, args: parsed.args.map((a) => a.toString()) };
   }
   return null;
+}
+
+/// Who acts. A key by itself: the worker of record is the key's address. A key driving a contract
+/// account: every call goes through the account's `execute`, and the worker of record - and the
+/// tender owner the adapter checks - is the account. The key must be one the account obeys.
+///
+/// A key that a running agent node also sends from must not be used here: two programs sending from
+/// one key collide on nonces, and a node that finds its nonce consumed by another program can be
+/// left with an operation it cannot resolve by itself.
+async function actorOf(signer, account) {
+  const key = await signer.getAddress();
+  if (!account) return { address: key, key, account: null, send: (to, data) => signer.sendTransaction({ to, data }) };
+  const contract = new ethers.Contract(ethers.getAddress(account), ACCOUNT_ABI, signer);
+  if ((await signer.provider.getCode(contract.target)) === "0x") throw new Error(`${contract.target} is not a contract account`);
+  const obeys = [];
+  for (const role of ["owner", "operator"]) { try { obeys.push(await contract[role]()); } catch { /* the account has no such role */ } }
+  if (obeys.length > 0 && !obeys.includes(key)) throw new Error(`the key ${key} is neither the owner nor the operator of the account ${contract.target}`);
+  return { address: contract.target, key, account: contract.target, send: (to, data) => contract.execute(to, 0, data) };
 }
 
 /// The contracts of one deployment. The manifest names the ledger; the policy and the seed source
 /// are read from the ledger itself, and whatever else the manifest says about them must agree, so a
 /// wrong manifest cannot point the client at contracts that do not belong together.
 ///   tag      - the block the client treats as settled: "finalized" (default), "safe", "latest", or a number
-///   logChunk - largest block range of one log query; 0 = no limit (for endpoints that cap the range)
-async function connect(manifest, runner, { tag = "finalized", logChunk = 0 } = {}) {
+///   logChunk - largest block range of one log query; 0 = no limit. Public endpoints cap the range of
+///              a log query; the default is the manifest's own hint for its chain's endpoint, if any
+async function connect(manifest, runner, { tag = "finalized", logChunk } = {}) {
+  logChunk = Number(logChunk ?? manifest.logChunk ?? 0);
   const provider = runner.provider ?? runner;
   const ledger = new ethers.Contract(manifest.contracts.GenesisLedger, abi.ledger, runner);
   const policy = new ethers.Contract(await ledger.policy(), abi.policy, runner);
@@ -292,10 +324,11 @@ async function auditSubjectFor(ctx, epoch) {
 ///
 /// The ledger cannot tell this from a client that reads the subject off the chain: an accepted
 /// receipt is evidence of presence and of a conforming submission, not of the audit having been done.
-async function workAudit(ctx, signer, { wait = 1 } = {}) {
+async function workAudit(ctx, signer, { wait = 1, account = null, expectEpoch = null } = {}) {
+  const actor = await actorOf(signer, account);
   const ledger = ctx.ledger.connect(signer);
-  const worker = await signer.getAddress();
   const epoch = await ctx.policy.currentEpoch();
+  if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the work was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}`);
   let audited = null; let subject; let receiptsAudited = 0; let auditedTableHash = null;
   if (epoch === 0n) {
     ({ subject } = await auditSubjectFor(ctx, 0n));
@@ -308,17 +341,127 @@ async function workAudit(ctx, signer, { wait = 1 } = {}) {
     }
     audited = epoch - 1n; subject = report.subject; receiptsAudited = report.receipts.length; auditedTableHash = report.tableHash;
   }
+  // opening an epoch is nobody's act in particular: the key sends it directly
   if ((await ledger.seedOf(epoch)) === ethers.ZeroHash) await (await ledger.openEpoch()).wait(wait);
   const seed = await ledger.seedOf(epoch);
   if (seed === ethers.ZeroHash) throw new Error(`epoch ${epoch} has no seed: it turned before it could be opened; run again`);
-  const instance = g0Instance(seed, AUDIT_V1_FUNCTION_ID, 0, worker);
+  const instance = g0Instance(seed, AUDIT_V1_FUNCTION_ID, 0, actor.address);
   const output = auditOutput(instance, auditInputHash(epoch, subject));
-  const tx = await ledger.submitG0(profileKey(PROFILE_G0_REF), epoch, 0, output);
+  const tx = await actor.send(ledger.target, ledger.interface.encodeFunctionData("submitG0", [profileKey(PROFILE_G0_REF), epoch, 0, output]));
   const rc = await tx.wait(wait);
-  const ev = rc.logs.map((l) => { try { return ledger.interface.parseLog(l); } catch { return null; } })
-    .find((p) => p && p.name === "ReceiptRecorded");
-  const id = ev.args.id;
-  return { epoch, audited, receiptsAudited, auditedTableHash, instance, output, receiptId: id, status: plainStatus(await ledger.status(id)), txHash: rc.hash };
+  const id = eventOf(rc, ledger, "ReceiptRecorded").args.id;
+  return {
+    worker: actor.address, key: actor.key, account: actor.account, epoch, audited, receiptsAudited, auditedTableHash, instance, output,
+    receiptId: id, status: plainStatus(await ledger.status(id)), txHash: rc.hash, gasUsed: rc.gasUsed,
+  };
+}
+
+/// The first event named `name` that `contract` emitted in a transaction.
+function eventOf(rc, contract, name) {
+  for (const l of rc.logs) {
+    if (l.address !== contract.target) continue;
+    let p = null;
+    try { p = contract.interface.parseLog(l); } catch { p = null; }
+    if (p && p.name === name) return p;
+  }
+  throw new Error(`the transaction ${rc.hash} carries no ${name} event of ${contract.target}`);
+}
+
+/// Confirm a settled submission of an ERC-8414 tender to the ledger, as the tender's owner (or as
+/// the key that drives the owner, when the owner is a contract account).
+async function bridgeTender(ctx, signer, { tokenId, submissionId, wait = 1, account = null }) {
+  const actor = await actorOf(signer, account);
+  const epoch = await ctx.policy.currentEpoch();
+  const profile = await ctx.policy.activeProfile(profileKey(PROFILE_G1_TENDER), epoch);
+  const adapter = new ethers.Contract(profile.module, abi.adapter, signer);
+  const tx = await actor.send(adapter.target, adapter.interface.encodeFunctionData("bridge", [tokenId, submissionId]));
+  const rc = await tx.wait(wait);
+  const id = eventOf(rc, adapter, "TenderBridged").args.receiptId;
+  const receipt = plainReceipt(await ctx.ledger.receipt(id));
+  return {
+    demander: actor.address, key: actor.key, account: actor.account, adapter: adapter.target, receiptId: id, epoch: receipt.epoch,
+    worker: receipt.worker, status: plainStatus(await ctx.ledger.status(id)), txHash: rc.hash, gasUsed: rc.gasUsed,
+  };
+}
+
+// ---------------------------------------------------------------- a deployment against the builds
+
+/// Runtime code with the immutable values blanked: what a build and its deployment have in common.
+function maskedCode(code, ranges) {
+  const bytes = ethers.getBytes(code);
+  for (const [start, length] of ranges) bytes.fill(0, start, start + length);
+  return ethers.hexlify(bytes);
+}
+
+const codeHashOf = async (provider, address) => ethers.keccak256(await provider.getCode(address));
+
+/// Check a deployment against this repository's builds and against its own manifest: the code at
+/// each address is the build's runtime code (immutable values aside) and has the hash the manifest
+/// records; the contracts point at one another and at the external tender contract as the manifest
+/// says; the profiles in force name these modules. `loadBuild(name)` returns build/<name>.json.
+async function verifyDeployment(ctx, loadBuild) {
+  const m = ctx.manifest;
+  const checks = [];
+  const check = (what, ok, detail) => { checks.push({ what, ok: Boolean(ok), ...(detail === undefined ? {} : { detail: String(detail) }) }); return Boolean(ok); };
+  const eq = (a, b) => typeof a === "string" && typeof b === "string" && a.toLowerCase() === b.toLowerCase();
+  const code = {};
+  for (const [role, entry] of Object.entries(m.code ?? {})) {
+    const address = m.contracts?.[role];
+    if (!address) { check(`${role}: the manifest records its code and names its address`, false, "no address"); continue; }
+    const onchain = await ctx.provider.getCode(address);
+    const build = loadBuild(entry.contract);
+    const hash = ethers.keccak256(onchain);
+    code[role] = { address, contract: entry.contract, codeHash: hash };
+    const sameLength = onchain.length === build.deployedBytecode.length;
+    check(`${role} at ${address}: the code on chain is this repository's build of ${entry.contract}`,
+      onchain !== "0x" && sameLength && maskedCode(onchain, build.immutableReferences) === maskedCode(build.deployedBytecode, build.immutableReferences),
+      sameLength ? undefined : `code of ${(onchain.length - 2) / 2} bytes, the build has ${(build.deployedBytecode.length - 2) / 2}`);
+    check(`${role}: the code hash is the one the manifest records`, eq(entry.codeHash, hash), `${hash}`);
+  }
+  // every contract an epoch's figures depend on has to be named and to have its code on record: a
+  // manifest that leaves one out - the function that verifies G0 work, say - proves nothing about it
+  const required = ["GenesisPolicy", "SeedSource", "GenesisLedger", "AuditV1", "TenderAdapter8414"];
+  const missing = required.filter((role) => !m.contracts?.[role] || !m.code?.[role]?.codeHash);
+  check("the manifest names every contract of the deployment and records its code", missing.length === 0, missing.length === 0 ? undefined : `missing: ${missing.join(", ")}`);
+
+  const ledgerAddress = ctx.ledger.target;
+  // a contract that is not what its role says does not answer these reads: that is a failed check, not a failure
+  const read = async (call) => { try { return await call(); } catch { return null; } };
+  check("the ledger's policy is the manifest's GenesisPolicy", eq(m.contracts.GenesisPolicy, ctx.policy.target), ctx.policy.target);
+  check("the ledger's seed source is the manifest's SeedSource", eq(m.contracts.SeedSource, ctx.seedSource), ctx.seedSource);
+  if (m.clock) {
+    check("the policy's clock is the manifest's", BigInt(m.clock.genesisTime) === ctx.genesisTime && BigInt(m.clock.epochDuration) === ctx.epochDuration,
+      `genesis ${ctx.genesisTime}, epochs of ${ctx.epochDuration} s`);
+  }
+  if (m.contracts.AuditV1) {
+    const fn = new ethers.Contract(m.contracts.AuditV1, abi.audit, ctx.provider);
+    check("the audit function reads this ledger", eq(await read(() => fn.ledger()), ledgerAddress));
+    check("the audit function is audit-v1", (await read(() => fn.functionId())) === AUDIT_V1_FUNCTION_ID);
+  }
+  if (m.contracts.TenderAdapter8414) {
+    const adapter = new ethers.Contract(m.contracts.TenderAdapter8414, abi.adapter, ctx.provider);
+    const reads = await read(() => adapter.taskToken());
+    check("the adapter reports to this ledger", eq(await read(() => adapter.ledger()), ledgerAddress));
+    check("the adapter reads the manifest's ERC-8414 contract", eq(reads, m.external?.taskToken8414?.address), reads ?? "no answer");
+    check("the adapter records under g1.tender", (await read(() => adapter.profileKey())) === profileKey(PROFILE_G1_TENDER));
+  }
+  if (m.external?.taskToken8414?.codeHash) {
+    const hash = await codeHashOf(ctx.provider, m.external.taskToken8414.address);
+    check("the ERC-8414 contract's code is what it was when the adapter was pointed at it", eq(hash, m.external.taskToken8414.codeHash), hash);
+  }
+
+  // the profiles in force (for the running epoch, or for epoch 0 before the start) name these modules
+  const started = await ctx.policy.started();
+  const epoch = started ? await ctx.policy.currentEpoch() : 0n;
+  const moduleOf = async (name) => { try { return (await ctx.policy.activeProfile(profileKey(name), epoch)).module; } catch { return null; } };
+  const g0Module = await moduleOf(PROFILE_G0_REF);
+  check(`epoch ${epoch}: the g0.ref profile's function is the manifest's AuditV1`, g0Module && eq(g0Module, m.contracts.AuditV1), g0Module ?? "no profile in force");
+  const g1Module = await moduleOf(PROFILE_G1_TENDER);
+  check(`epoch ${epoch}: the g1.tender profile's adapter is the manifest's TenderAdapter8414`, g1Module && eq(g1Module, m.contracts.TenderAdapter8414), g1Module ?? "no profile in force");
+
+  // not checks: who can register versions and admit parties, and whether recording is paused
+  const info = { steward: await read(() => ctx.policy.steward()), paused: await read(() => ctx.policy.paused()) };
+  return { ok: checks.every((c) => c.ok), checks, code, epoch, started, info };
 }
 
 // ---------------------------------------------------------------- the independent audit of an epoch
@@ -374,15 +517,32 @@ async function policyAt(ctx, epoch, toBlock) {
   };
 }
 
+/// The block a tender was minted in: where its history begins. The tender contract may be far older
+/// than the tender, and a public endpoint serves a log query over a limited range only, so the mint
+/// is looked for from the newest range backwards and everything else is read from there on. When no
+/// mint record is found the whole range is read.
+async function mintBlockOf(ctx, tender, tokenId, toBlock) {
+  const filter = tender.filters.Transfer(ethers.ZeroAddress, null, tokenId);
+  const lo = Number(ctx.tenderFromBlock); const hi = Number(toBlock);
+  if (!ctx.logChunk) return (await tender.queryFilter(filter, lo, hi))[0]?.blockNumber ?? lo;
+  for (let b = hi; b >= lo; b -= ctx.logChunk) {
+    const found = await tender.queryFilter(filter, Math.max(lo, b - ctx.logChunk + 1), b);
+    if (found.length > 0) return found[0].blockNumber;
+  }
+  return lo;
+}
+
 /// One tender's history from its own log: who owned it, who judged it and which task it was bound
 /// to, in the chain's order. ERC-8414 lets all three change hands; the log is the complete record.
 async function tenderHistory(ctx, tender, tokenId, toBlock) {
+  const from = await mintBlockOf(ctx, tender, tokenId, toBlock);
   return {
-    owners: await logs(ctx, tender, "Transfer", [null, null, tokenId], ctx.tenderFromBlock, toBlock),
-    judges: await logs(ctx, tender, "AcceptanceAuthorityChanged", [tokenId], ctx.tenderFromBlock, toBlock),
-    bindings: await logs(ctx, tender, "TaskUpdated", [tokenId], ctx.tenderFromBlock, toBlock),
-    settled: await logs(ctx, tender, "FulfillmentAccepted", [tokenId], ctx.tenderFromBlock, toBlock),
-    defaults: await logs(ctx, tender, "FulfillmentClaimedUnjudged", [tokenId], ctx.tenderFromBlock, toBlock),
+    mintBlock: from,
+    owners: await logs(ctx, tender, "Transfer", [null, null, tokenId], from, toBlock),
+    judges: await logs(ctx, tender, "AcceptanceAuthorityChanged", [tokenId], from, toBlock),
+    bindings: await logs(ctx, tender, "TaskUpdated", [tokenId], from, toBlock),
+    settled: await logs(ctx, tender, "FulfillmentAccepted", [tokenId], from, toBlock),
+    defaults: await logs(ctx, tender, "FulfillmentClaimedUnjudged", [tokenId], from, toBlock),
   };
 }
 
@@ -433,6 +593,7 @@ async function auditEpoch(ctx, epoch) {
   };
 
   // re-decide every receipt in order
+  const observations = []; // what the tender's log shows and the ledger's rules cannot read
   const accrued = new Map(); const demanderCount = new Map(); const pairCount = new Map();
   const functionIds = new Map(); // G0 module -> function id
   const redecided = [];
@@ -518,7 +679,20 @@ async function auditEpoch(ctx, epoch) {
       }
       // how the tender settled: the ledger counts the three paths alike, the report tells them apart
       const settlement = sub.machineSettled ? "verified" : byDefault ? "default" : "judged";
-      it.tender = { source: b.source, tokenId: b.tokenId, submissionId: b.submissionId, demander: owner, judge, asset: terms.asset, reward: BigInt(terms.rewardPerCompletion), settlement };
+      // The ledger's rules read the tender as it stands when it is bridged: ERC-8414 keeps no state of
+      // who owned or judged it when it settled, and both can be handed on in between. The log has it.
+      const ownerAtSettlement = settled ? lastBefore(hist.owners, settled)?.args.to ?? null : null;
+      const judgeAtSettlement = settled ? lastBefore(hist.judges, settled)?.args.newAuthority ?? null : null;
+      const noted = [];
+      if (judgeAtSettlement && r.worker === judgeAtSettlement) noted.push("worker-judged-its-own-delivery");
+      if (ownerAtSettlement && r.worker === ownerAtSettlement) noted.push("worker-owned-the-tender-when-it-settled");
+      if (judgeAtSettlement && judgeAtSettlement !== judge) noted.push("judge-changed-between-settlement-and-bridge");
+      if (ownerAtSettlement && ownerAtSettlement !== owner) noted.push("owner-changed-between-settlement-and-bridge");
+      it.tender = {
+        source: b.source, tokenId: b.tokenId, submissionId: b.submissionId, demander: owner, judge, asset: terms.asset,
+        reward: BigInt(terms.rewardPerCompletion), settlement, ownerAtSettlement, judgeAtSettlement,
+      };
+      if (noted.length > 0) observations.push({ receiptId: it.id, worker: r.worker, subsidized: st.gmuSubsidized > 0n, noted });
     }
     for (const k of ["verdict", "ineligible", "relation", "gmuMeasured", "gmuSubsidized"]) {
       if (st[k] !== recorded[k]) note(`receipt ${it.id}: ${k}`, st[k], recorded[k]);
@@ -574,7 +748,7 @@ async function auditEpoch(ctx, epoch) {
     mode: pol.params.subsidizeDeclaredRelated ? "controlled-self-test" : "standard",
     budget, pools, receipts: redecided, digest: replay.digest, receiptCount: replay.receiptCount, totals: replay.totals,
     subject: replay.subject, table, tableHash: tableHashOf(table), allocated, unallocated: budget - allocated,
-    isSealed: summary.isSealed,
+    isSealed: summary.isSealed, observations,
     operators: [...operators.values()].sort((a, b) => a.operator - b.operator),
     undeclaredAddresses: table.filter((t) => t.operator === 0).length,
     g1: {
@@ -591,7 +765,8 @@ module.exports = {
   abi, POOL_G0, POOL_G1, VERDICT, VERDICT_NAME, RELATION, RELATION_NAME, INELIGIBLE, INELIGIBLE_NAME, PROFILE_G0_REF,
   PROFILE_G1_TENDER, AUDIT_V1_FUNCTION_ID, MANIFEST_SCHEMA, profileKey, ledgerDomain, configHash, epochSeed, g0Instance,
   g0ContributionId, g1ContributionId, g1Ref, auditInputHash, auditOutput, digestStep, auditSubject, tableHashOf, budgetOf,
-  poolBudgets, share, connect, refusal, horizon, epochEnd, requireEnded, readEpochReceipts, replayRecorded, auditSubjectFor,
-  workAudit, policyAt, tenderHistory, auditEpoch, AuditMismatch, NotFinalYet, plainParams, plainProfile, plainReceipt,
-  plainStatus, jsonable,
+  poolBudgets, share, connect, refusal, actorOf, eventOf, horizon, epochEnd, requireEnded, readEpochReceipts, replayRecorded,
+  auditSubjectFor, workAudit, bridgeTender, policyAt, mintBlockOf, tenderHistory, auditEpoch, verifyDeployment, maskedCode, codeHashOf,
+  AuditMismatch, NotFinalYet, ACCOUNT_ABI,
+  plainParams, plainProfile, plainReceipt, plainStatus, jsonable,
 };

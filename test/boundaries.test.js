@@ -5,7 +5,7 @@ const path = require("path");
 const { expect } = require("chai");
 const h = require("./helpers");
 const { ethers, g } = h;
-const { sources, abiOf } = require("../scripts/export-abi");
+const { sources, deployable, abiOf, buildOf } = require("../scripts/export-abi");
 
 const root = path.join(__dirname, "..");
 const artifactAbi = (rel) => JSON.parse(fs.readFileSync(path.join(root, "artifacts", "contracts", rel), "utf8")).abi;
@@ -37,6 +37,21 @@ describe("Boundaries: what the kernel is and is not", () => {
       const shipped = JSON.parse(fs.readFileSync(path.join(root, "client", "abi", `${name}.json`), "utf8"));
       expect(shipped, `client/abi/${name}.json is stale: run npm run export-abi`).to.deep.equal(abiOf(name));
     }
+  });
+
+  it("ships builds that are what the sources compile to: a deployment made from build/ is this repository's code", () => {
+    for (const name of Object.keys(deployable)) {
+      const shipped = fs.readFileSync(path.join(root, "build", `${name}.json`), "utf8");
+      expect(shipped, `build/${name}.json is stale: run npm run export-abi`).to.equal(`${JSON.stringify(buildOf(name), null, 2)}\n`);
+      const build = JSON.parse(shipped);
+      // the pinned compiler, and the positions of the immutable values inside the runtime code
+      expect(build.compiler.version.startsWith(`${require("solc/package.json").version}+commit.`), `${name}: compiler ${build.compiler.version}`).to.equal(true);
+      for (const [start, length] of build.immutableReferences) {
+        expect(build.deployedBytecode.slice(2 + 2 * start, 2 + 2 * (start + length)), `${name}: an immutable position that is not blank in the build`).to.match(/^0+$/);
+      }
+    }
+    // nothing under contracts/testing or contracts/vendor is ever deployed from here
+    expect(Object.values(deployable).some((rel) => rel.includes("/testing/") || rel.includes("/vendor/"))).to.equal(false);
   });
 
   it("changes state through these functions and no others: nothing edits a receipt, a verdict, a total or an allocation (X6)", () => {

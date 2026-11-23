@@ -17,6 +17,13 @@ import {G1Facts} from "./GenesisTypes.sol";
 ///         onto somebody else. The owner's own call is the statement the ledger relies on - this
 ///         was my tender, and it was settled. The standard does not expose who funded a tender, so
 ///         nothing stronger can be read from it; two parties who agree to pretend are not detected.
+///
+///         The owner and the acceptance authority are read here, when the tender is bridged, and
+///         not as they were when the submission settled: the standard keeps no state of who held
+///         either at that moment. A worker that judged its own delivery and then handed the right
+///         to judge to somebody else before the bridge is therefore not caught by the ledger's
+///         self-dealing rule. The tender's own log has the history; the audit reads it and reports
+///         such a receipt (docs/genesis-mining-mvp.md, section 7.5).
 contract TenderAdapter8414 {
     IGenesisLedger public immutable ledger;
     ITaskTender8414 public immutable taskToken;

@@ -114,7 +114,7 @@ describe("G1: real demand through ERC-8414, settlement apart from subsidy", () =
     expect(confirmed.status.ineligible).to.equal(I.NONE);
   });
 
-  it("records self-dealing and never subsidizes it (D5)", async () => {
+  it("records self-dealing as the tender stands when it is bridged, and does not subsidize it (D5)", async () => {
     const [, w1, d1] = await ethers.getSigners();
     const d = await h.deploy({ admit: [w1, d1] });
     // the worker is the tender's owner
@@ -130,6 +130,30 @@ describe("G1: real demand through ERC-8414, settlement apart from subsidy", () =
     expect(s.measuredG1).to.equal(100n);
     expect(s.subsidizedG1).to.equal(0n);
     expect(await d.ledger.provisionalAllocation(0, w1.address)).to.equal(0n);
+  });
+
+  it("reads the judge as of the bridge: a worker that judged its own delivery and then handed the judgment on is not caught (D17)", async () => {
+    const [, a, b, c] = await ethers.getSigners(); // a the worker, c the tender's owner, b a third address
+    const d = await h.deploy({ admit: [a, c] });
+    // the control: bridged while the worker is still the judge, the receipt is refused as self-dealing
+    const kept = await h.tender(d, { owner: c, judge: a, worker: a });
+    expect((await h.bridge(d, kept)).status.ineligible).to.equal(I.SELF_DEALING);
+
+    // the same settlement - the worker accepted its own delivery - but the judgment is handed to
+    // somebody else before the owner bridges. ERC-8414 lets the acceptance authority move at any time
+    // and keeps no record of who held it when the submission settled.
+    const moved = await h.tender(d, { owner: c, judge: a, worker: a });
+    await (await d.taskToken.connect(a).setAcceptanceAuthority(moved.tokenId, b.address)).wait();
+    expect(await d.taskToken.acceptanceAuthorityOf(moved.tokenId)).to.equal(b.address);
+    const out = await h.bridge(d, moved);
+    // the rule reads the judge of record at the bridge, finds a third address, and subsidizes
+    expect(out.status.ineligible).to.equal(I.NONE);
+    expect(out.status.gmuSubsidized).to.equal(50n);
+    // what bounds it is what bounds any two parties who agree to pretend: the owner had to name the
+    // worker as judge and had to bridge, both are admitted, and the caps apply
+    const again = await h.tender(d, { owner: c, judge: a, worker: a });
+    await (await d.taskToken.connect(a).setAcceptanceAuthority(again.tokenId, b.address)).wait();
+    expect((await h.bridge(d, again)).status.ineligible).to.equal(I.PAIR_CAP);
   });
 
   it("subsidizes admitted parties only: the worker and the demander (T3, D12)", async () => {

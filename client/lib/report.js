@@ -18,6 +18,7 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
   return g.jsonable({
     schema: "finchain-pouw.audit/1",
     environment: ctx.manifest.environment ?? "unspecified",
+    labels: ctx.manifest.labels ?? [],
     deployment: ctx.manifest.name ?? "unnamed",
     chainId: ctx.chainId,
     ledger: ctx.ledger.target,
@@ -55,6 +56,7 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
     operators: report.operators,
     undeclaredAddresses: report.undeclaredAddresses,
     g1: report.g1,
+    observations: report.observations,
     receipts: report.receipts.map((it) => ({
       id: it.id, pool: it.receipt.pool === g.POOL_G0 ? "g0" : "g1", worker: it.receipt.worker, counterparty: it.receipt.counterparty,
       contributionId: it.receipt.contributionId, verdict: g.VERDICT_NAME[it.status.verdict],
@@ -69,6 +71,11 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
       report.mode === "controlled-self-test"
         ? "This epoch subsidized declared-related parties: it is a controlled self-test and no evidence of external demand."
         : "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand.",
+      "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+      ...((ctx.manifest.labels ?? []).includes("controlled-self-test")
+        ? ["Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch."] : []),
+      ...((ctx.manifest.labels ?? []).includes("operator-wallet-integration")
+        ? ["The parties are wallets held by an operator. No agent's contract account took part: this is not a record of an agent mining as itself."] : []),
     ],
   });
 }
@@ -79,6 +86,7 @@ function pad(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n 
 function auditText(ctx, report) {
   const lines = [];
   lines.push(`epoch ${report.epoch}  ${report.ok ? "MATCH" : "DIFFERS"}  mode ${report.mode}  settled block ${report.settledBlock}`);
+  if ((ctx.manifest.labels ?? []).length > 0) lines.push(`  ${ctx.manifest.environment ?? "environment unspecified"}: ${ctx.manifest.labels.join(", ")}`);
   lines.push(`  parameters v${report.paramsVersion}  budget ${points(report.budget)} (G0 ${points(report.pools[0])}, G1 ${points(report.pools[1])})  share cap ${Number(report.params.workerCapBps) / 100}% per address`);
   lines.push(`  receipts ${report.receiptCount}  measured GMU G0 ${report.totals.measured[0]} G1 ${report.totals.measured[1]}  subsidized GMU G0 ${report.totals.subsidized[0]} G1 ${report.totals.subsidized[1]}`);
   lines.push(`  digest  ${report.digest}`);
@@ -103,6 +111,11 @@ function auditText(ctx, report) {
     lines.push("");
     lines.push("  recorded and not subsidized:");
     for (const it of refused) lines.push(`    receipt ${it.id} G${it.receipt.pool} ${it.receipt.worker}: ${g.INELIGIBLE_NAME[it.status.ineligible]}`);
+  }
+  if (report.observations.length > 0) {
+    lines.push("");
+    lines.push("  observations (not differences: what the tender's log shows and the ledger's rules cannot read):");
+    for (const o of report.observations) lines.push(`    receipt ${o.receiptId}${o.subsidized ? ", subsidized" : ""}: ${o.noted.join(", ")}`);
   }
   if (!report.ok) {
     lines.push("");

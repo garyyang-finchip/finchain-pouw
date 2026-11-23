@@ -4,6 +4,7 @@
 "use strict";
 
 const fs = require("fs");
+const path = require("path");
 const { ethers } = require("ethers");
 const g = require("./lib/genesis");
 const { auditRecord, auditText, points, CLIENT } = require("./lib/report");
@@ -16,19 +17,28 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
   pouw bridge <tokenId> <submissionId> confirm a settled submission of an ERC-8414 tender the key owns (g1.tender)
   pouw seal <epoch>                    write the close record of an ended epoch (any key; changes no figure)
   pouw audit <epoch>                   recompute an ended epoch from the chain and compare it with the ledger
+  pouw verify                          check the deployment: the code on chain is this repository's build, and
+                                       the contracts are wired as the manifest says
 
   --manifest <path>    deployment manifest                       (or POUW_MANIFEST)
   --rpc <url>          JSON-RPC endpoint                          (or POUW_RPC, else the manifest's rpc)
   --key-file <path>    file with the private key, for work, bridge and seal   (or POUW_KEY_FILE)
+  --account <address>  work, bridge: act through this contract account, by its execute(target, value, data).
+                       The worker of record, and the tender owner that bridges, is then the account and
+                       not the key. The key must be the account's owner or operator
   --address <address>  status: also show this address
   --tag <tag>          block treated as settled: finalized (default), safe, latest, or a block number
-  --log-chunk <n>      largest block range of one log query; 0 = no limit (default)
+  --log-chunk <n>      largest block range of one log query; 0 = no limit   (or POUW_LOG_CHUNK, else the
+                       manifest's logChunk, else 0)
   --json               print JSON instead of text
-  --out <path>         audit: also write the record to a file
+  --out <path>         audit, verify: also write the record to a file
 
-Exit status: 0 done / the audit matches; 2 the recomputation differs from the ledger (nothing is submitted);
+Exit status: 0 done / the audit or the check matches; 2 it differs (and work submits nothing);
 3 not settled yet; 1 any other failure.
-A key is read from a file and never from the command line. An audit needs no key.`;
+A key is read from a file and never from the command line. An audit needs no key.
+Never give this client a key that a running agent node also sends from: two programs sending from one
+key collide on nonces. A key beside an agent is its operator's wallet, not the agent: an agent whose
+identity is a contract account takes part only when that account is the sender.`;
 
 function parse(argv) {
   const opts = { _: [] };
@@ -42,6 +52,15 @@ function parse(argv) {
     opts[name] = argv[++i];
   }
   return opts;
+}
+
+/// A key file holds one private key and is its owner's alone: a file that others can read is refused.
+function readKeyFile(file) {
+  const mode = fs.statSync(file).mode & 0o777;
+  if (process.platform !== "win32" && (mode & 0o077) !== 0) {
+    throw new Error(`${file} can be read by others (mode ${mode.toString(8)}): make it the owner's alone (chmod 600) and try again`);
+  }
+  return fs.readFileSync(file, "utf8").trim();
 }
 
 function need(value, what) {
@@ -60,14 +79,15 @@ async function open(opts, { signer = false } = {}) {
   let runner = provider;
   if (signer) {
     const keyFile = need(opts["key-file"] ?? process.env.POUW_KEY_FILE, "--key-file (or POUW_KEY_FILE)");
-    runner = new ethers.Wallet(fs.readFileSync(keyFile, "utf8").trim(), provider);
+    runner = new ethers.Wallet(readKeyFile(keyFile), provider);
   }
   const tag = opts.tag === undefined ? "finalized" : (/^\d+$/.test(opts.tag) ? Number(opts.tag) : opts.tag);
-  const ctx = await g.connect(manifest, runner, { tag, logChunk: Number(opts["log-chunk"] ?? 0) });
+  const ctx = await g.connect(manifest, runner, { tag, logChunk: opts["log-chunk"] ?? process.env.POUW_LOG_CHUNK });
   return { ctx, rpc, provider, signer: signer ? runner : null };
 }
 
 const print = (opts, value, text) => console.log(opts.json ? JSON.stringify(g.jsonable(value), null, 2) : text);
+const via = (r) => (r.account ? ` (the account ${r.account}, driven by ${r.key})` : "");
 
 async function status(opts) {
   const { ctx } = await open(opts);
@@ -77,7 +97,7 @@ async function status(opts) {
     epochDuration: ctx.epochDuration, started: await ctx.policy.started(), paused: await ctx.policy.paused(),
   };
   const lines = [
-    `${out.deployment ?? "deployment"} (${out.environment ?? "environment unspecified"}) on chain ${out.chainId}`,
+    `${out.deployment ?? "deployment"} (${[out.environment ?? "environment unspecified", ...(ctx.manifest.labels ?? [])].join(", ")}) on chain ${out.chainId}`,
     `  ledger ${out.ledger}  policy ${out.policy}`,
     `  epochs of ${out.epochDuration} s from ${new Date(Number(out.genesisTime) * 1000).toISOString()}${out.paused ? "  PAUSED" : ""}`,
   ];
@@ -90,7 +110,7 @@ async function status(opts) {
     out.epoch = { epoch, opened: s.opened, paramsVersion: version, params: g.plainParams(params), budget: s.budget, budgetG0: s.budgetG0,
       budgetG1: s.budgetG1, receipts: s.receiptCount, measured: [s.measuredG0, s.measuredG1], subsidized: [s.subsidizedG0, s.subsidizedG1],
       endsAt: g.epochEnd(ctx, epoch) };
-    lines.push(`  epoch ${epoch}${s.opened ? "" : " (not opened)"}, ends ${new Date(Number(out.epoch.endsAt) * 1000).toISOString()}, parameters v${version}`);
+    lines.push(`  epoch ${epoch}${s.opened ? "" : " (not opened)"}, ends ${new Date(Number(out.epoch.endsAt) * 1000).toISOString()}, parameters v${version}${params.subsidizeDeclaredRelated ? " (controlled self-test)" : ""}`);
     lines.push(`  budget ${points(s.budget)} (G0 ${points(s.budgetG0)}, G1 ${points(s.budgetG1)}); receipts ${s.receiptCount}; subsidized GMU G0 ${s.subsidizedG0} G1 ${s.subsidizedG1}`);
     if (opts.address) {
       const a = ethers.getAddress(opts.address);
@@ -104,8 +124,8 @@ async function status(opts) {
 
 async function work(opts) {
   const { ctx, signer } = await open(opts, { signer: true });
-  const r = await g.workAudit(ctx, signer);
-  const text = `epoch ${r.epoch}: audited ${r.audited === null ? "the deployment's configuration" : `epoch ${r.audited} (${r.receiptsAudited} receipts)`}; `
+  const r = await g.workAudit(ctx, signer, { account: opts.account ?? null });
+  const text = `epoch ${r.epoch}: ${r.worker}${via(r)} audited ${r.audited === null ? "the deployment's configuration" : `epoch ${r.audited} (${r.receiptsAudited} receipts)`}; `
     + `receipt ${r.receiptId} ${g.VERDICT_NAME[r.status.verdict]}, ${g.INELIGIBLE_NAME[r.status.ineligible]}, GMU ${r.status.gmuSubsidized}/${r.status.gmuMeasured}; tx ${r.txHash}`;
   print(opts, r, text);
 }
@@ -114,16 +134,9 @@ async function bridge(opts) {
   const tokenId = BigInt(need(opts._[1], "tokenId"));
   const submissionId = BigInt(need(opts._[2], "submissionId"));
   const { ctx, signer } = await open(opts, { signer: true });
-  const epoch = await ctx.policy.currentEpoch();
-  const profile = await ctx.policy.activeProfile(g.profileKey(g.PROFILE_G1_TENDER), epoch);
-  const adapter = new ethers.Contract(profile.module, g.abi.adapter, signer);
-  const rc = await (await adapter.bridge(tokenId, submissionId)).wait();
-  const ev = rc.logs.map((l) => { try { return adapter.interface.parseLog(l); } catch { return null; } }).find((p) => p && p.name === "TenderBridged");
-  const id = ev.args.receiptId;
-  const st = g.plainStatus(await ctx.ledger.status(id));
-  const receipt = g.plainReceipt(await ctx.ledger.receipt(id));
-  const out = { receiptId: id, epoch: receipt.epoch, status: st, txHash: rc.hash };
-  print(opts, out, `receipt ${id} in epoch ${receipt.epoch}: ${g.INELIGIBLE_NAME[st.ineligible]}, relation ${g.RELATION_NAME[st.relation]}, GMU ${st.gmuSubsidized}/${st.gmuMeasured}; tx ${rc.hash}`);
+  const r = await g.bridgeTender(ctx, signer, { tokenId, submissionId, account: opts.account ?? null });
+  print(opts, r, `receipt ${r.receiptId} in epoch ${r.epoch}: confirmed by ${r.demander}${via(r)} for the worker ${r.worker}; `
+    + `${g.INELIGIBLE_NAME[r.status.ineligible]}, relation ${g.RELATION_NAME[r.status.relation]}, GMU ${r.status.gmuSubsidized}/${r.status.gmuMeasured}; tx ${r.txHash}`);
 }
 
 async function seal(opts) {
@@ -144,11 +157,30 @@ async function audit(opts) {
   return report.ok ? 0 : 2;
 }
 
+async function verify(opts) {
+  const { ctx, rpc } = await open(opts);
+  const loadBuild = (name) => JSON.parse(fs.readFileSync(path.join(__dirname, "..", "build", `${name}.json`), "utf8"));
+  const result = await g.verifyDeployment(ctx, loadBuild);
+  const record = g.jsonable({
+    schema: "finchain-pouw.deployment-check/1", environment: ctx.manifest.environment ?? "unspecified", labels: ctx.manifest.labels ?? [],
+    deployment: ctx.manifest.name ?? "unnamed",
+    chainId: ctx.chainId, ledger: ctx.ledger.target, settledTag: String(ctx.tag), endpointHost: (() => { try { return new URL(rpc).host; } catch { return "unknown"; } })(),
+    recordedAt: new Date().toISOString(), client: CLIENT, ok: result.ok, epoch: result.epoch, started: result.started, steward: result.info.steward,
+    paused: result.info.paused, code: result.code, checks: result.checks,
+  });
+  if (opts.out) fs.writeFileSync(opts.out, JSON.stringify(record, null, 2) + "\n");
+  const text = [`${ctx.manifest.name ?? "deployment"} on chain ${ctx.chainId}: ${result.ok ? "MATCH" : "DIFFERS"}`,
+    ...result.checks.map((c) => `  ${c.ok ? "ok  " : "FAIL"} ${c.what}${c.ok || !c.detail ? "" : ` (${c.detail})`}`),
+    `  steward ${result.info.steward}${result.info.paused ? "; recording is PAUSED" : ""}`].join("\n");
+  console.log(opts.json ? JSON.stringify(record, null, 2) : text);
+  return result.ok ? 0 : 2;
+}
+
 async function main() {
   const opts = parse(process.argv.slice(2));
   const command = opts._[0];
   if (opts.help || !command) { console.log(USAGE); return opts.help ? 0 : 1; }
-  const commands = { status, work, bridge, seal, audit };
+  const commands = { status, work, bridge, seal, audit, verify };
   if (!commands[command]) throw new Error(`unknown command ${command}\n\n${USAGE}`);
   return (await commands[command](opts)) ?? 0;
 }
