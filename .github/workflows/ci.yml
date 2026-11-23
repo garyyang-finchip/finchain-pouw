@@ -1,1 +1,80 @@
+# Started by hand (Actions -> ci -> Run workflow), and for every pull request:
+#   - the tests and the rehearsal, from a clean checkout;
+#   - with a manifest named: also an audit of that public deployment from this runner - a machine
+#     that holds no key, runs no node and reads the chain through the manifest's public endpoint.
+# It does not start on a push: a version arrives in this repository as several commits, and a run
+# on a tree that is half there would mean nothing. Run it once the version is complete.
+name: ci
 
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: "Manifest to audit: a path in this repository, such as deployments/finchain-sepolia-r2.json. Empty: the tests and the rehearsal only"
+        required: false
+        default: ""
+      epochs:
+        description: "Epochs to audit, separated by spaces"
+        required: false
+        default: "0 1"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run local-run
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: local-run
+          path: evidence/local-run-*.json
+          if-no-files-found: ignore
+
+  audit:
+    if: github.event_name == 'workflow_dispatch' && inputs.manifest != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MANIFEST: ${{ inputs.manifest }}
+      EPOCHS: ${{ inputs.epochs }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      # the client only: no compiler, no test tooling
+      - run: npm ci --omit=dev
+      - name: Say where this runs
+        run: |
+          mkdir -p out/audit
+          node -e 'const e = process.env; console.log(JSON.stringify({ schema: "finchain-pouw.audit-run/1", repository: e.GITHUB_REPOSITORY, commit: e.GITHUB_SHA, workflowRun: `${e.GITHUB_SERVER_URL}/${e.GITHUB_REPOSITORY}/actions/runs/${e.GITHUB_RUN_ID}`, runner: `${e.RUNNER_OS}/${e.RUNNER_ARCH}`, node: process.version, manifest: e.MANIFEST, epochs: e.EPOCHS, startedAt: new Date().toISOString() }, null, 2))' | tee out/audit/run.json
+      - name: Check the deployment against the committed builds
+        run: node client/pouw.js verify --manifest "$MANIFEST" --out out/audit/verify.json
+      - name: Recompute the epochs from the chain
+        run: |
+          for e in $EPOCHS; do
+            node client/pouw.js audit "$e" --manifest "$MANIFEST" --out "out/audit/audit-epoch-$e.json"
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: audit
+          path: out/audit
+          if-no-files-found: warn
