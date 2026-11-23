@@ -1,14 +1,22 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.3. Following the formal review (A28), a row is accepted in a round only if
-that round implements what it tests. Every row therefore carries a state:
+Design revision v0.1.4, documentation alignment of 2026-11-24. Sections 1 to 10 are those of
+v0.1.3, unchanged: the rows of the kernel and of round R2. Sections 11 to 14 are deliverable D of
+the alignment (`decisions.md` A54): the staged acceptance of the production extension, every row
+of which is proposed and not run.
+
+Following the formal review (A28), a row is accepted in a round only if that round implements
+what it tests. Every row therefore carries a state:
 
 - **passes** - implemented, and covered by the named test of this repository (`npm test`) or by a
   check of the rehearsal (`npm run local-run`);
 - **Sepolia** - belongs to a round on Finchain Sepolia (`roadmap.md` 3), where the same behaviour
   is shown on a public chain or needs another party: round R2a (wallets an operator holds), round
   R2b (agents as their contract accounts) or round R3 (a third party);
-- **deferred** - belongs to something not implemented (`decisions.md` A19, A23, A30).
+- **deferred** - belongs to something not implemented (`decisions.md` A19, A23, A30);
+- **proposed; not run** - belongs to the production extension (sections 11 to 13): designed, not
+  built, not run. Such a row says what a later increment has to show. It is no addition to the
+  tests of this repository or to the checks of its rehearsal.
 
 Row ids are stable across revisions: a row that was revised keeps its id, a row that no longer
 applies stays in the table with its state. The recovery rows are numbered R1 to R10; to keep them
@@ -211,3 +219,100 @@ Neither proves, and neither claims:
 - an economy: that test points mean anything, that GMU measures intelligence, that anyone will
   take part. Economic sustainability - a funding source, participation, the decreasing schedule,
   FCT - is a separate acceptance at P4 with its own evidence (P18).
+
+## 11. Staged acceptance of the production extension
+
+The fourteen proposed checks of `genesis-mining-mvp.md` 15, with identifiers, the items of A54
+each belongs to (`decisions.md` 4.3) and the production increment proposed to run it
+(`roadmap.md` 8, 9). A later run reports its environment, versions, data source, parties, finance
+mode and evidence, and says which facts were simulated.
+
+| Id | Proposed check | Expected observation | Items | Increment | State |
+| --- | --- | --- | --- | --- | --- |
+| E1 | Manual startup funding and renewal | a Holder's manual fiat purchase or renewal makes service available; later usage and delivery are recorded separately from the top-up | 1, 6 | first | proposed; not run |
+| E2 | Authorized agent wallet procurement | an agent purchases and reconciles a supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | 2 | second | proposed; not run |
+| E3 | Authorized fiat-account procurement | an agent purchases or renews through a supported fiat-billed account within the Holder's authority; provider actions that are not supported are reported, not assumed | 2 | second | proposed; not run |
+| E4 | Manual and autonomous coexistence | both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | 3 | second | proposed; not run |
+| E5 | Qualified inference delivery | the chosen profile records model and tokenizer versions, usage categories, output, the evaluator's findings and the accepted service units | 1, 5 | first | proposed; not run |
+| E6 | Mixed-source service | external and operated suppliers are assessed against the same specification, with source control and evidence classes stated separately | 4 | third | proposed; not run |
+| E7 | Declared usage limitation | a worker's declaration and a provider's attested usage are not reported as a proof of inference or of GPU ownership | 5 | first | proposed; not run |
+| E8 | Customer cash receipt | acceptance, credit owed, withdrawal and actual receipt are reconciled; gross amounts, fees and refunds stay identifiable | 1, 6 | first | proposed; not run |
+| E9 | Cost and autonomy report | a period report separates payment autonomy, revenue coverage and supply control, with Holder funding, liabilities and operating costs | 6 | first; its payment and supply dimensions with the second and third | proposed; not run |
+| E10 | Multiple contribution roles | producer, fulfiller and verifier contributions link to their funding and work without a second subsidy for the same contribution | 7 | after the third, with the profiles of the other roles | proposed; not run |
+| E11 | Unknown payment result and restart | a crash or a timeout is reconciled without a second purchase or an invented success | 2, 7 | first for a restart of the worker; second for a payment | proposed; not run |
+| E12 | Repair, replication and authorization | recovery keeps obligations and evidence; a replica has its own identity and budget, repeats no past contribution and inherits no unrestricted authority | 7 | with a FOGA cell taking part, on FOGA's cycle | proposed; not run |
+| E13 | Missing evidence and source change | the report exposes evidence that is unavailable and assumptions about the model or the service that changed; qualification follows the profile's rule | 5 | first for missing evidence; third for a change of source | proposed; not run |
+| E14 | Related-party demand | controlled self-tests stay labelled; no set of addresses, signatures or transfers is presented as proof that all parties are independent | 1, 5 | first | proposed; not run |
+
+The seven items of A54, and where each is first accepted:
+
+| Item | Checks | First accepted in |
+| --- | --- | --- |
+| 1. A model service bought by a person; the agent produces, the delivery is accepted, the contribution is recorded | E1, E5, E8, E14 | the first increment |
+| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11 | the second increment |
+| 3. Both kinds of participant under one work protocol | E4 | the second increment |
+| 4. An external model service and a self-operated model under one specification | E6 | the third increment |
+| 5. A third party re-checks usage, delivery, billing and contribution | E5, E7, E13, E14; rows S7, S9, S13 | the first increment, by a machine that is not the operator's; by a party that is not the operator's in its third acceptance |
+| 6. Holder input, customer revenue, protocol subsidy and production cost told apart | E1, E8, E9; rows F1, F12, F13 | the first increment |
+| 7. A cell recovers after a failure; a replica obeys deduplication and attribution | E10, E11, E12; rows F11, F15 | the first increment for the reference worker; with a cell for E12 |
+
+## 12. The first production profile
+
+Rows for `production-service.md`. All are proposed and not run; the increment is the first unless
+a row says otherwise.
+
+| Id | Scenario | Expected outcome |
+| --- | --- | --- |
+| S1 | The specification is published | the identifiers of its records are recomputed from their canonical form; a delivery made under another specification is not a delivery under the profile |
+| S2 | A fixture is delivered and accepted | the checks that apply all pass; the submission settles by the route the profile names; one receipt with the role, the work id and the envelope's hash; GMU is the profile's `baseGmu` |
+| S3 | A delivery fails a check: not JSON, not valid against the schema, over the limit, a value not in the input, not the reference, late, or refused by the model | rejected with the published reason; no qualified delivery and no contribution; the cost stays in the worker's records |
+| S4 | The same accepted result out of more generated tokens | the same qualified service units and the same GMU |
+| S5 | A retry; the same input asked again by the same demander | one work id and one delivery for the retry; no units for the repeat, which the report lists |
+| S6 | Categories that overlap | cached input is never added to input; delivered output is never added to generated output |
+| S7 | The counts are made again | for the categories that can be counted again, the recount equals the envelope; a difference is reported by category, with the counter used |
+| S8 | The envelope stated by the worker is not the one the demander confirms | no receipt under the profile; the two statements are reported |
+| S9 | Evidence that is public; evidence that cannot be retrieved | a machine with no role repeats the checks and the counts; the second delivery is marked unauditable and has no verified qualification, and its receipt stays as recorded |
+| S10 | A report on a delivery | usage that was declared or attested by a provider is called that, and is presented neither as proof of inference nor as proof of operated hardware |
+| S11 | The rules of the kernel on a production receipt: self-dealing, admission on both sides, a declared relation, a bounty in another asset or below the minimum, the caps | the outcomes of rows D5, D8, D9 and D12 to D14 |
+| S12 | History | the receipts and the audits of the first ledger are unchanged; no `g0.ref` receipt is read as production; a new measurement version changes no recorded envelope |
+| S13 | The ledger is right and a count is wrong | `pouw audit` says `ok` and the recount reports the difference: two reports, and neither stands for the other |
+| S14 | A task fulfilled with inference bought for it (later, with a fulfiller's profile) | two receipts, the child naming its parent; each contribution counted once in its own role |
+
+## 13. Supply, funds and payment
+
+Rows for `supply-and-payment.md`. All are proposed and not run.
+
+| Id | Scenario | Expected outcome | Increment |
+| --- | --- | --- | --- |
+| F1 | A person buys quota for the worker | recorded as Holder funding and as a cost; never as production, never as income | first |
+| F2 | The quota runs out during service | no new request is taken; requests in flight end as what they are; service resumes when credit is available; nothing is claimed for output that was not delivered | first |
+| F3 | A second source under the same specification | deliveries go on; each envelope names the source and the revision actually used; a source that does not meet the specification is not used | first |
+| F4 | The states of a purchase on the manual route | entered from the person's report and the quota read back, and labelled so | first |
+| F5 | The agent buys within its policy; a purchase beyond it | bought and renewed without a person acting; declined or escalated as the policy says | second |
+| F6 | A renewal fails | a bounded number of retries inside the policy, then a stop and an escalation | second |
+| F7 | The answer to a payment is lost | reconciled on the purchase's identifier before anything is sent again; one payment | second |
+| F8 | Paid, and the credit does not arrive | recorded as paid and not credited; not booked as service received | second |
+| F9 | A request times out after the provider accepted it | reconciled before the service is bought again; a second bill is a second cost and still one delivery | first |
+| F10 | A customer sends one request twice | one work id, one delivery, one receipt | first |
+| F11 | The worker is stopped at each step of a delivery and started again | one submission, one envelope, one receipt, one cost per provider bill | first |
+| F12 | The customer's payment | reserved, owed, received: an accepted submission that was not withdrawn is a receivable and is reported as one | first |
+| F13 | The report | native amounts per asset or currency; what was not observed is listed as missing and is not zero; no sum across assets; a conversion names its source and time | first |
+| F14 | A worker with a manual source and an agent's source at once | each purchase carries who decided and who executed it; the three dimensions are three fields | second |
+| F15 | A replica | its own identity and budget, by an authorized procedure; no signing secret copied; no earlier contribution claimed again; the operator's rules bind it | with a cell |
+| F16 | A bounty in an asset other than the native one | recorded, measured and not subsidized, as today (row D13), until an asset policy is ruled | unchanged |
+
+## 14. What the production increments are to show, and what they will not
+
+The first increment, in its first acceptance, is to show: a published specification; deliveries
+qualified by published checks; usage recorded by category with the origin of every counter;
+counts and checks repeated by a machine that is not the operator's; a contribution recomputed
+from the chain; and a report that tells the cost of the model service from the bounty received
+and from the Holder's funding.
+
+No increment shows, and none will claim:
+
+- that a named model ran, before there is execution evidence;
+- demand, while the procurement is controlled; commercial demand, from one customer;
+- self-sufficiency, from a renewal that happened by itself or from a token count;
+- anything about real payments, from a mocked provider, a sandbox bill or a test asset;
+- an economic stage: completing an increment certifies none (A53).

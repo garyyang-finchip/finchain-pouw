@@ -16,6 +16,14 @@ check - and rehearses round R2 with them. Nothing is deployed on a public chain 
 owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what is
 approved, what this repository proposes, and which figures are only illustrative.
 
+Design revision v0.1.4 (2026-11-24) is a revision of the documents. The software is release
+0.1.3, unchanged: no contract, interface, client, script, configuration or deployment changes
+with it, and round R2 runs from it as it was prepared. The revision records the alignment of the
+owner and the advisor on the production line - model-token generation as the first production
+commodity, the economic stages, the three operating dimensions, the complete AI Node, production
+roles, evidence, procurement and payment - and adds the plans for carrying it out. Nothing of the
+production line is built.
+
 ## What this repository is for
 
 | Repository | Responsibility |
@@ -52,8 +60,9 @@ scripts/               the tooling of a deployment and a round
   export-abi.js          client/abi and build/ from the compiler's output
 deployments/           the manifest format; the configuration of round R2a; no public manifest yet
 evidence/              records, as in finchain: local-run-<time>.json
-docs/                  decisions, architecture, the MVP specification, roadmap, acceptance matrix,
-                       the runbook of round R2a
+docs/                  decisions, architecture, the MVP specification with the production extension
+                       design, the plans of the first production service and of the supply and
+                       payment interfaces, roadmap, acceptance matrix, the runbook of round R2a
 .github/workflows/     the tests and the rehearsal on a hosted runner; the independent audit
 ```
 
@@ -131,18 +140,22 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 
 | Document | Content |
 | --- | --- |
-| `docs/decisions.md` | Approved rulings; the two reviews and how each ruling was applied; this repository's proposals, each open to a veto; open questions; illustrative figures |
-| `docs/architecture.md` | Position, actors, modules as built, identity and admission, interfaces between the three repositories, the trust and abuse model with what each measure does not do, chain neutrality |
-| `docs/genesis-mining-mvp.md` | The specification of what is built: data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit, and the designs kept for what is deferred |
-| `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances, and the figures round R2a must show |
-| `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the rehearsal's checks; when round R2 is accepted; what the rounds prove and do not prove |
+| `docs/decisions.md` | Approved rulings; the two reviews and how each ruling was applied; the alignment of 2026-11-24 and how it is applied; this repository's proposals, each open to a veto; open questions; illustrative figures |
+| `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
+| `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
+| `docs/production-service.md` | Plan, not built: the first production profile - its task class and published checks, the pinned choices, the evidence envelope, the measurement rule, the evidence class of every claim, the contribution record, three forms of supply under one profile |
+| `docs/supply-and-payment.md` | Plan, not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; one state machine for a purchase on the manual and the agent routes; failure and recovery; the customer's payment; the operating report; the later adaptations |
+| `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the production increments and their order |
+| `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the rehearsal's checks; when round R2 is accepted; what the rounds prove and do not prove; the staged acceptance of the production extension, every row proposed and not run |
 | `docs/r2-runbook.md` | Round R2a on Finchain Sepolia, one command at a time, with the clock and what to do when something goes wrong |
 | `deployments/README.md` | The deployment manifest, the configuration a deployment is made from, the files of this directory |
 
 ## Principles (from FPM01)
 
 - **Progressive Standardization**: start from incomplete, non-standard conditions and build the
-  unified measurement of intelligence production step by step (GMU now, SIG later).
+  unified measurement of intelligence production step by step (GMU now, SIG later). Token usage,
+  qualified delivery, capability, contribution and economic value keep separate meanings and
+  separate evidence on the way.
 - **Open Participation**: a third-party miner takes part with FOGA, another agent, a GPU or a model
   API, over RPC, without running a Finchain full node.
 - **Conservative Settlement**: work verification, contribution measurement and reward distribution

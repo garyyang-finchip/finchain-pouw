@@ -1,21 +1,36 @@
 # Genesis Mining MVP
 
-The minimal runnable loop (A7):
+The minimal runnable loop (A7) records work, verifies it, measures GMU, closes the epoch by time,
+and exposes a recomputable test allocation.
 
-```
-Work  ->  Verify  ->  GMU  ->  Epoch  ->  Test Reward
- off chain   on chain,     measured     closed by time,    a table that is the value of
-             deterministic per receipt  nothing to submit  a function, recomputable by anyone
-```
+| Step | R1 behavior |
+| --- | --- |
+| Work | The client performs work off chain and submits or bridges its result |
+| Verify | G0 checks the reference output; G1 reads ERC-8414 acceptance; receipt eligibility is deterministic |
+| GMU | Measured and subsidized GMU are recorded per receipt |
+| Epoch | The clock freezes the contributions; no closing figures are submitted |
+| Test reward | An allocation table is the value of a function, recomputable by anyone |
 
-Design revision v0.1.3. The specification was written after the formal review of v0.1.1
-(`decisions.md`, A19-A30) and implemented as round R1 in this repository: the contracts under
-`contracts/`, the reference client under `client/`, the tests under `test/`. The review of v0.1.2
-and of round R1 (A31-A39) changed no rule; this revision states two boundaries more exactly - who
-a participant is when its identity is a contract account (section 5.5), and what the self-dealing
-rule reads (section 7.5) - and adds three kept designs (13.7 to 13.9). This document describes
-what is built. Where it and the code differ, the code and its tests are right and this document
-is to be corrected. Figures marked *illustrative* are examples (`decisions.md`, last section).
+Implemented baseline: the kernel of design revision v0.1.2 and round R1, following the formal
+review of v0.1.1 (`decisions.md`, A19-A30), as released in v0.1.3 with the tooling of round R2.
+The review of v0.1.2 and of round R1 (A31-A39) changed no rule; v0.1.3 stated two boundaries more
+exactly - who a participant is when its identity is a contract account (section 5.5), and what the
+self-dealing rule reads (section 7.5) - and added three kept designs (13.7 to 13.9).
+Documentation alignment: 2026-11-24 (design revision v0.1.4; `decisions.md`, A40-A54). This
+alignment is not a new software release and does not claim an implementation beyond that
+baseline.
+
+Sections 1-12 describe the existing contracts under `contracts/`, reference client under
+`client/`, and tests under `test/`, with explicit pointers to the future production design.
+The existing data structures, functions, receipt rules and allocation formulas remain unchanged.
+Where the as-built description and the code differ, the code and its tests govern. Section 13
+retains deferred proposals. Sections 14-15 describe production extensions and proposed acceptance
+work; none of their new fields, payment adapters, verification classes or services is implemented
+or validated by R1. Figures marked *illustrative* remain examples (`decisions.md`, last section).
+
+The owner's Q9-Q12 rulings have already been delivered to the executor and are recorded as
+A33-A36. This alignment does not reopen them, infer missing deployment parameters, or expand R2
+into a production-inference or Tokenomics release. R2 continues under its agreed execution scope.
 
 The three errors the MVP is built to prevent, in the review's words: fake compute earning a
 reward, non-real demand drawing the subsidy, over-engineering blocking the MVP. The third one
@@ -25,7 +40,7 @@ nothing to submit at the close.
 ## 1. Scope
 
 In R1 (implemented): G0 protocol work with one profile, `g0.ref`, verified by recomputation on
-chain; G1 real demand with one profile, `g1.tender`, through ERC-8414, with the subsidy decided
+chain; G1 tender settlement with one profile, `g1.tender`, through ERC-8414, with the subsidy decided
 apart from the settlement; one receipt type; GMU measured and GMU subsidized per receipt; epochs of
 a fixed clock with parameters fixed before they begin; an allocation that is a pure function of
 the ledger; the reference client with a worker's job and an independent audit.
@@ -35,7 +50,17 @@ commit-reveal, challenge windows and overturns, any tier or quality factor, pagi
 operator, receipts without the demander, the binding of the authority at settlement, a delegation
 signed by an account, node attestations, the FOGA adapter.
 
-Out (later milestones, A9): SIG, IPC, routing, FCT, any balance, claim or token.
+Outside implemented R1 (later milestones, A9): SIG, IPC, production routing, FCT, any balance,
+claim or token, autonomous provider payments, stablecoin payment adapters, and production
+inference measurement. Sections 14-15 establish their design relationship without implementing
+them.
+
+The production objective is a sustainable supply of useful intelligence, beginning with model
+token usage that results in qualified delivery and economic value. R1 provides a generic
+contribution ledger for that direction. Its G0 audit receipt demonstrates presence and a
+conforming submission; it does not demonstrate compute expenditure. Its G1 receipt demonstrates
+a settled tender confirmed by its owner; it does not establish independent demand or quantify
+model-token production. A successful R2 accounting drill preserves these limits.
 
 ## 2. Terms
 
@@ -58,6 +83,20 @@ Out (later milestones, A9): SIG, IPC, routing, FCT, any balance, claim or token.
 | Domain | `keccak256("finchain-pouw.genesis-ledger.v1", chainId, ledger address)`, computed at deployment; part of every seed and contribution id (A13) |
 | Steward | The account that registers profile and parameter versions, admissions and operator declarations, and can pause recording. It cannot touch a receipt, a status, a total or an allocation |
 | Settled block | The block the client treats as final: the `finalized` block on a public chain (section 12) |
+
+Additional production-design terms are used only in sections 14-15 and in the alignment notes.
+They are not additional fields of `GenesisTypes.sol`.
+
+| Term | Production-design meaning |
+| --- | --- |
+| Model token | A tokenizer-dependent unit of model input or output. It is distinct from a blockchain asset and has no universal intelligence value by itself |
+| Qualified intelligent delivery | A service result that meets the profile's declared specification and acceptance conditions, with the required evidence available |
+| Holder funding | Capital or spending authority supplied to a participant by its holder, through a wallet or an authorized provider account. It is funding, not service revenue or generated tokens |
+| Payment autonomy | The agent can initiate, reconcile and renew authorized purchases within a spending policy; this does not establish that its revenue covers its costs |
+| Operating self-sufficiency | The measured relationship between service income and operating costs over a stated period, with holder funding and subsidies shown separately |
+| Supply control | The participant's degree of control over the compute and model service, from an external API to operated GPU/model infrastructure; this is separate from who pays |
+| SIG | The planned versioned standard for measuring intelligence-production capability from calibrated, qualified service evidence |
+| Production evidence envelope | A proposed versioned record of service, usage, acceptance, funding and settlement evidence, with availability and access rules and a possible on-chain commitment |
 
 ## 3. Data structures
 
@@ -199,7 +238,8 @@ The reference client does the job in full (`pouw work`): it re-decides every rec
 from primary data (section 12), derives the subject from its own result and submits. Its output is
 accepted only if its independent recomputation equals what the ledger holds; if the two differ it
 submits nothing and reports the differences. A submission names its epoch, so one that lands after
-the epoch has turned reverts and spends nothing. One attempt per instance: a wrong output for the
+the epoch has turned reverts and records no receipt or GMU; transaction gas may still be charged.
+One attempt per instance: a wrong output for the
 epoch named is recorded as rejected and the instance is spent.
 
 What an accepted receipt shows: an address was present in the epoch and submitted the right value
@@ -211,7 +251,9 @@ and why every worker's G0 contribution in an epoch is the same.
 
 ERC-8414 is used as it is: a tender is minted and funded, a fulfillment submitted, and the tender
 settles it - by its judge, by its verifier contract, or by default once the judgment window has
-passed in silence. The bounty is paid by the tender's own vault. Acceptance, rejection and the
+passed in silence. The bounty is handled by the tender's own vault, through payment or a credit
+that must subsequently be withdrawn. R1 reads the accepted settlement facts; actual cash receipt
+requires the corresponding transfer or withdrawal evidence. Acceptance, rejection and the
 default are the standard's own acceptance and dispute path, and R1 adds nothing to it (A23). Once
 a submission is `Accepted` the standard never changes it.
 
@@ -280,8 +322,16 @@ What the formula does not contain, on purpose:
 - no proportion to the bounty: a tender of 100 ETH measures what a tender of 0.001 ETH measures,
   so that money moved between two addresses does not buy GMU.
 
-GMU measured is the record of work; it is kept for everything accepted, subsidized or not, and is
-the input SIG will start from. GMU subsidized is what the allocation reads.
+GMU measured is the record of accepted work under the registered profile; it is kept whether or
+not the work is subsidized. GMU subsidized is what the allocation reads. In R1 a fixed `baseGmu`
+is assigned to an accepted instance or submission. It does not measure token count, inference
+throughput, model quality, energy, cost or independently purchased demand.
+
+Future SIG calibration can use historical records only to the extent that their actual evidence
+supports the measurement. Existing fixed-base receipts cannot be retroactively treated as
+standardized token production. A future production profile needs richer evidence and a reviewed,
+versioned measurement rule (section 14). Historical GMU and allocations remain unchanged; no
+automatic GMU-to-SIG exchange, asset conversion or future-token entitlement follows from them.
 
 ## 7. Epochs and the allocation
 
@@ -399,7 +449,7 @@ it starts from the tables as a separate, reviewable step.
 | The same G0 instance submitted twice | the second reverts (`AlreadySubmitted`); one receipt | D1 |
 | A wrong output, then the right one | the wrong one is recorded as rejected and the instance is spent | D4 |
 | Another worker's correct output | not this worker's instance: rejected | D4 |
-| A G0 submission that lands after its epoch | reverts (`WrongEpoch`); nothing is spent | R10 |
+| A G0 submission that lands after its epoch | reverts (`WrongEpoch`); no receipt or GMU is recorded, but transaction gas may be charged | R10 |
 | An output computed for a past epoch, submitted for the current one | not the current instance: rejected | R10 |
 | The same settled submission bridged again, in the same or a later epoch | the existing receipt is returned; nothing is added | D2 |
 | The same submission under a later profile version or a new adapter | the contribution id does not depend on the profile: the existing receipt is found, not recorded again | V6 |
@@ -517,7 +567,9 @@ source, and an audit that differs is a finding about the ledger or about the aud
 
 ## 13. Deferred, with the designs kept for later rulings
 
-Nothing below is implemented or tested in R1.
+The retained proposals in this section are not implemented or tested in R1. Sections 14-15 add
+the production direction and its proposed acceptance work. They do not turn these proposals into
+implemented functionality or alter the as-built rules above.
 
 ### 13.1 `g0.ver`: verification work
 
@@ -619,3 +671,329 @@ that the account's owner authorized the work to be submitted in the account's na
 agent's node did it. The fullest form - the agent's own software sending through the account,
 within its own authorization and budget - needs nothing from this protocol and remains open to
 any agent that builds it.
+
+## 14. Production extension design (not implemented)
+
+This section aligns the production direction agreed on 2026-11-24. The maturity descriptions are
+the owner's strategic direction. The concrete profile shape, field names, adapters and acceptance
+cases below are proposed engineering designs, not existing functions or an additional approved
+release. Nothing here changes `GenesisTypes.sol`, the R1 GMU formula, the native-asset subsidy
+rule, the epoch calculation, or the deployed ERC-8414 contracts.
+
+The executor's plans for carrying this section out are `production-service.md` (14.2 to 14.5) and
+`supply-and-payment.md` (14.6 to 14.8). They add concrete choices, each put up for a ruling
+(`decisions.md`, P42-P53). Where a plan and this section differ, this section governs.
+
+### 14.1 Three stages, with three parts of Stage 1
+
+This alignment supersedes the economic-stage numbering in `decisions.md` A17. It preserves A17's
+source-interoperability principle: holder-funded services, agent-purchased services and operated
+GPU/model services can participate together. A17 remains a historical approved decision, not an
+illustration. The following five maturity segments are the current development description.
+
+| Stage and segment | Funding and payment operation | Intelligence supply and maturity |
+| --- | --- | --- |
+| Stage 1, early: Startup | The holder buys model services with fiat and continues to top up or renew them manually | Non-independent startup. External model services supply intelligence; the cell uses the authorized account or quota to deliver work |
+| Stage 1, middle: Development | The holder funds the agent's digital-asset wallet or authorizes and funds a fiat-billed API account. The agent purchases, pays and renews within that authority where the provider supports it | Semi-independent operation. External model services remain important; manual and agent-operated purchasing coexist |
+| Stage 1, late: Pre-expansion | Development-stage funding and payment remain available | Most operation continues in the middle-stage form, while a small initial group operates its own GPUs and model services. Hardware/supply independence starts to appear; external model services remain the main supply |
+| Stage 2: Expansion | Authorized manual and autonomous payment routes both remain usable | Operated GPU/model services supply intelligence at scale and meet the same published service specifications as other eligible sources. Mixed supply is allowed |
+| Stage 3: Maturity | Cells increasingly perform authorized procurement, routing, budgeting, renewal and cost reconciliation as part of their own operation | Self-maintenance, self-repair and code-based replication support an autonomous operating economy. Diverse valuable services predominate, while basic model-token production continues to support them |
+
+Stage 1 concentrates on the progression from model-token usage to qualified intelligent delivery
+and then to economic value. Buying quota supplies the ability to consume a service; it does not
+itself generate tokens, prove useful delivery, or earn a mining reward. More output tokens do not
+by themselves demonstrate more useful intelligence.
+
+The labels non-independent and semi-independent describe this development route. Reports retain
+three separate dimensions so that a change in one is not mistaken for a change in all three.
+
+| Dimension | What a report records | What it does not establish by itself |
+| --- | --- | --- |
+| Payment autonomy | Who authorizes, initiates, reconciles and renews purchases, and within what limits | That service revenue pays the bills |
+| Operating self-sufficiency | Revenue actually received, costs incurred and paid, liabilities, holder funding and subsidies over a stated period | Control of the underlying GPUs or model service |
+| Supply control | Whether service is external, operated on rented infrastructure, or operated on owned infrastructure, with the supporting evidence | Autonomous payment, profitability or independent demand |
+
+No fixed percentage of autonomous payments, self-funded costs or GPU supply is introduced as a
+maturity gate. The stages describe development and can overlap. Running a GPU is not an admission
+requirement. A standard complete Finchain AI Node combines independent chain-state verification,
+FOGA cellular capabilities, a PoUW work interface and the ability to provide measurable, qualified
+intelligent deliveries. Production can use an authorized external model service. Chain-only and
+work-only participants remain valid. Verification-node participation does not make every worker
+a sequencer, change L2 consensus, or create a PoUW reward by itself.
+
+These economic stages are separate from the project's P1-P4 milestones and R1-R4 execution
+rounds. A completed R2 ledger test does not, by itself, complete a production maturity stage.
+
+### 14.2 The first production profile
+
+The proposed first production extension is a narrowly specified text-inference service. A working
+profile name such as `g1.inference` identifies a future design, not a name registered by R1.
+Its purpose is to connect an authorized request, model-service usage, qualified delivery,
+acceptance and payment evidence in one reviewable record.
+
+The initial specification should choose a bounded task class whose acceptance can be explained
+and repeated, such as structured extraction against a published schema and a declared evaluation
+procedure. A syntactically valid answer alone need not be a correct extraction. The specification
+must state exactly what the evaluator checks and what remains a trust assumption. A controlled
+fixture demonstrates that procedure; it is not evidence of external demand.
+
+The first implementation can use G1 procurement by a customer or a designated test demander.
+A later, separately specified G0 production profile can procure useful basic inference with a
+finite public budget. That profile must identify the public purpose, the requested output, its
+use, acceptance and expenditure limit. Generation without an identified use does not become
+public work merely by consuming tokens. The existing `g0.ref` remains the ledger-audit/presence
+profile. An independent paying customer is not a gate for every startup-stage work experiment;
+controlled procurement validates its stated mechanism, while evidence from independent buyers
+is needed for claims about commercial demand.
+
+A production profile needs the following pinned choices before work is accepted under it.
+
+| Specification | Required design decision |
+| --- | --- |
+| Service | Task class, input and output schemas, permitted modality, output and context limits, and completion conditions |
+| Model and tokenizer | Model identifier and revision, tokenizer identifier and revision, relevant serving configuration, and the treatment of provider revisions that cannot be independently inspected |
+| Execution | Sampling and decoding settings relevant to evaluation, timeout, retry policy, and whether exact replay or a specified evaluation procedure is expected |
+| Quality | Published checks, any held-out evaluation conditions, acceptable partial results, refusal handling, and reasons for rejection |
+| Service level | Availability and latency commitments, measurement boundaries, and consequences of incomplete service |
+| Measurement | Usage categories, the source of every counter, billing semantics, and the rule for counting accepted service units |
+| Verification | The evidence required, the verifier's authority, its independence assumptions, and the dispute/finality procedure |
+| Finance | Who funds the model service, who buys the delivery, spending caps, accepted payment route, fees, refunds and settlement evidence |
+| Evidence | Content format, hashing and signing rules, retention, retrieval, access control and the policy when required evidence is unavailable |
+
+Hosted and operated-model suppliers may implement the same service profile when they satisfy its
+specification. A declaration of equivalent service does not establish equal compute consumption,
+equal hardware, or equal model internals. An opaque provider revision must be labelled as such.
+
+Production inference executes off chain. Its verifier need not make the EVM rerun an LLM, and
+`IG0Function.evaluate` is not repurposed as a cryptographic proof of inference. The choice of an
+attestation, evaluation, proof or dispute mechanism is part of a new reviewed profile and adapter.
+
+### 14.3 A proposed production evidence envelope
+
+The current receipt has hashes but no token counters, model identifiers, provider invoices or
+payment states. The following groups are a proposed versioned off-chain evidence envelope,
+potentially anchored by a content commitment on chain. They are not a replacement Solidity
+struct, a new ABI, or fields that an existing receipt can be assumed to contain.
+
+| Proposed field group | Suggested contents and meaning |
+| --- | --- |
+| Domain and versions | `schemaVersion`, chain ID, protocol deployment, profile identifier and version, evaluator version, measurement-rule version |
+| Work identity | Stable `workId`, request identifier, parent task or delivery identifiers, contribution role, worker, demander and any declared operator relationships |
+| Service specification | Specification hash, model and tokenizer revisions, serving configuration, input commitment and requested limits |
+| Supply provenance | External API or operated-model source, provider/endpoint identity, deployment evidence where available, and a label distinguishing declared from verified facts |
+| Usage | Input, cached-input and output categories with explicit overlap rules; billable categories distinct from delivered-output categories; each counter's origin and observation period |
+| Delivery | Output commitment, completion or failure status, start and finish observations, actual service-level measurements and any partial-delivery reference |
+| Verification | Evaluator or attestor, checks performed, evidence class, verdict, stated limitations, dispute reference and finality status |
+| Funding and procurement | Holder contribution or other source, authorized payer, account or wallet reference, budget and renewal-policy references, provider purchase/invoice identifiers |
+| Payment and costs | Asset or currency, raw amount and precision, payer and recipient, fee components, payment state, transaction/provider references, credits, refunds and liabilities |
+| Availability and integrity | Canonical encoding and hash algorithm, evidence locations, retention term, permitted auditor access, signatures where available and a missing-evidence status |
+
+Exact field names and interfaces are proposals for the implementation review. Payment credentials,
+private keys and provider API secrets never belong in an envelope or public manifest. Sensitive
+prompts and outputs may use controlled-access evidence, but the report must disclose that a
+public auditor cannot independently check the withheld content. A hash proves a commitment; it
+does not guarantee that evidence is available or true.
+
+Any production adapter must define how its envelope commitment, tender and receipt correspond,
+including how retries, partial results and parent/child work are linked. This requires a reviewed
+new adapter, registry or ledger version as appropriate; a side file alone does not alter R1's
+verdict or its fixed-base GMU.
+
+### 14.4 Measurement, qualification and future SIG
+
+Keep four observations distinct: purchased quota, measured service usage, accepted delivery and
+economic settlement. A top-up or token allowance is purchased capacity to use a service. It is
+not measured output and is not interchangeable with an accepted delivery.
+
+Usage measurement must identify the tokenizer, model/service revision and counter source. Input,
+cached input, generated output, delivered output and provider-billed categories need explicit
+definitions. Categories that overlap must not be added as if they were disjoint. An incomplete
+request may incur a cost even when no delivery qualifies for contribution credit.
+
+The proposed production rule first determines whether the delivery meets the profile, then
+records its qualified service units with the corresponding measurement version. It must not
+reward extra verbosity, repeated output or repeated requests simply because their raw token
+count is larger. A requester-funded service and protocol-funded benchmark work need separate
+purpose and eligibility labels.
+
+SIG is the future calibration of intelligence-production capability from comparable evidence.
+Model class, quality, throughput, latency and verification assumptions can be reported separately
+before a reviewed method permits any normalization. Different models' raw token counts have no
+automatic universal exchange rate. A general task can contain several qualified inference
+services and additional orchestration or verification work; its whole value need not be reduced
+to generated-token count.
+
+GMU continues to identify contribution under a versioned reward rule. A future rule may use
+qualified production units and other eligible roles, but it needs its own specification and
+implementation. The R1 formula in section 6 remains unchanged. Neither old GMU, future SIG nor a
+provider usage counter creates a redeemable balance or a right to a platform token.
+
+### 14.5 Verification classes and their limits
+
+The following proposed classes distinguish the claim supported by evidence. They are not an
+automatic ranking or rewards schedule, and none is implemented by R1 for production inference.
+
+| Evidence class | What it can establish under its stated assumptions | What it cannot establish on its own |
+| --- | --- | --- |
+| Declared usage | What the worker or operator reports | Independent usage, correct inference, owned GPUs or useful demand |
+| Provider-attested usage | What an identified provider attests it served or billed, with a signature or authenticated record when supported | A cryptographic proof of model execution, worker-owned hardware, independent demand or qualified output |
+| Independently evaluated delivery | Results of the specified checks on available inputs and outputs, performed by the named evaluator | Every internal model operation, every claimed token or universal semantic correctness beyond those checks |
+| Execution-evidenced delivery | Execution claims supported by a specific reviewed proof or attestation system and its trust assumptions | Whether the customer needed the result, whether the service was profitable, or facts outside the proved statement |
+
+A production profile names the combination it needs. For example, provider usage can support
+cost reconciliation while an independent evaluator supports acceptance. These are separate
+claims. A provider's signed usage statement is not presented as cryptographic proof of inference
+or evidence that the worker runs a GPU.
+
+Rewarded verification is a later work role with an assigned verification target, distinct work
+identity, timing rules and budget. It must not reward a verifier merely for copying a verdict
+that was already public. Known operator relationships must be visible; undeclared relationships
+and collusion remain explicit limitations. The proposed mechanisms in section 13 require their
+own review before they govern valuable rewards.
+
+### 14.6 Procurement, authorization and payment
+
+Both procurement routes are part of the design: digital assets from an authorized agent wallet,
+and fiat-billed service through an account authorized by the holder. A fiat route can mean an
+agent buying or renewing service within an existing funded or billed provider account; it does
+not imply that every provider permits autonomous card entry, account creation or arbitrary
+payment automation. Each adapter must declare the operations its provider actually supports.
+
+The purchasing policy records who funds the account, who may spend, permitted providers, account
+or wallet boundaries, per-request and period budgets, renewal conditions and escalation rules.
+Human payments and agent payments may coexist in the same deployment. Authorization is preserved
+through procurement, retries, renewal and recovery.
+
+The proposed payment record distinguishes at least the following meanings; the final state
+machine is adapter-specific and is not an existing R1 interface.
+
+| State meaning | Required evidence or action |
+| --- | --- |
+| Authorized or reserved | An applicable spending authority and available budget; no payment is yet claimed |
+| Initiated | A transaction or provider payment request exists; retain its stable identifier |
+| Pending or unknown | The payment has not reached the required confirmation, or the response was lost; reconcile before retrying |
+| Settled or captured | The required on-chain finality or provider settlement/capture evidence exists under the declared policy |
+| Service credit available | The provider has made quota or credit usable; record this separately from money leaving the payer |
+| Refunded, credited or disputed | A reversal, refundable amount, internal credit or unresolved liability remains linked to the original payment |
+
+Payment initiation is not settlement. A provider credit becoming available is not inference
+delivery. An ERC-8414 `Accepted` submission may leave withdrawable credit; actual customer
+revenue is established by the corresponding transfer or withdrawal evidence, not by the
+acceptance label alone. These states must remain visible when service, payment and chain
+finality happen at different times.
+
+Production evidence and subsidy support for stablecoin or other ERC-20 settlement require future
+adaptations. Existing ERC-8414 asset features do not implement those PoUW production adaptations.
+Their design identifies the chain,
+asset contract, raw integer amount, decimals, permitted token behavior, payer, recipient and
+transfer evidence. Issuer-native and bridged representations are distinguished in the manifest;
+an asset name alone does not establish provenance, support or equivalence. Any fiat conversion
+used in reporting records its source and observation time. The current G1 rule still treats a
+non-native bounty as ineligible for subsidy (code 6); these documents do not change it.
+
+Paying for a service with a stablecoin does not change the chain's gas asset. The operating budget
+must include transaction gas and any explicit sponsorship arrangement. No production payment
+flow is routed through a test-point balance: R1 has no such balance or payment function.
+
+### 14.7 Contribution roles, budgets and economic reports
+
+Production economics retains three separate records: customer service payments, protocol-funded
+work or subsidies, and holder-supplied capital. Simulated points remain a fourth, non-monetary
+record and are never presented as cash revenue.
+
+| Future work role | Acceptance basis | Who supplies the budget |
+| --- | --- | --- |
+| Intelligence producer | Qualified service delivered under its profile | Its customer or an explicitly purchasing protocol program |
+| Agent or cell fulfiller | An accepted task or agreed orchestration service, with linked underlying work | The task's demander |
+| Verifier or dispute participant | The separately specified verification or resolution work and its final result | A reserved task fee or a named protocol budget |
+| Public-service provider | An explicitly procured audit, availability, maintenance or other public service | The responsible public-service budget |
+
+The same cell may perform more than one role. Its receipts identify each role, parent/child work,
+funding purpose and deduplication key so that a supplier's inference and a fulfiller's completed
+task are distinguishable. Multiple real services can be paid, while the same contribution cannot
+be repackaged to claim the same subsidy repeatedly. Unused or rejected work retains its cost
+record without automatically becoming an eligible contribution.
+
+Self-maintenance, self-repair and replication support cellular completeness. They do not, merely
+by occurring, authorize a public reward. If a maintenance or replication service is purchased,
+its buyer, budget, accepted outcome and authority must be explicit. A cell's replicas receive
+distinct identities, scoped authorization and resource budgets; creating replicas does not
+create independent demand or evade operator-level rules.
+
+An operating report covers a stated period and separately reports customer cash received,
+receivables, provider charges, unpaid liabilities, refunds, inference costs, verification and
+orchestration costs, chain fees, hosting/hardware costs, holder contributions and subsidies.
+Where assets or currencies differ, native amounts remain available alongside any justified
+conversion. It distinguishes cash flow from costs incurred and identifies omitted costs.
+
+This report evaluates revenue coverage and dependence on external funding. It does not infer
+profitability from a token count, a GMU balance, a platform-token price or a successful automatic
+renewal. No emission formula, future token price, fixed return, guaranteed margin or automatic
+conversion is approved here. Tokenomics must later identify its own budgets, obligations and
+asset rules without rewriting historical test allocations.
+
+### 14.8 Failure recovery and evidence availability
+
+The proposed production implementation must recover the work and financial state together.
+
+| Failure | Required design behavior |
+| --- | --- |
+| Insufficient budget, gas or authorized quota | Decline or pause the purchase according to policy, preserve the request state and report the shortfall; do not infer credit or expand authorization |
+| Provider unavailable or a model revision changes | Apply bounded retries or route only to an eligible source whose specification and evidence requirements are satisfied; record the actual source and revision |
+| Request times out after the provider accepted it | Reconcile its stable request identifier and billed usage before buying the service again; mark uncertainty explicitly |
+| Payment response is lost or transaction remains pending | Reconcile the existing payment, account balance and receipt before any resubmission; preserve nonce/provider-id idempotency as appropriate |
+| Work is incomplete, refused or rejected | Preserve partial evidence and incurred cost, apply the agreed acceptance/refund rule, and avoid counting it as a qualified full delivery |
+| Payment and delivery complete in different orders | Keep both state machines and their references; do not report both as complete because one succeeded |
+| Required evidence cannot be retrieved | Mark the delivery unauditable under that profile and withhold the corresponding verified qualification until its rule is satisfied |
+| A cell crashes or repairs itself | Resume from durable work, payment and authorization records; retain prior evidence and prevent duplicate purchase, recording or reward |
+| A cell is replicated | Initialize a separate identity and scoped budget through an authorized procedure; retain lineage without copying signing secrets or duplicating earlier contributions |
+| Chain history reorganizes | Reconcile chain-derived state with the configured finality policy; preserve records of external purchases that cannot be rolled back with the chain |
+
+No current `pouw` command is claimed to implement these production behaviors. Existing R1
+recovery and finality rules remain those of sections 9-12.
+
+## 15. Proposed production acceptance and execution sequencing
+
+Every row below is proposed and not run as part of R1 or this documentation alignment. These rows
+are not additions to the 69 tests and 16 local-run checks reported for round R1, nor to the tests
+and the 37 rehearsal checks added for round R2 in v0.1.3. A later implementation
+must report the actual environment, versions, data source, parties, finance mode and evidence
+for each completed row.
+
+| Proposed check | Expected observation | Status |
+| --- | --- | --- |
+| Manual startup funding and renewal | A holder's manual fiat purchase/renewal makes service available; later usage and delivery are recorded separately from the top-up | Proposed; not run |
+| Authorized agent wallet procurement | An agent purchases and reconciles supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | Proposed; not run |
+| Authorized fiat-account procurement | An agent purchases or renews through a supported fiat-billed API/account within the holder's authority; unsupported provider actions are reported rather than assumed | Proposed; not run |
+| Manual and autonomous coexistence | Both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | Proposed; not run |
+| Qualified inference delivery | The chosen service profile records model/tokenizer versions, usage categories, output, evaluator findings and accepted service units | Proposed; not run |
+| Mixed-source service | External and operated GPU/model suppliers are assessed against the same selected service specification, with source control and evidence classes stated separately | Proposed; not run |
+| Declared usage limitation | A worker's declaration and provider-attested usage are not misreported as a proof of inference or GPU ownership | Proposed; not run |
+| Customer cash receipt | Acceptance, credit owed, withdrawal and actual receipt are reconciled; gross service amounts, fees and refunds remain identifiable | Proposed; not run |
+| Cost and autonomy report | The cell produces a period report that separates payment autonomy, revenue coverage and supply control, including holder funding, liabilities and operating costs | Proposed; not run |
+| Multiple contribution roles | Producer, fulfiller and verifier contributions link to their funding and work without duplicate subsidy for the same contribution | Proposed; not run |
+| Unknown payment result and restart | A crash or timeout is reconciled without duplicate purchase or an invented success state | Proposed; not run |
+| Repair, replication and authorization | Recovery preserves obligations and evidence; a replica has its own identity and budget and does not duplicate past contributions or inherit unrestricted authority | Proposed; not run |
+| Missing evidence and source change | The report exposes unavailable evidence and changed model/service assumptions; qualification follows the declared profile rule | Proposed; not run |
+| Related-party demand | Controlled self-tests remain labelled; no collection of addresses, signatures or transfers is presented as proof of all-party independence | Proposed; not run |
+
+Payment simulation, sandbox billing, testnet assets and mocked providers may establish specific
+technical behaviors. Every such run must say which facts were simulated. They do not establish
+real revenue, a live provider payment integration, external demand, economic self-sufficiency or
+production-model performance. A real provider charge likewise does not prove independent
+customer demand or a profitable service.
+
+The same rows, with identifiers, the items of `decisions.md` A54 they belong to and the production
+increment proposed to run each, are in `acceptance-matrix.md`, section 11.
+
+R2 continues first as the already-approved Finchain Sepolia ledger and audit round. Its public
+evidence is scoped to the functions it actually exercises. The proposed production extension is
+then specified and implemented as a separately reviewable increment, starting with one bounded
+inference profile, a supported procurement route, its evidence envelope and an operating report.
+Additional providers, stablecoin settlement, richer verification, SIG calibration and platform
+economics expand from that evidence rather than being assumed complete by the generic loop.
+
+The protocol remains in `finchain-pouw`. Finchain supplies the deployment environment and records
+verified integration versions. FOGA and other agents participate through their existing approved
+capabilities or later optional adapters. This alignment authorizes no FOGA release, ERC change,
+mainnet deployment, token issuance, or change to the chain's consensus or sequencing.
