@@ -1,6 +1,7 @@
 # Supply and Payment Interfaces: Plan
 
-Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
+Design revision v0.1.8, after the reviews of v0.1.4, v0.1.5 and v0.1.6 and the owner's adoption
+of the recommendations on its questions (`decisions.md` A55-A70).
 This is the executor's plan for the supply and payment interfaces: deliverable C of the alignment of
 2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.6 to 14.8 and `architecture.md` 5.3. It
 covers the source of supply, the execution of payment, the source of funds and the scope of
@@ -19,10 +20,14 @@ v0.1.5 asked for one level more before the second increment is coded: a purchase
 the payments tried for it are attempts, and each attempt has its own record on its channel; and
 after a crash every reservation that is not finished is taken up, whatever status its purchase
 shows (sections 3, 4 and 4.3). They are applied here. On the questions this plan raises (Q24,
-Q28) the advisor's recommendations are recorded with the questions, and the owner's adoption of
-them is pending (`decisions.md` 12, and A66). What this repository adds on its own judgment is
-marked as a proposal (P56, P57). Where this plan and `genesis-mining-mvp.md` 14 differ, that
-section governs. Where the text says "is", read "is proposed to be".
+Q28) the owner adopted the advisor's recommendations on 2026-11-24 (`decisions.md` A70, and
+12.2): the purchase record and the budget book (P56, P57) are approved as the design the second
+increment is built to, and its providers are chosen when it opens. One point is left to be
+settled when that increment is coded, as the review of v0.1.6 asked: the budget that fees belong
+to, for which rule 12 of section 4.3 is the proposal. What the plan adds in carrying the adopted
+choices out is this repository's, and is reviewed with the implementation. Where this plan and
+`genesis-mining-mvp.md` 14 differ, that section governs. Where the text says "is", read "is to
+be".
 
 ## 1. Four flows of money, kept apart
 
@@ -50,9 +55,10 @@ buy all its inference. Each combination is valid and each is recorded as what it
 
 ## 3. What a worker's side keeps
 
-Proposed (P48, P56, P57). The records are JSON documents the worker's side keeps and reports; none
-of them is a contract field. They are the same whether a person or an agent acts, which is what
-lets the startup and the development forms share one interface. The first increment keeps four:
+Adopted as design (P48 as corrected, P56, P57; Q24, Q28; A70). The records are JSON documents
+the worker's side keeps and reports; none of them is a contract field. They are the same whether
+a person or an agent acts, which is what lets the startup and the development forms share one
+interface. The first increment keeps four:
 supply source, purchasing policy, purchase, funding. The second adds a fifth, the budget book,
 which an agent's purchases need (4.3).
 
@@ -105,8 +111,7 @@ wallet it went to, and its evidence.
 what is held and what is consumed, each entry under the `purchaseId` it belongs to (4.3).
 
 An adapter implements a route. What an adapter has to declare is fixed now, before any provider
-is chosen, as the review recommends (Q24); the providers are chosen when the second increment is
-opened:
+is chosen (Q24; adopted, A70); the providers are chosen when the second increment is opened:
 
 | An adapter declares | Content |
 | --- | --- |
@@ -231,7 +236,7 @@ available is not a delivery, and a top-up is never production (A40).
 
 For the agent routes, in the second increment. To check that a budget has room and then to buy is
 not enough: two requests can read the same room at the same moment and both spend it (A58).
-Proposed (P57):
+Adopted (P57; Q28, A70), rule 12 remaining a proposal until the increment is coded:
 
 1. One book per boundary of a policy, asset or currency, and budget period. It holds the limit,
    what is held and what is consumed, each entry under its `purchaseId`.

@@ -12,13 +12,13 @@ audit from the chain alone that agrees with the ledger on every figure. The kern
 are those of v0.1.2. This version adds what a public deployment needs - committed builds, a
 deployment that records code hashes, a check of deployed code, an operator's round, the identity
 check - and rehearses round R2 with them. Round R2a is being run on Finchain Sepolia as design
-revision v0.1.7 is written; its manifest and its records enter this repository when the round is
+revision v0.1.8 is written; its manifest and its records enter this repository when the round is
 complete (`docs/roadmap.md`, `docs/r2-runbook.md`). The strategic baseline is FPM01 / FPM01-G
 v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what
-is approved, what this repository proposes, what the advisor recommends and the owner has not yet
-adopted, and which figures are only illustrative.
+is approved, what this repository proposes, what is still open for the owner's ruling, and which
+figures are only illustrative.
 
-Design revisions v0.1.4 to v0.1.7 (all 2026-11-24) are revisions of the documents. The software
+Design revisions v0.1.4 to v0.1.8 (all 2026-11-24) are revisions of the documents. The software
 is release 0.1.3, unchanged: no contract, interface, client, script, configuration or deployment
 changes with any of them, nor any command of the runbook, and round R2 runs from it as it was
 prepared.
@@ -34,8 +34,10 @@ confirmation takes the one counting of a task unit, the attempts inside a purcha
 beside receipts, and the one linked chain of evidence that closes the first production milestone.
 v0.1.7 applies the review of v0.1.6: the fallback of the runbook of round R2a is worded exactly -
 which epochs the round works in, which epochs are audited, when the budget first halves - and two
-points are written into the plans for the next implementation. Nothing of the production line is
-built.
+points are written into the plans for the next implementation. v0.1.8 records the owner's
+adoption of the advisor's recommendations on the thirteen questions of the production line (Q17
+to Q29; `docs/decisions.md` A70): the plans are approved as design. Nothing of the production
+line is built.
 
 ## What this repository is for
 
@@ -155,11 +157,11 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 
 | Document | Content |
 | --- | --- |
-| `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the reviews of design revisions v0.1.4 and v0.1.5, and how each is applied; this repository's proposals, each open to a veto; the open questions, with the advisor's recommendations recorded beside them until the owner adopts them; illustrative figures |
+| `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the reviews of design revisions v0.1.4, v0.1.5 and v0.1.6, and how each is applied; the owner's adoption of the advisor's recommendations on Q17 to Q29; this repository's proposals, each open to a veto; the questions put to the owner, open and adopted; illustrative figures |
 | `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
 | `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
-| `docs/production-service.md` | Plan, not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work with the task description behind the content key, and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
-| `docs/supply-and-payment.md` | Plan, not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - with the attempts under a purchase, and what settlement means per channel; the budget book of an agent's purchases and the recovery after a crash; failure and recovery; the customer's payment; the operating report; the later adaptations |
+| `docs/production-service.md` | Plan, adopted as design (A70) and not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work with the task description behind the content key, and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
+| `docs/supply-and-payment.md` | Plan, adopted as design (A70) and not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - with the attempts under a purchase, and what settlement means per channel; the budget book of an agent's purchases and the recovery after a crash; failure and recovery; the customer's payment; the operating report; the later adaptations |
 | `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the first production increment, the staged acceptances after it and the linked chain of evidence that closes the first production milestone; the later increments and the order |
 | `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the rehearsal's checks; when round R2 is accepted; what the rounds prove and do not prove; the staged acceptance of the production extension, every row proposed and not run |
 | `docs/r2-runbook.md` | Round R2a on Finchain Sepolia, one command at a time, with the clock and what to do when something goes wrong |

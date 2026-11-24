@@ -9,18 +9,20 @@ none of them is a protocol parameter, and the kernel runs with any value in thei
 A recommendation of the advisor on an open question belongs to none of the three. It is recorded
 beside its question with the words "advisor recommendation recorded; owner adoption pending". It
 is neither approved nor in force until the owner adopts it in a statement of his own, and a
-review that the owner relays is not adopted by being relayed (A66).
+review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
+the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.7: a revision of the documents after the review of design revision v0.1.6.
-The software is release 0.1.3, unchanged - no contract, interface, client, script, configuration
-or deployment changes with it. The runbook of round R2a has its fallback worded exactly (A69);
-none of its commands changes. Sections 2 and 3 record the two reviews of the kernel - of v0.1.1,
-and of v0.1.2 with round R1 - and how each ruling was applied; section 4 records the alignment of
-2026-11-24 on the production line; sections 5 and 6 record the reviews of v0.1.4, of v0.1.5 and
-of v0.1.6 and how each is applied; sections 7 and 8 give the state of the earlier proposals;
-section 9 lists what v0.1.3 proposed, section 10 what v0.1.4 proposed and section 11 what v0.1.5
-proposed, each as it stands after the reviews; section 12 holds the open questions, with the
-advisor's recommendations beside them; section 13 the illustrative figures.
+Design revision v0.1.8: a revision of the documents that records the owner's adoption of the
+advisor's recommendations on Q17 to Q29 (A70). The software is release 0.1.3, unchanged - no
+contract, interface, client, script, configuration, runbook or deployment changes with it.
+Sections 2 and 3 record the two reviews of the kernel - of v0.1.1, and of v0.1.2 with round R1 -
+and how each ruling was applied; section 4 records the alignment of 2026-11-24 on the production
+line; sections 5 and 6 record the reviews of v0.1.4, of v0.1.5 and of v0.1.6, how each is
+applied, and the adoption that followed; sections 7 and 8 give the state of the earlier
+proposals; section 9 lists what v0.1.3 proposed, section 10 what v0.1.4 proposed and section 11
+what v0.1.5 proposed, each as it stands after the reviews and the adoption; section 12 holds the
+questions put to the owner - those still open, and those adopted, each with the advisor's
+recommendation as it was adopted; section 13 the illustrative figures.
 
 ## 1. Approved
 
@@ -95,6 +97,7 @@ advisor's recommendations beside them; section 13 the illustrative figures.
 | A67 | ERC-8506 is a light dependency. Nothing may fail to run because that standard has not become an EIP merged into the main repository. | owner, his note in relaying the review of v0.1.5, 2026-11-24 |
 | A68 | The review of design revision v0.1.6, and the owner's instruction on it. The owner relayed the review and asked for the update at once. The revision of the documents in v0.1.6 is accepted, and the main findings of the round before it are closed: the record of recommendations apart from approvals; who takes the one counting; what a content key is made of; work facts apart from receipts; attempts and the recovery of a crash; the linked chain that closes A54; the light dependency on ERC-8506 and the validation of its records at the build. The demander that a profile version names is reasonable in its scope - it binds the first controlled fixture profile and is no admission rule of the network - and stays a proposal under Q25. FOGA's independence is intact: no change or release of FOGA and no ERC-8506 contract became a condition of round R2a. Round R2a continues. After it, the next review in depth is of the implementation of the new ledger and of the first production increment. The instruction covers design revision v0.1.7. It adopts none of the recommendations on Q17-Q29. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A69 | The running of round R2a, corrected and made exact. (a) The budget of an epoch is counted from the first epoch of its parameter version. With the configuration of round R2a the standard version begins in epoch 1 with a halving interval of 8: epochs 1 to 8 have 1,000 test points, and epoch 9 is the first with 500. The executor's operating instruction that the first halving was epoch 8 was wrong by one epoch. The contract is right and is not changed to fit an instruction; a standard round worked from epoch 9 on changes the expected figures, and neither invalidates the round nor asks for a new deployment. (b) `--epochs n` is an upper bound - the round works in epochs 0 to n - 1, by default 2 - so a standard round in epoch k is run, and closed, with `--epochs k+1`. (c) Closing an epoch sends a transaction and is not called read-only. (d) The five minutes an epoch must still have are the threshold below which nothing is started, not an assurance that what is started completes. (e) The audit job of epoch k recomputes epoch k - 1. Where that epoch is empty, the record says that an empty epoch was recomputed: that shows the procedure and is no recomputation of epoch 0's receipts. (f) The independent audit covers epoch 0 and the epoch in which the standard round was in fact worked. The host's audits, the input of the hosted job and the evidence name the same epochs, and receipts recorded across an epoch boundary are covered where they were recorded. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
+| A70 | The owner adopts the advisor's recommendations on Q17 to Q29, each as it is recorded with its question (12.2), its conditions included. He first asked the executor whether it had an evident objection to any of them; it had none, and it named what the adoption carries with it (6.7). The choices these questions put up - P42 to P45, P47, P48, P50, P51 and P54 to P60, as they stand after the reviews - are approved as design: the plans that carry them out are what the next version of the ledger and the production increments are built against and reviewed with. With Q26 the choice that A64 left is made: the facts of a piece of work are kept apart from the confirmation that leads to the subsidy (P60, in the place of P40). The second item of Q16 is settled by that, and work whose demander does not confirm is in no epoch's GMU, measured or subsidized. Nothing is built, deployed or spent by the adoption. Each implementation still goes design, ruling, code; the limits of A53 stand; Q13 to Q15 and the rest of Q16 are not ruled by it. | owner, 2026-11-24: his own statement to the executor, made after the executor answered that it had no evident objection |
 
 The rulings of the reviews and of the alignment are recorded here in condensed form from the
 owner's relay of them. A review's own text governs wherever a wording here falls short of it, and
@@ -102,7 +105,8 @@ for A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining
 15. A55-A62 and A64 condense what the review of design revision v0.1.4 required, A65-A67 the
 review of v0.1.5 and A68-A69 the review of v0.1.6, each with the owner's instruction on it. What
 a review recommends on an open question is not in this table: it is with its question in section
-12 until the owner adopts it (A66).
+12 until the owner adopts it (A66). A70 is such an adoption. It rests on the owner's own
+statement, and the recommendations it adopts stay worded with their questions (12.2).
 
 ## 2. The formal review of v0.1.1 and how it was applied
 
@@ -311,8 +315,8 @@ It ran no code and contacted no node. These limits are the review's own statemen
 
 ### 5.3 The advisor's recommendations on the eight questions of v0.1.4
 
-Advisor recommendation recorded; owner adoption pending (A66). The review of v0.1.5 maintains
-each of them. The plans follow them as proposals, in the places named.
+Recorded as the advisor gave them (A66); the review of v0.1.5 maintains each of them. The owner
+adopted them on 2026-11-24 (A70), and the plans carry them out in the places named.
 
 | Question | The advisor's recommendation | Where the plans follow it |
 | --- | --- | --- |
@@ -326,7 +330,7 @@ each of them. The plans follow them as proposals, in the places named.
 | Q24 The providers of the second increment (P48) | Agree: chosen when it opens. Fixed now: the capability interface, the authorization, the budget, the idempotency and the reconciliation. No provider is presumed to support a top-up without a person | `supply-and-payment.md` 3, 4.3 |
 
 Q9-Q12 are not reopened. Q13-Q16 are approved neither by the merge of the documents nor by this
-review, and stay open (section 12).
+review, and stay open (section 12); the second item of Q16 has since been settled with Q26 (A70).
 
 ### 5.4 Corrections the review required
 
@@ -348,7 +352,7 @@ review, and stay open (section 12).
 | `supply-and-payment.md` 9: "The kernel's rule stays until a new policy replaces it", followed by a parameter version that lists assets | A policy, its implementation, and only then parameters (A62) |
 | The same section: payments by x402 "are usually made on another chain" | On the same chain or on another supported one; the mechanism described is one example, and an adapter pins its own (A62) |
 
-## 6. The reviews of design revisions v0.1.5 and v0.1.6, and how they are applied
+## 6. The reviews of design revisions v0.1.5 and v0.1.6, and the adoption that followed
 
 The owner relayed the advisor's review of design revision v0.1.5 with the instruction to carry
 out what it asks. Its verdict and the scope of the revision that applied it, v0.1.6, are A65; the
@@ -359,6 +363,9 @@ not approvals. Design revision v0.1.6 changed documents only (6.1 to 6.3).
 The owner then relayed the review of v0.1.6 and asked for the update. That review accepts v0.1.6
 (A68) and makes the running of round R2a exact (A69). Design revision v0.1.7 applies it, again in
 documents only (6.4 to 6.6).
+
+On the same day the owner adopted the advisor's recommendations on Q17 to Q29 (A70). Design
+revision v0.1.8 records the adoption, in documents only (6.7).
 
 ### 6.1 What the review checked, and what it did not
 
@@ -388,8 +395,8 @@ on the hosted run; and the order policy, implementation, parameters for other as
 
 ### 6.3 The conventions the review asked to have written exactly
 
-Each is part of a proposal (section 11) and of a recommendation whose adoption is pending
-(section 12).
+Each is part of a proposal (section 11) and of a recommendation (section 12), which the owner
+has since adopted (A70).
 
 | Matter | What v0.1.5 left open | Written as | Where |
 | --- | --- | --- | --- |
@@ -419,8 +426,8 @@ It closes the main findings of the review of v0.1.5, each as v0.1.6 wrote it: th
 recommendations apart from approvals (A66); who takes the one counting of a content key, and what
 the key is made of; work facts apart from receipts; the attempts inside a purchase and the
 recovery of a crash; the linked chain of evidence that closes A54; the light dependency on
-ERC-8506 and the validation of its records at the build. On Q25 to Q29 its support remains a
-recommendation (section 12).
+ERC-8506 and the validation of its records at the build. On Q25 to Q29 its support was a
+recommendation, which the owner has since adopted (A70; 12.2).
 
 ### 6.5 The rulings of the review of v0.1.6
 
@@ -445,6 +452,29 @@ implementation finds them there.
 | --- | --- | --- |
 | The demander that a profile version names, and a rightful delegate (Q25) | The check is of the demander that is represented. A confirmation by a named demander and one by its rightful delegate have the same outcome: a delegate is not another demander, and a contract account that confirms through a delegate is not refused for it. The test confirms both ways | `production-service.md` 7; row S25 |
 | The budget that fees belong to, in a purchase by an agent (Q28) | Principal and fees each have a stated budget. A fee that was incurred and cannot be recovered is consumption of its budget. Before a new attempt is opened, and before a transaction is sent again at a higher fee, the reservation for fees is raised to cover what the fee can now reach | `supply-and-payment.md` 3, 4.3; row F26 |
+
+### 6.7 The owner's adoption of the recommendations on Q17 to Q29
+
+On 2026-11-24, with the thirteen questions explained to him, the owner asked the executor whether
+the advisor's recommendations on them all made sense to it, and said that, if it had no evident
+objection, they were to be carried out as recommended. The executor answered that it had none.
+It added that most of the designs were its own proposals, on which the advisor had put
+conditions, so that its agreement was not a second independent opinion; and it named what the
+adoption carries with it:
+
+| Adopted with | What it carries with it |
+| --- | --- |
+| Q26 | Work whose demander does not confirm leaves a public work fact and is in no epoch's GMU, measured or subsidized. That is acceptable while the demanders are named. In an open network a demander could keep a worker's GMU from being recorded by not confirming, the bounty being paid all the same, and a rule for that would have to be made then |
+| Q25 | A task unit counts once, and the order in which the named demander's confirmations are recorded decides for whom - not who finished first. The rule binds the first controlled fixture profile and is not inherited by a later one |
+| Q19, Q21 | The first specification takes a model with published weights and a public tokenizer, and its fixtures are public and finite. The first increment therefore shows the mechanism, and neither demand nor revenue |
+| Q27 | The first increment does not close A54 by itself. A cell taking part, which needs the ruling of Q13, and an external customer's own request are needed as well, joined in one chain of evidence |
+| Q22 | The next version of the ledger can be designed as one. What it still waits for is the ruling of Q13 and of the rest of Q16 |
+
+How the adoption is applied:
+
+| Ruling | Applied as | Where |
+| --- | --- | --- |
+| A70 | Q17 to Q29 leave the open questions and are listed as adopted, each with the recommendation as it was adopted. The proposals they put up are marked adopted. The plans say that their choices are approved as design, that what they add in carrying the choices out is reviewed with the implementation, and that nothing is built. The kept design of work facts says what the adoption rules on. No acceptance row is run by it, and nothing of the software changes | sections 9 to 12; `production-service.md`; `supply-and-payment.md`; `roadmap.md`; `architecture.md`; `genesis-mining-mvp.md` 13.7 and 14; `acceptance-matrix.md`; `README.md` |
 
 ## 7. The proposals of v0.1.0 and v0.1.1, and their state
 
@@ -503,9 +533,11 @@ settlement-time authority, the delegation signed by an account.
 On this repository's own judgment, to carry out the rulings of section 3. P32, P33, P34, P37, P38
 and P39 are implemented and in force unless vetoed. P35, P36, P40 and P41 are designs put up for
 a ruling; nothing of them is built. Neither the alignment of 2026-11-24 nor the review of v0.1.4
-ruled on them: round R2 continues as approved (A53, A55), and the questions Q13 to Q16 stay open.
-The review of v0.1.4 put one condition on P40 (A64), which P60 is proposed to meet; the review
-of v0.1.5 supports that way of meeting it, as a recommendation (Q26).
+ruled on them: round R2 continues as approved (A53, A55), and the questions Q13 to Q16 stay open,
+with one exception. The review of v0.1.4 put a condition on P40 (A64); P60 was proposed to meet
+it, the review of v0.1.5 supported that, and the owner adopted it with Q26 (A70). P60 therefore
+stands in the place of P40: work that settles without its demander's confirmation leaves a work
+fact, and not a receipt.
 
 | Id | Proposal | Why | Where |
 | --- | --- | --- | --- |
@@ -525,8 +557,9 @@ of v0.1.5 supports that way of meeting it, as a recommendation (Q26).
 On this repository's own judgment, to carry out the alignment of section 4. All of it is design:
 nothing is built. Where an entry and `genesis-mining-mvp.md` 14 or 15 differ, those sections
 govern. The first table has the proposals as v0.1.4 made them; the second says where each stands
-after the reviews of v0.1.4 and of v0.1.5 (sections 5 and 6). A proposal that a review recommends
-is still a proposal until the owner adopts it (A66). Where the two tables differ, the second
+after the reviews of v0.1.4 and of v0.1.5 (sections 5 and 6) and after the owner's adoption of
+2026-11-24 (A70). A proposal that a review recommends is still a proposal until the owner adopts
+it (A66); those marked adopted are approved as design. Where the two tables differ, the second
 governs.
 
 | Id | Proposal | Why | Where |
@@ -544,28 +577,31 @@ governs.
 | P52 | Designs kept for later adaptations, in no increment yet: a list of accepted assets per parameter version; the agent-wallet route by signed stablecoin transfer, as x402 does it; metered and prepaid supply on the entitlement ledger of ERC-8506, where an authorization up to a ceiling is a Holder's delegated budget; a G0 production profile and paid verification as the content of the kept designs `g0.cal` and `g0.ver`; the sponsoring of gas | A51, A45, A48: each needs its own review. Writing the designs down keeps the first increment from closing a door | `supply-and-payment.md` 9; `genesis-mining-mvp.md` 13.1, 13.2 |
 | P53 | The reference worker, the reference demander, the evaluator and the recount of the first profile are programs of this repository's client. FOGA is not modified: a cell takes part through the capabilities it has - it issues and fulfills tenders today - or through an adapter of its own, on its own cycle | A29, A53. The first acceptance of the first increment therefore needs nothing from FOGA, and the second waits for nothing in this repository | `production-service.md` 10 |
 
-| Id | State after the reviews of v0.1.4 and of v0.1.5 |
+| Id | State after the reviews of v0.1.4 and of v0.1.5, and after the adoption (A70) |
 | --- | --- |
-| P42 | Recommended by the review as the first controlled profile (Q17); adoption pending. Added: the task units are enumerated as a committed fixture set, each with a task description (P55) |
-| P43 | Recommended on a condition, which P59 carries out (A61; Q18, Q29); adoption pending. Narrowed by the mapping: a conformant Unit and a conformant Grade; from the Source and the Receipt a vocabulary and the format of two members. The wording is: no ERC-8506 contract and no runtime dependency, and a light dependency on a pinned specification (A67) |
-| P44 | Recommended (Q19); adoption pending. The template and the serving configuration are pinned as the model and the tokenizer are |
-| P45 | The fixed GMU is recommended (Q20); adoption pending. Corrected in the measurement (A56): the count of the canonical result is a count of its own, and the formula has a stated scale. Corrected in what the fixed GMU attaches to (A57): a task unit, counted once by the order of confirmation (P55), not every accepted delivery |
+| P42 | Adopted as the first controlled profile (Q17; A70). Added: the task units are enumerated as a committed fixture set, each with a task description (P55) |
+| P43 | Adopted on the condition that P59 carries out (A61; Q18, Q29; A70). Narrowed by the mapping: a conformant Unit and a conformant Grade; from the Source and the Receipt a vocabulary and the format of two members. The wording is: no ERC-8506 contract and no runtime dependency, and a light dependency on a pinned specification (A67) |
+| P44 | Adopted (Q19; A70). The template and the serving configuration are pinned as the model and the tokenizer are |
+| P45 | The fixed GMU is adopted (Q20; A70). Corrected in the measurement (A56): the count of the canonical result is a count of its own, and the formula has a stated scale. Corrected in what the fixed GMU attaches to (A57): a task unit, counted once by the order of confirmation (P55), not every accepted delivery |
 | P46 | Stands for the work id and for the correspondence of envelope, tender and receipt. Extended: the request id and the content key are identities of their own, the key being the hash of a task description (A57, P54) |
-| P47 | Recommended (Q21); adoption pending. With what is published together |
-| P48 | The records and the routes stand. Corrected (A58): the state of a purchase is three records, not one state machine, with the attempts under it (P56); a purchase by an agent reserves its budget (P57). That what an adapter declares is fixed before providers are chosen is recommended (Q24); adoption pending |
+| P47 | Adopted (Q21; A70), with what is published together |
+| P48 | The records and the routes stand. Corrected (A58): the state of a purchase is three records, not one state machine, with the attempts under it (P56); a purchase by an agent reserves its budget (P57). That what an adapter declares is fixed before providers are chosen, and that the providers are chosen when the second increment opens, is adopted (Q24; A70) |
 | P49 | Stands. The report gains the lines and the reconciliation of prepaid credit, and its example is corrected (A58) |
-| P50 | One design is recommended, after Q13 and Q16 have converged (Q22); adoption pending. Extended by the content key and by the two reasons of P55; to be decided together with P60 (Q26) |
-| P51 | The increments and their own numbering stand; running them beside rounds R2b and R3 is recommended (Q23), adoption pending. Corrected (A59): the first increment has one acceptance, the mechanism; three further acceptances are evidenced one by one, and A54 is closed by one linked chain (P58) |
+| P50 | One design is adopted, to be written once Q13 and the rest of Q16 are ruled (Q22; A70). Extended by the content key and by the two reasons of P55, and designed together with P60 (Q25, Q26; A70) |
+| P51 | The increments and their own numbering stand; running them beside rounds R2b and R3 is adopted (Q23; A70). Corrected (A59): the first increment has one acceptance, the mechanism; three further acceptances are evidenced one by one, and A54 is closed by one linked chain (P58) |
 | P52 | Stands, as designs kept. The wording on assets and on x402 is corrected (A62) |
 | P53 | Stands. In the terms of P58: the first increment needs nothing from FOGA, and the acceptance with a cell waits for nothing in this repository |
 
-## 11. Proposed in v0.1.5, as revised in v0.1.6 and v0.1.7
+## 11. Proposed in v0.1.5, as revised in v0.1.6 and v0.1.7, and adopted
 
 On this repository's own judgment, to carry out the reviews of sections 5 and 6. All of it is
-design: nothing is built, and each entry is in force only after a ruling. The review of v0.1.5
-supports each of them, several on conditions that v0.1.6 wrote in (6.3). The review of v0.1.6
-finds them written so and names two points for the implementation, which v0.1.7 writes in (6.6).
-That support is a recommendation and is recorded with the questions in section 12.
+design, and nothing is built. The review of v0.1.5 supports each of them, several on conditions
+that v0.1.6 wrote in (6.3). The review of v0.1.6 finds them written so and names two points for
+the implementation, which v0.1.7 writes in (6.6). That support was a recommendation, recorded
+with the questions in section 12. The owner adopted it on 2026-11-24 (A70): P54 to P60 are
+approved as design, with the conditions recorded there. One point stays a proposal by the terms
+of the recommendation itself: the budget that fees belong to, in P57, is settled when the second
+increment is coded (Q28).
 
 | Id | Proposal | Why | Where |
 | --- | --- | --- | --- |
@@ -575,22 +611,33 @@ That support is a recommendation and is recorded with the questions in section 1
 | P57 | The budget book, for a purchase by an agent: one book per boundary, asset or currency and budget period; a reservation that tests the room and holds the amount in one operation; then, before each sending, the attempt written durably with its identifiers on the channel; the reservation held through all the attempts and while a payment is pending or unknown. An unknown result is reconciled, or sent again as the same attempt, and never doubled by a second one; a new attempt only after a definite failure, with the budget tested again; at most one payment settles, and what failed attempts cost is cost. Principal and fees each have a stated budget: a fee that was incurred and cannot be recovered is consumption of its budget, and the reservation for fees is raised before a new attempt or a resending at a higher fee. Released when the purchase closes without a payment or by the release rule the adapter declares; consumed at the amount settled, in the period it was made in; a refund returning nothing unless the policy says so. At every start every reservation that is not finished is taken up, a purchase still showing `authorized` included. What an adapter declares - operations, channel, idempotency, release, authorization - is fixed before any provider is chosen | A58; Q24 and Q28. A process can send a payment and stop before it notes that it did: the attempt is therefore written before the sending, and recovery does not trust the status. To be specified before the second increment is implemented; nothing of it belongs to the first | `supply-and-payment.md` 3, 4.3, 6 |
 | P58 | The acceptances of the production line. The first increment is the controlled fixtures and has one acceptance, the mechanism. Three further acceptances follow it, each with evidence of its own and none standing in for another: a FOGA cell taking part; a supplier that is not the operator's; a customer's own request, which needs a later version of the profile. The milestone of A54 is met when the mechanism, a cell taking part and a customer's own request have each been evidenced, and when at least one chain of business evidence joins them: linked by request and work ids or by parent and child, from the external customer's request through the cell, the delivery, the re-check and the payment to the GMU record and the cost. An external supplier is not among its conditions and is reported for what it shows | A59. A54 names a buyer's real request, a standardized delivery, a cell, an independent re-check, a completed payment, a GMU record and a cost report. It names no external supplier. The review of v0.1.5 (Q27): acceptances met apart would not show that the parts worked together in one business | `roadmap.md` 8; `acceptance-matrix.md` 11 |
 | P59 | The pin of ERC-8506 for the first specification: `garyyang-finchip/ai-inference-token` at commit `2b62b6171a504dc504cbb89a1b2b5d13520e1595`, the specification and four schema files by their SHA-256, the sections used. The mapping: the usage categories with their counter are a conformant Unit; the count of a canonical result is a second conformant Unit, with no relation declared to the first; the model, its configuration, the requirements and the evidence of each claim are a conformant Grade; from the Source record its vocabulary of origin and of authorization, and from the Receipt record its `claim` and `evidence` members, without the envelope being called either record. A light dependency (A67): the schema files are copied, nothing fetches the standard, and nothing depends on its status or on its being merged. The records are validated against the pinned schemas when they are written, at the build. A later revision of the standard is adopted by a new pin, in a new version of the specification | A61. A Source states the grounds on which units are issued and a Receipt describes a request on a home ledger; the first increment has neither, so that claiming those two records would claim more than is there. The review of v0.1.5 fetched the pinned files itself and found the five hashes (Q29); what that establishes is the source and that the mapping can hold, not the validity of records that do not exist yet | `production-service.md` 4.2 |
-| P60 | For ruling, with the next ledger version - work facts apart from receipts; it settles the choice that P40 left open. Anyone may record, through the adapter, that a submission settled: a work fact, which holds what the adapter read from the tender and no measure. It has an id of its own, derived from the work's source in a domain apart from the contribution id, and is recorded once. It consumes nothing that a reward depends on: not the contribution id, not a production content key, no cap and no counter. A receipt - the record that is measured, has an eligibility and counts in an epoch - is made only by the confirmation of the tender's owner or of its delegate (P35). It is linked to the same work by that source, needs no fact and is not blocked by one, and counts in the epoch in which it is recorded. No recorded status changes, and no epoch that is frozen is rewritten. The trade-off: work whose demander never confirms has a public fact and is in no epoch's GMU | A64: a third party must not take the contribution id before the rightful demander confirms. The other answer the review of v0.1.4 names - a rule by which a later confirmation raises the eligibility of a receipt already recorded - is the one place where a recorded status would change, and it would put eligible GMU into an epoch other than the one that measured it. The review of v0.1.5 supports the separation and asks for the fact's identity, for the content key to be out of its reach and for the link to the work (Q26). Whether a fact outside the totals is what the reservation of A33 asks for is part of the ruling | `genesis-mining-mvp.md` 13.7 |
+| P60 | Adopted with Q26 (A70), for the next ledger version - work facts apart from receipts; it settles the choice that P40 left open. Anyone may record, through the adapter, that a submission settled: a work fact, which holds what the adapter read from the tender and no measure. It has an id of its own, derived from the work's source in a domain apart from the contribution id, and is recorded once. It consumes nothing that a reward depends on: not the contribution id, not a production content key, no cap and no counter. A receipt - the record that is measured, has an eligibility and counts in an epoch - is made only by the confirmation of the tender's owner or of its delegate (P35). It is linked to the same work by that source, needs no fact and is not blocked by one, and counts in the epoch in which it is recorded. No recorded status changes, and no epoch that is frozen is rewritten. The trade-off: work whose demander never confirms has a public fact and is in no epoch's GMU | A64: a third party must not take the contribution id before the rightful demander confirms. The other answer the review of v0.1.4 names - a rule by which a later confirmation raises the eligibility of a receipt already recorded - is the one place where a recorded status would change, and it would put eligible GMU into an epoch other than the one that measured it. The review of v0.1.5 supports the separation and asks for the fact's identity, for the content key to be out of its reach and for the link to the work (Q26). Whether a fact outside the totals is what the reservation of A33 asks for was part of the ruling: the adoption takes it so, in the first of the two ways that A64 allows (A70) | `genesis-mining-mvp.md` 13.7 |
 
-## 12. Open for the owner's ruling
+## 12. The questions put to the owner: open, and adopted
 
-On Q13 to Q16 nothing has changed. On Q17 to Q29 the advisor has given recommendations, in the
-reviews of v0.1.4, of v0.1.5 and of v0.1.6. Each is recorded here as it was given - advisor
-recommendation recorded; owner adoption pending - and none is an approval (A66). An adoption is
-entered in section 1 with the owner's statement and its date. Meanwhile the plans follow the
-recommendations as proposals, and nothing of them is built.
+Q13 to Q16 are open (12.1). On Q17 to Q29 the advisor gave recommendations, in the reviews of
+v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor recommendation
+recorded; owner adoption pending - and none was an approval (A66). The owner adopted all thirteen
+on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as adopted. What is
+adopted is design, and nothing of it is built.
+
+### 12.1 Open for the owner's ruling
 
 | Id | Question | This repository's suggestion | Advisor recommendation recorded; owner adoption pending |
 | --- | --- | --- | --- |
 | Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA | None recorded. The review of v0.1.4 asks that this converge before the next ledger version is designed (Q22) |
 | Q14 | Whether round R2b is run on the present kernel. That is possible only by driving a cell's `execute` with the cell's own key from the reference client, with the cell's node stopped for the duration | No. R2a now, on the present kernel; R2b on the next ledger version | None recorded |
 | Q15 | The independent machine of R2: a hosted CI runner (P38) | Confirm. A further audit from any other machine costs nothing and can be added | None recorded |
-| Q16 | The content of the next ledger version, before R3: the cap per declared operator (A35, P41), receipts without the demander (A33, P40), the delegation (P35), and what is decided about the authority at settlement (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value | On the second item a condition, which is a ruling (A64). On how to meet it: Q26 |
+| Q16 | The content of the next ledger version, before R3: the cap per declared operator (A35, P41), receipts without the demander (A33, P40), the delegation (P35), and what is decided about the authority at settlement (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value | On the second item a condition, which is a ruling (A64). How to meet it was Q26, which the owner has adopted (A70): work facts apart from receipts. That item is settled; the other three are open |
+
+### 12.2 Adopted by the owner on 2026-11-24 (A70)
+
+Each question is adopted as the advisor recommended it, with the conditions that the
+recommendation names. The third column is kept for the record: it is what this repository had
+suggested before the recommendation was given.
+
+| Id | Question | This repository's suggestion | The advisor's recommendation, as adopted |
+| --- | --- | --- | --- |
 | Q17 | The task class of the first production profile and its three checks (P42) | Confirm structured extraction, or name another bounded class. The plan changes in section 2 of `production-service.md` only | Agree, as the first controlled profile. Format, grounding and reference each keep the boundary of what they verify (review of v0.1.4) |
 | Q18 | Whether the specification, the provenance of supply and the usage records follow the record formats of ERC-8506 (P43) | Confirm, at the pin and with the mapping of P59: no contract, no runtime dependency, a light dependency on a pinned specification | Agree on a condition: the source, the pinned version and the mapping of the fields are stated, and the dependency is on the specification only (review of v0.1.4). See Q29 |
 | Q19 | The model of the first specification (P44): published weights and a public tokenizer; and whether a specification for the provider a FOGA node calls today is registered beside it | Confirm the criteria and choose the model at the build round, from what can be bought then. Register the second specification when a cell is to take part with the model it has | Agree. The model, the tokenizer, the template and the serving configuration are all pinned by version; the specification of the provider a FOGA node calls may be registered separately (review of v0.1.4) |

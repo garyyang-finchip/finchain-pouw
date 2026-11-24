@@ -1,10 +1,11 @@
 # The First Production Service: Plan
 
-Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
+Design revision v0.1.8, after the reviews of v0.1.4, v0.1.5 and v0.1.6 and the owner's adoption
+of the recommendations on its questions (`decisions.md` A55-A70).
 This is the executor's plan for the first production profile: deliverable B of the alignment of
 2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.2 to 14.5 and `architecture.md` 5.3, 6.2
-and 6.3. Those sections state what a production profile has to decide; this document proposes the
-decisions for the first one.
+and 6.3. Those sections state what a production profile has to decide; this document sets out the
+decisions for the first one, as the owner adopted them on the advisor's recommendations (A70).
 
 Nothing here is built, and nothing here changes round R2. The review of v0.1.4 required
 corrections before this plan can serve as an implementation specification: to the measurement
@@ -12,12 +13,12 @@ corrections before this plan can serve as an implementation specification: to th
 11), to what is said of an agent that buys (section 8), and to the way ERC-8506 is cited (section
 4.2). The review of v0.1.5 asked that two things be written exactly: what a content key is made
 of, and which confirmation takes the one counting of a task unit (sections 4.1 and 7). They are
-applied here. On the questions this plan raises (Q17 to Q21, Q25, Q27, Q29) the advisor's
-recommendations are recorded with the questions and the owner's adoption of them is pending
-(`decisions.md` 12, and A66): where the text says that the review recommends something, it says
-no more than that. What this repository adds on its own judgment is marked as a proposal
-(P54, P55, P58, P59). Where this plan and `genesis-mining-mvp.md` 14 differ, that section governs.
-Where the text says "is", read "is proposed to be".
+applied here. On the questions this plan raises (Q17 to Q21, Q25, Q27, Q29) the owner adopted the
+advisor's recommendations on 2026-11-24 (`decisions.md` A70, and 12.2): the choices those
+questions put up - P54, P55, P58 and P59 among them - are approved as design, with the conditions
+that the recommendations name. What the plan adds in carrying them out is this repository's, and
+is reviewed with the implementation. Where this plan and `genesis-mining-mvp.md` 14 differ, that
+section governs. Where the text says "is", read "is to be".
 
 The milestone it is written for (A54): a buyer makes a real request for intelligence service; a
 supply node completes a standardized delivery; a FOGA cell uses or organizes the service; an
@@ -46,8 +47,8 @@ useful work and not a larger reward.
 
 ## 2. The first profile: one bounded task class
 
-Working name `g1.inference` (not a name the kernel has registered). The task class, which the
-review recommends as the first controlled profile (Q17): **structured extraction**. A request is a
+Working name `g1.inference` (not a name the kernel has registered). The task class, adopted as
+the first controlled profile (Q17; A70): **structured extraction**. A request is a
 text document together with the profile's published instruction and output schema; a delivery is
 one JSON object that follows the schema and holds the fields extracted from the document.
 
@@ -93,9 +94,9 @@ exactly that), its own rule for evidence that is not public, and its own scope o
 
 ## 3. The pinned choices
 
-The table of `genesis-mining-mvp.md` 14.2, with what is proposed for the first profile.
+The table of `genesis-mining-mvp.md` 14.2, with what the first profile takes.
 
-| Specification | Proposed for the first profile |
+| Specification | The first profile |
 | --- | --- |
 | Service | the task class of section 2. Input: UTF-8 text up to the context limit. Output: canonical JSON under the published schema, up to the output limit. Completion: a fulfillment submitted inside the tender's submission window |
 | Model and tokenizer | one model at a named revision whose weights are published and whose tokenizer is public (Q19). The model, the tokenizer, the chat template and the serving configuration are each pinned by version, and the serving configuration actually used is recorded with each delivery. A hosted revision that cannot be inspected is labelled opaque |
@@ -151,7 +152,7 @@ The review of v0.1.4 required that the identity of a request be kept apart from 
 its order on chain (A57). The review of v0.1.5 asked that the content key be defined on stated
 content: "the commitment to the input" could be read as the document alone, as the document with
 its instruction and schema, or as the input in the form one model's template gives it (Q25).
-Proposed (P54):
+Adopted (P54; Q25, A70):
 
 | Identity | What it names | Fixed | Derived from |
 | --- | --- | --- | --- |
@@ -362,7 +363,8 @@ machine that is not the operator's, for no reward, as the audit of round R2 is.
 
 ## 7. The contribution record, task units and duplicates
 
-Proposed for the next version of the ledger (P50), which a ruling requires before round R3 (A35):
+Adopted for the next version of the ledger (P50; A70), which a ruling requires before round R3
+(A35):
 
 - a receipt carries, besides what it carries today, the role of the contribution, the work id,
   the parent work, the commitment to the evidence envelope and the content key;
@@ -490,7 +492,7 @@ to do so was obtained; the protocol records the statement and does not vouch for
 | Piece | Where it belongs |
 | --- | --- |
 | The first specification: its records, the instruction, the schema and the template; the evaluator, the counter and the canonicalization rule; a fixture set with its task descriptions and its root | this repository |
-| The next version of the ledger, with the role, the work id, the parent, the envelope commitment and the content key in a receipt; the `g1.inference` profile and its adapter | this repository; the content of that version is `decisions.md` Q13, Q16 and Q26 |
+| The next version of the ledger, with the role, the work id, the parent, the envelope commitment and the content key in a receipt; the `g1.inference` profile and its adapter | this repository; the content of that version is adopted in part (`decisions.md` A70: Q22, Q25, Q26) and waits for the rulings of Q13 and of the rest of Q16 |
 | A reference worker (takes a task, calls the model service, checks its own delivery, writes the envelope, submits), a reference demander (issues fixtures, confirms) and the recount | this repository's client. FOGA is not modified |
 | The operating report of the worker | this repository's client; `supply-and-payment.md` 8 |
 | The rehearsal of the increment, with a deterministic stand-in for the model service | this repository |
@@ -524,6 +526,6 @@ It will not show, and will not claim:
   sustainability;
 - external supply: the worker is the operator's;
 - that an accepted extraction is right beyond the published checks and the demander's reference;
-- that the milestone of A54 is met: as proposed (P58), that takes a cell taking part and a
+- that the milestone of A54 is met: as adopted (P58; A70), that takes a cell taking part and a
   customer's own request as well, each evidenced on its own;
 - self-sufficiency, a price that means anything, capacity, or an economy.

@@ -20,7 +20,9 @@ Documentation alignment: 2026-11-24 (design revision v0.1.4; `decisions.md`, A40
 alignment is not a new software release and does not claim an implementation beyond that
 baseline. Design revisions v0.1.5 and v0.1.6 apply the reviews of v0.1.4 and of v0.1.5 (A55-A67)
 in the executor's plans. In this document they add a note to 13.7 and update the pointer in
-section 14; no rule, section number or acceptance row changes.
+section 14; no rule, section number or acceptance row changes. Design revision v0.1.8 records the
+owner's adoption of the advisor's recommendations on Q17 to Q29 (A70): here 13.7 says which of
+its two designs is adopted, and the pointer in section 14 says that the plans are.
 
 Sections 1-12 describe the existing contracts under `contracts/`, reference client under
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
@@ -630,19 +632,19 @@ holding many addresses that does not rest on the admission list alone.
 
 In R1 and R2 a settled submission becomes a receipt only when the tender's owner confirms it. The
 reservation of the ruling: work that has settled should be able to leave a receipt even when the
-demander does nothing. The kept design gives the adapter a second entry, open to anyone, that
-records a settled submission as a receipt which is measured and can never be subsidized, under an
-eligibility code of its own; the owner's confirmation stays the only way to the subsidy. One
-contribution still has one receipt: a receipt recorded without the demander is the receipt of that
-submission, so the design has to say whether a later confirmation may raise its eligibility - the
-one place where a recorded status would change - or whether an unconfirmed receipt is final as it
-stands. That choice is the ruling to ask for.
+demander does nothing. The design first kept (P40) gave the adapter a second entry, open to
+anyone, that records a settled submission as a receipt which is measured and can never be
+subsidized, under an eligibility code of its own; the owner's confirmation stayed the only way to
+the subsidy. One contribution still has one receipt: a receipt recorded without the demander is
+the receipt of that submission, so that design had to say whether a later confirmation may raise
+its eligibility - the one place where a recorded status would change - or whether an unconfirmed
+receipt is final as it stands. It is replaced by the design below.
 
 The review of v0.1.4 set a condition on this design (A64): a record that anyone may make first
 must not take the one contribution id of a piece of work, or a third party could record a settled
 submission before its demander does and leave the demander's confirmation nothing to obtain.
-Proposed for the ruling (`decisions.md` P60, Q26), in the form the review of v0.1.5 asked to have
-written down before anything is built:
+Adopted by the owner on the advisor's recommendation (`decisions.md` P60, Q26, A70), in the form
+the review of v0.1.5 asked to have written down before anything is built:
 
 | Record | Who can make it | What it does |
 | --- | --- | --- |
@@ -664,11 +666,11 @@ written down before anything is built:
 
 What this gives up is said plainly. When the demander never confirms, the work has a public fact
 and no receipt, and it is in no epoch's GMU, measured or subsidized. A work fact is never
-reported as a contribution that was counted or as an eligibility that was confirmed. Whether such
-a trace is what the reservation of A33 asks for, or whether settled work without its demander has
-to enter the measured totals after all, is part of the ruling. The choice named above falls away
-under this proposal: an unconfirmed submission has no receipt whose eligibility could be raised.
-It is to be decided before the next version of the ledger is coded.
+reported as a contribution that was counted or as an eligibility that was confirmed. The adoption
+rules on what was left open here (A70): such a trace is how the reservation of A33 is met, in the
+first of the two ways that A64 allows, and settled work without its demander does not enter the
+measured totals. The owner adopted it with that consequence named to him. The choice named above
+falls away: an unconfirmed submission has no receipt whose eligibility could be raised.
 
 ### 13.8 The authority as it was at settlement (A38)
 
@@ -717,8 +719,8 @@ rule, the epoch calculation, or the deployed ERC-8414 contracts.
 The executor's plans for carrying this section out are `production-service.md` (14.2 to 14.5) and
 `supply-and-payment.md` (14.6 to 14.8). They add concrete choices, each put up for a ruling
 (`decisions.md`, P42-P60). The reviews of v0.1.4 and of v0.1.5 corrected the plans (A55-A67); on
-the questions the plans raise, the advisor's recommendations are recorded with the questions and
-the owner's adoption of them is pending. Where a plan and this section differ, this section
+the questions the plans raise, the owner adopted the advisor's recommendations on 2026-11-24
+(A70), and the choices are approved as design. Where a plan and this section differ, this section
 governs.
 
 ### 14.1 Three stages, with three parts of Stage 1

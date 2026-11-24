@@ -9,9 +9,9 @@ deployment or the approved R2 scope. References are to `decisions.md`: A1-A39 an
 to the baseline, A40-A54 record this alignment, and P42-P53 are the executor's proposals for
 carrying it out. A55-A64 record the review of design revision v0.1.4 and A65-A67 that of v0.1.5;
 P54-P60 are the executor's proposals for carrying the two reviews out (design revisions v0.1.5
-and v0.1.6). In this document they change the pointers to the plans and nothing else. On the open
-questions the advisor's recommendations are recorded, and the owner's adoption of them is
-pending. Sections labelled **future design** describe
+and v0.1.6). In this document they change the pointers to the plans and nothing else. On the
+questions the plans raise (Q17 to Q29) the owner adopted the advisor's recommendations on
+2026-11-24 (A70); Q13 to Q16 are open. Sections labelled **future design** describe
 requirements for later work, not features available in R1. The three stages and five subdivisions
 below refine and replace A17's older economic-stage numbering. A17's approved compatibility with
 operator funding, agent procurement and self-operated hardware remains in force; those operating
@@ -513,7 +513,7 @@ continue separately.
 | --- | --- | --- |
 | `g0.ver`, `g0.cal`, verification evidence and calibration records | Deferred from R1 | The kept designs and their acceptance rules in `genesis-mining-mvp.md` 13 |
 | Declared-operator cap | Before round R3, in a new version of the ledger (A35) | A versioned implementation and a manifest that names the deployment it supersedes; existing ledgers remain immutable (P41, Q16) |
-| Receipts without the demander; a delegation signed by a contract account | With that version of the ledger, if ruled (A33, A37) | The rulings of Q13 and Q16 |
+| Receipts without the demander; a delegation signed by a contract account | With that version of the ledger, if ruled (A33, A37) | The rulings of Q13 and Q16. For the first, work facts apart from receipts are adopted (A64, A70) |
 | The authority as it was at settlement, deciding eligibility | Before any subsidy of value (A38) | The verification work |
 | Bridge freshness policy | Kept as a deferred option | A separate ruling if needed; no new R2 requirement |
 | Full FOGA adapter | FOGA's own review and release cycle | Account authority and the published protocol interfaces |
