@@ -1,23 +1,28 @@
 # Supply and Payment Interfaces: Plan
 
-Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). This is the
-executor's plan for the supply and payment interfaces: deliverable C of the alignment of
+Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67). This
+is the executor's plan for the supply and payment interfaces: deliverable C of the alignment of
 2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.6 to 14.8 and `architecture.md` 5.3. It
 covers the source of supply, the execution of payment, the source of funds and the scope of
 permission, in one form shared by manual and autonomous operation; and what happens when quota
 runs out, a renewal fails, the state of a payment is unclear, a request is duplicated, or a
 service has to recover.
 
-Nothing here is built, and nothing here changes round R2. The review required corrections before
-this plan can serve as an implementation specification (A58, A62): a purchase is not one state
-but three records that move independently - the payment, the service credit and the adjustments
-(sections 3 and 4); what "settled" means is stated per payment channel (4.1); a purchase by an
-agent reserves its budget atomically before anything is sent (4.3); the report reconciles what was
-prepaid, what was consumed and what was paid out, and adds none of them twice (section 8); and the
-wording on assets and on x402 is made exact (section 9). They are applied here. What this revision
-adds on its own judgment to carry them out is marked as a proposal (P56, P57). Where this plan and
-`genesis-mining-mvp.md` 14 differ, that section governs. Where the text says "is", read "is
-proposed to be".
+Nothing here is built, and nothing here changes round R2. The review of v0.1.4 required
+corrections before this plan can serve as an implementation specification (A58, A62): a purchase
+is not one state but three records that move independently - the payment, the service credit and
+the adjustments (sections 3 and 4); what "settled" means is stated per payment channel (4.1); a
+purchase by an agent reserves its budget atomically before anything is sent (4.3); the report
+reconciles what was prepaid, what was consumed and what was paid out, and adds none of them twice
+(section 8); and the wording on assets and on x402 is made exact (section 9). The review of
+v0.1.5 asked for one level more before the second increment is coded: a purchase is an intent,
+the payments tried for it are attempts, and each attempt has its own record on its channel; and
+after a crash every reservation that is not finished is taken up, whatever status its purchase
+shows (sections 3, 4 and 4.3). They are applied here. On the questions this plan raises (Q24,
+Q28) the advisor's recommendations are recorded with the questions, and the owner's adoption of
+them is pending (`decisions.md` 12, and A66). What this repository adds on its own judgment is
+marked as a proposal (P56, P57). Where this plan and `genesis-mining-mvp.md` 14 differ, that
+section governs. Where the text says "is", read "is proposed to be".
 
 ## 1. Four flows of money, kept apart
 
@@ -81,14 +86,14 @@ which an agent's purchases need (4.3).
 
 | Member | Meaning |
 | --- | --- |
-| `purchaseId` | a stable identifier chosen before anything is sent. A retry reuses it |
+| `purchaseId` | the stable identifier of the purchase as an intent - this credit, bought once - chosen before anything is sent. It stays through every attempt |
 | `source`, `policy` | the supply source bought for; the policy it was bought under |
 | `decidedBy`, `executedBy` | `operator` or `agent`, each |
 | `route`, `channel` | `manual-fiat`, `agent-wallet` or `agent-fiat-account`; and the payment channel with its mechanism, as the adapter pins it (4.1) |
 | `asset`, `amount` | a currency, or a chain and an asset contract; the raw amount and its precision |
-| `idempotency` | the identifier under which the channel knows this purchase, mapped one to one to `purchaseId` and written before the first attempt (4.3) |
+| `attempts` | the payments tried for this purchase, in order and one at a time; each with its `attemptId`, its own status and its record on the channel (section 4) |
 | `reservation` | on an agent route, the entry in the budget book (4.3) |
-| `payment` | its status; the channel's own state as the channel returned it; for each status reached, the reference that supports it and the time it was observed |
+| `payment` | its status, read from the attempts (section 4); for each status reached, the reference that supports it and the time it was observed |
 | `credit` | its status; the quantity made available, used and left, in the provider's unit of account; as of when; its expiry |
 | `adjustments` | a list: what changed afterwards, each entry with its kind, its amount, its reference and its time |
 | `fundingSource` | `holder`, `service-revenue`, `protocol`, or the shares of each where the worker can tell; otherwise `undeclared` |
@@ -100,13 +105,14 @@ wallet it went to, and its evidence.
 what is held and what is consumed, each entry under the `purchaseId` it belongs to (4.3).
 
 An adapter implements a route. What an adapter has to declare is fixed now, before any provider
-is chosen (A63, Q24); the providers are chosen when the second increment is opened:
+is chosen, as the review recommends (Q24); the providers are chosen when the second increment is
+opened:
 
 | An adapter declares | Content |
 | --- | --- |
 | Operations | for each of: read the quota, quote, buy, renew, read the state of a payment, confirm that credit arrived, read adjustments - `supported`, or `unsupported` |
 | Channel | the payment channel and its mechanism, pinned by version; which of its stages the adapter records as `settled`, and by which evidence (4.1) |
-| Idempotency | the identifier the channel accepts for one purchase, or that it accepts none |
+| Idempotency | the identifier the channel accepts for one attempt, or that it accepts none; and whether the same attempt can be sent again without a second charge |
 | Release | the rule, if the channel has one, by which an amount that was held is free again |
 | Authorization | the scope of the account or the wallet it acts in, and what it can never do there |
 
@@ -141,16 +147,32 @@ The payment:
 
 | Status | Reached when | The reference to keep |
 | --- | --- | --- |
-| `authorized` | the policy covers the purchase and, on an agent route, its amount is held in the budget book (4.3). Nothing is paid | the policy; the reservation |
-| `initiated` | a transaction was sent, a signed authorization was handed over, or a payment request was made | the identifier fixed beforehand: the transaction, the identifier of the signed authorization, or the provider's idempotency key |
-| `pending` | the channel has the payment and has not finished with it | the channel's own state as returned; the transaction that was broadcast, where there is one |
-| `unknown` | the answer was lost, or the channel cannot say | the same identifier: reconcile on it before anything else |
-| `settled` | the channel's rule for settlement is met (4.1) | the evidence that rule names |
-| `failed` | the channel's own evidence says that nothing was taken and that nothing can still be taken | that evidence |
+| `authorized` | the policy covers the purchase and, on an agent route, its amount is held in the budget book (4.3). No attempt is open: none has been written yet, or the last one failed definitely and another may follow | the policy; the reservation |
+| `initiated` | an attempt was written, with its identifiers on the channel. It may have been sent: from here on the purchase counts as possibly paid | the attempt and its identifiers |
+| `pending` | the channel has the open attempt and has not finished with it | the channel's own state as returned; the transaction that was broadcast, where there is one |
+| `unknown` | the answer to the open attempt was lost, or the channel cannot say | the attempt's identifiers: reconcile on them before anything else |
+| `settled` | one attempt met the channel's rule for settlement (4.1). A purchase has at most one | the evidence that rule names |
+| `failed` | the purchase was closed without a payment: its last attempt failed definitely and no other will be made | the evidence of each attempt's failure |
 
 `pending` and `unknown` are different: the first is the channel's answer, the second is the
 absence of one. Nothing leaves `settled` or `failed`; what happens to the money afterwards is an
 adjustment, linked to the purchase, with its own amount.
+
+A purchase and the tries at paying for it are kept apart, as the review of v0.1.5 asked (Q28).
+v0.1.5 gave a purchase one identifier on its channel, made `failed` final and let a retry reuse
+the purchase's identifier; real payments cannot satisfy all three. Three levels:
+
+| Level | What it is | Identified by |
+| --- | --- | --- |
+| Purchase | one intent: this credit, bought once | `purchaseId` |
+| Attempt | one try at paying for it | `attemptId`, mapped one to one to what makes the try unique on its channel: an idempotency key, the nonce of a signed authorization, or the sending account with its nonce |
+| Channel record | what the channel returned for that attempt | the provider's identifiers and states, as returned; every transaction hash that carries the attempt |
+
+An attempt has a status of its own: written, pending, unknown, settled or failed. A transaction
+sent again at the same nonce with a higher fee is the same attempt with one more hash, and at
+most one of the hashes can be included. A new nonce, a new signed authorization or a new
+idempotency key is a new attempt. An attempt that failed is final as an attempt; the purchase
+goes on only by a new one, under the rules of 4.3, and neither is a second purchase.
 
 The six meanings of `genesis-mining-mvp.md` 14.6 (A50) all stay apart, now across the three parts:
 
@@ -170,7 +192,7 @@ States that hold together, and are recorded together:
 | The money was taken and the credit has not arrived | `settled` | `not-available` | none |
 | Half the credit was used and part of the money came back | `settled` | `partly-used` | a `partial-refund`, with its amount |
 | The service is in use and its payment is disputed | `settled` | `available` or `partly-used` | a `dispute`, open, with the amount in dispute |
-| The answer to a payment was lost and the quota reads higher | `unknown` | `available` | none. The payment is reconciled on its identifier; the credit that appeared is evidence to weigh and does not settle it |
+| The answer to a payment was lost and the quota reads higher | `unknown` | `available` | none. The open attempt is reconciled on its identifiers; the credit that appeared is evidence to weigh and does not settle it |
 
 Initiation is not settlement, settlement is not credit, and none of them is a delivery. On the
 manual route the same records are entered from what the person reports, the provider's receipt
@@ -217,27 +239,38 @@ Proposed (P57):
    book. Where the worker's side is more than one process, the book is the one durable place they
    all pass through; two copies of a book are not a book. The per-request budget is tested in the
    same operation.
-3. The reservation comes first. It is written, together with the purchase's `idempotency`
-   identifier, before anything is sent: after a crash, the record of a possible attempt exists
-   before the attempt could have.
-4. A payment that is `pending` or `unknown` keeps its reservation. It counts as possibly made.
-5. A reservation is released only on a definite failure - the channel's own evidence that nothing
-   was taken and nothing can still be taken, such as a signed authorization whose validity ended
-   unused, or a provider's definite refusal - or by the release rule the adapter declares for its
-   channel, such as a hold the provider has released. A timeout releases nothing.
-6. When the payment settles, the amount settled becomes consumption of the period, and what was
-   held beyond it is released. A reservation belongs to the period it was made in and stays
-   there, whenever the payment settles.
-7. A refund is an adjustment. It returns nothing to a budget unless the policy says that its
+3. The order is: the reservation; then, before each sending, the attempt, written durably with
+   its identifiers on the channel; and only then the sending. After a crash the record of a
+   possible payment therefore exists before the payment could have, whatever status the purchase
+   still shows.
+4. The reservation is held for the purchase through all its attempts. A payment that is `pending`
+   or `unknown` keeps it: it counts as possibly made.
+5. An attempt whose result is unknown is reconciled on its identifiers, or sent again as the same
+   attempt where the channel makes that harmless. No second attempt that could also succeed is
+   opened beside it.
+6. A new attempt is opened only when the one before it has failed definitely: the channel's own
+   evidence that nothing was taken and that nothing can still be taken under its identifiers -
+   a signed authorization whose validity ended unused or that was cancelled, a nonce used up by
+   another transaction, a provider's definite refusal. The budget is tested again when the new
+   attempt is opened. A timeout is not such evidence.
+7. A purchase has at most one payment that settles. What a failed attempt cost - the fee of a
+   transaction that reverted, a charge the provider kept - is recorded as a cost of the purchase.
+   It is not a second purchase.
+8. The reservation is released when the purchase is closed without a payment, or by the release
+   rule the adapter declares for its channel, such as a hold the provider has released. When the
+   payment settles, the amount settled becomes consumption of the period, and what was held
+   beyond it is released. A reservation belongs to the period it was made in and stays there,
+   whenever the payment settles.
+9. A refund is an adjustment. It returns nothing to a budget unless the policy says that its
    budgets are net of refunds.
-8. At every start, before any new purchase: the book is checked against the purchase records,
-   every purchase found `initiated`, `pending` or `unknown` is reconciled on its identifier, and
-   what is held plus what is consumed is at most the limit. The report states the same figures.
-9. `purchaseId` maps one to one to the identifier under which the channel knows the purchase: an
-   idempotency key given to the provider, the identifier of a signed authorization, or the
-   sending account's nonce and then the transaction. Where a channel accepts none, the adapter
-   says so, and a lost answer on that channel is resolved by reading the account and never by
-   sending again.
+10. At every start, before any new purchase, every reservation that is not finished is taken up,
+    whatever status its purchase shows - `authorized` included, because the process can have
+    stopped between a sending and the note of it. Its attempts are read; an attempt that was
+    written counts as possibly sent and is reconciled on its identifiers. What is held plus what
+    is consumed is at most the limit, and the report states the same figures.
+11. Where a channel accepts no identifier for an attempt, the adapter says so. A purchase on that
+    channel has one attempt, and a lost answer is resolved by reading the account and never by
+    sending again.
 
 The manual route has no book: a person decides each purchase, and what is recorded is who
 decided. The protocol's records state the policy, the reservations and the purchases; enforcing
@@ -261,8 +294,8 @@ together, each from its own durable record.
 | Quota exhausted | takes no new request; ends requests in flight as what they are - completed, or failed with their cost recorded; switches only to a source that meets the same specification and its evidence requirements; resumes when credit is available | a delivery claimed for output that never reached the customer; a silent change of model |
 | Budget, gas or authorized quota insufficient | declines or pauses as the policy says, keeps the state of the request, reports the shortfall | credit inferred; authority widened |
 | Two requests need the same room in a budget at once | the reservation admits one; the other is declined or waits, as the policy says | two purchases made on one reading of the same room |
-| A renewal fails | retries a bounded number of times inside the policy, each retry under the same `purchaseId`; then stops and escalates | spending outside the policy; a retry that is a second purchase |
-| The state of a payment is unclear | reconciles on the purchase's identifier - and on the account balance and the provider's receipt - before any resubmission; until then the payment counts as possibly made and keeps its reservation | a second payment for one purchase; an invented success; room in a budget freed by a timeout |
+| A renewal fails | retries a bounded number of times inside the policy: each retry is a new attempt of the same purchase, opened only after the attempt before it failed definitely; then stops and escalates | spending outside the policy; a retry opened while the attempt before it could still succeed; a retry that is a second purchase |
+| The state of a payment is unclear | reconciles the open attempt on its identifiers - and on the account balance and the provider's receipt - or sends the same attempt again where the channel makes that harmless; until then the payment counts as possibly made and keeps its reservation | a second payment for one purchase; an invented success; room in a budget freed by a timeout |
 | Paid, and the credit does not arrive | the payment stays `settled` and the credit `not-available`; stops buying from that source and takes it up with the provider; the amount stays in the report as paid | booking it as service received, or writing it off in silence |
 | Money comes back in part, or a payment is disputed while the credit is in use | an adjustment linked to the purchase, with its amount; the payment and the credit keep their own status | one of the three overwritten by another |
 | A request times out after the provider accepted it | reconciles the request's identifier and the usage billed before buying the service again | paying twice without saying so. If the provider did bill twice, that is two costs and one delivery |
@@ -270,7 +303,7 @@ together, each from its own durable record.
 | Work incomplete, refused or rejected | keeps the partial evidence and the cost; applies the agreed rule of acceptance and refund | counting it as a qualified delivery |
 | Payment and delivery complete in different orders | keeps both records and their references | reporting both as complete because one is |
 | Required evidence cannot be retrieved | marks the delivery unauditable under its profile | a verified qualification for it |
-| The worker crashes, or a cell repairs itself | resumes from the durable records of work, payment, reservation and authority; prior evidence is kept | a second purchase, a second recording or a second reward |
+| The worker crashes, or a cell repairs itself | resumes from the durable records of work, payment, reservation and authority; takes up every reservation that is not finished, whatever status its purchase shows; prior evidence is kept | a second purchase, a second recording or a second reward; a payment that was sent and forgotten |
 | A cell is replicated | the replica gets its own identity and its own scoped budget by an authorized procedure, and keeps a record of its lineage | signing secrets copied; a budget book shared; earlier contributions claimed again |
 | The chain reorganizes | reconciles what was read from the chain under the configured finality; purchases made outside the chain cannot be rolled back with it and stay recorded | - |
 
@@ -430,5 +463,5 @@ ever becomes a payment key or a worker key (A43).
 | Increment | Routes | Builds |
 | --- | --- | --- |
 | First | `manual-fiat` | the four records; the three parts of a purchase as entered from a person's report, the provider's receipt and the quota read back; the failure rules that need no payment adapter; the operating report with its prepaid-credit lines |
-| Second | `agent-wallet`, `agent-fiat-account` | the budget book with its atomic reservation; one adapter of each kind, each with its declaration - operations, channel, idempotency, release, authorization; reconciliation of unknown payments; the policy enforced by the agent |
+| Second | `agent-wallet`, `agent-fiat-account` | the budget book with its atomic reservation; attempts under a purchase, each written before it is sent; one adapter of each kind, each with its declaration - operations, channel, idempotency, release, authorization; reconciliation of unknown payments and the recovery of a crash; the policy enforced by the agent |
 | Third | any | an operated model as a supply source of the same specification; the evidence that exists for its mode |

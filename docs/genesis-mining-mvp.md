@@ -18,9 +18,9 @@ exactly - who a participant is when its identity is a contract account (section 
 self-dealing rule reads (section 7.5) - and added three kept designs (13.7 to 13.9).
 Documentation alignment: 2026-11-24 (design revision v0.1.4; `decisions.md`, A40-A54). This
 alignment is not a new software release and does not claim an implementation beyond that
-baseline. Design revision v0.1.5 applies the review of v0.1.4 (A55-A64) in the executor's plans.
-In this document it adds a note to 13.7 and updates the pointer in section 14; no rule, section
-number or acceptance row changes.
+baseline. Design revisions v0.1.5 and v0.1.6 apply the reviews of v0.1.4 and of v0.1.5 (A55-A67)
+in the executor's plans. In this document they add a note to 13.7 and update the pointer in
+section 14; no rule, section number or acceptance row changes.
 
 Sections 1-12 describe the existing contracts under `contracts/`, reference client under
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
@@ -641,13 +641,34 @@ stands. That choice is the ruling to ask for.
 The review of v0.1.4 set a condition on this design (A64): a record that anyone may make first
 must not take the one contribution id of a piece of work, or a third party could record a settled
 submission before its demander does and leave the demander's confirmation nothing to obtain.
-Proposed for the ruling (`decisions.md` P60, Q26): the entry that is open to anyone records a
-work fact - the settlement as read from the tender, attributed to its worker, entering no total
-of any epoch and not taking the contribution id - and a receipt is made only by the
-confirmation, whether or not a work fact exists, in the epoch in which the confirmation is
-recorded. Under that proposal no recorded status changes and no epoch that is frozen is
-rewritten, and the choice named above falls away: an unconfirmed submission has no receipt whose
-eligibility could be raised. It is to be decided before the next version of the ledger is coded.
+Proposed for the ruling (`decisions.md` P60, Q26), in the form the review of v0.1.5 asked to have
+written down before anything is built:
+
+| Record | Who can make it | What it does |
+| --- | --- | --- |
+| Work fact | anyone, through the adapter, which reads the settlement from the tender and records what it read | a public trace that the work settled. It adds nothing to any total of any epoch and takes nothing that a reward depends on |
+| Receipt | the tender's owner or its delegate, by confirming | the contribution: measured, with its eligibility decided, under the profile and the policy of the epoch in which the confirmation is recorded |
+
+1. A work fact has an identity of its own and is recorded once. Its id is derived from the source
+   of the work - the chain, the tender contract, the tender and the submission - in a domain of
+   its own, so that it is not the contribution id. Recording the same settlement again, by anyone,
+   returns the fact that exists and adds nothing.
+2. A work fact consumes nothing. It does not take the contribution id. Under a production profile
+   it does not take the content key by which a task unit is counted once
+   (`production-service.md` 7). It uses up no cap and no counter. Otherwise the taking that A64
+   forbids would only have moved.
+3. A confirmation is linked to the same work by that source. A fact that exists does not stand in
+   the way of a confirmation, and a confirmation needs no fact; either can come first, and a
+   repeated call of either returns what exists. A receipt counts in the epoch in which the
+   confirmation is recorded. No recorded status changes and no epoch that is frozen is rewritten.
+
+What this gives up is said plainly. When the demander never confirms, the work has a public fact
+and no receipt, and it is in no epoch's GMU, measured or subsidized. A work fact is never
+reported as a contribution that was counted or as an eligibility that was confirmed. Whether such
+a trace is what the reservation of A33 asks for, or whether settled work without its demander has
+to enter the measured totals after all, is part of the ruling. The choice named above falls away
+under this proposal: an unconfirmed submission has no receipt whose eligibility could be raised.
+It is to be decided before the next version of the ledger is coded.
 
 ### 13.8 The authority as it was at settlement (A38)
 
@@ -695,8 +716,10 @@ rule, the epoch calculation, or the deployed ERC-8414 contracts.
 
 The executor's plans for carrying this section out are `production-service.md` (14.2 to 14.5) and
 `supply-and-payment.md` (14.6 to 14.8). They add concrete choices, each put up for a ruling
-(`decisions.md`, P42-P60); the review of v0.1.4 answered on the first of them and corrected the
-plans (A55-A64). Where a plan and this section differ, this section governs.
+(`decisions.md`, P42-P60). The reviews of v0.1.4 and of v0.1.5 corrected the plans (A55-A67); on
+the questions the plans raise, the advisor's recommendations are recorded with the questions and
+the owner's adoption of them is pending. Where a plan and this section differ, this section
+governs.
 
 ### 14.1 Three stages, with three parts of Stage 1
 

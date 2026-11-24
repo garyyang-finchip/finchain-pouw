@@ -1,10 +1,11 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). Sections 1 to 10 are
-those of v0.1.3 - the rows of the kernel and of round R2 - with one row added for the next version
-of the ledger (D18, A64). Sections 11 to 14 are deliverable D of the alignment of 2026-11-24
-(A54): the staged acceptance of the production extension, corrected and extended as the review
-required (A56 to A60). Every row of those four sections is proposed and not run.
+Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67).
+Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
+added for the next version of the ledger (D18 to D21, A64). Sections 11 to 14 are deliverable D
+of the alignment of 2026-11-24 (A54): the staged acceptance of the production extension,
+corrected and extended as the two reviews asked (A56 to A60, A65). Every row of those four
+sections is proposed and not run.
 
 Following the formal review (A28), a row is accepted in a round only if that round implements
 what it tests. Every row therefore carries a state:
@@ -84,6 +85,9 @@ has run (`decisions.md` 3).
 | D16 | A tender settled by default, the judge having said nothing | the worker has the bounty and cannot bridge by itself; subsidized once the demander confirms it; the audit reports the settlement as `default` | passes: `g1`, `audit` |
 | D17 | The worker judged its own delivery and handed the right to judge to another address before the bridge | not caught by the ledger: the rule reads the judge of the moment of bridging, finds another address, and the receipt is subsidized when the tender's owner - another admitted address - confirms it, within the caps. The audit reads the tender's own log, finds who judged and who owned it at settlement, and reports the receipt as an observation; `ok` is not affected | passes: `g1`, `audit` - the tests assert the boundary. Eligibility is to depend on it before any subsidy of value (A38) |
 | D18 | A third party records a settled submission before its demander confirms it (the next version of the ledger) | the third party's record is a work fact: it enters no total and does not take the contribution id. The demander's later confirmation makes the receipt, its eligibility decided as for any confirmation, in the epoch in which it is recorded. No earlier epoch changes and no recorded status changes | deferred: with the next version of the ledger. The design is proposed, and is to be ruled before that version is coded (A64; `decisions.md` P60, Q26) |
+| D19 | The same settlement recorded as a work fact twice, by one party or by two | one fact, with one stable id of its own; the second call returns it and adds nothing | deferred: with the next version of the ledger. The design is proposed, and is to be ruled before that version is coded (A64; `decisions.md` P60, Q26) |
+| D20 | A work fact for a delivery under a production profile | it takes neither the contribution id nor the content key, and uses up no cap and no counter. The confirmation that follows takes the counting as if no fact existed | deferred: with the next version of the ledger. The design is proposed, and is to be ruled before that version is coded (A64; `decisions.md` P60, Q26) |
+| D21 | A confirmation with no fact before it; a fact recorded after the receipt; a demander that never confirms | all three are valid, and the fact and the receipt of one work are found by its source. In the third the work has a public fact and no receipt: it is in no epoch's GMU, measured or subsidized, and no report presents it as a contribution that was counted | deferred: with the next version of the ledger. The design is proposed, and is to be ruled before that version is coded (A64; `decisions.md` P60, Q26) |
 
 ## 4. Disconnection, restart, lateness and recovery
 
@@ -254,7 +258,7 @@ The seven items of A54, and where each is first accepted:
 | Item | Checks | First accepted in |
 | --- | --- | --- |
 | 1. A model service bought by a person; the agent produces, the delivery is accepted, the contribution is recorded | E1, E5, E8, E14 | the first increment |
-| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11; rows F5 to F8, F18 to F21 | the second increment |
+| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11; rows F5 to F8, F18 to F21, F23 to F25 | the second increment |
 | 3. Both kinds of participant under one work protocol | E4 | the second increment |
 | 4. An external model service and a self-operated model under one specification | E6 | the third increment |
 | 5. A third party re-checks usage, delivery, billing and contribution | E5, E7, E13, E14; rows S7, S9, S13 | the first increment, by a machine that is not the operator's; by a party that is not the operator's when one takes part (acceptances 3 and 4, below) |
@@ -266,13 +270,17 @@ none stands in for another:
 
 | Acceptance | Rows | What it shows |
 | --- | --- | --- |
-| 1. The mechanism: controlled fixtures - the first increment | E1, E5, E7 to E9, E11 for a restart, E13 for missing evidence, E14; S1 to S13 and S15 to S20; F1 to F4, F9 to F13, F16, F22, and F17 as far as the manual route shows it | production, acceptance, measurement and payment work as specified |
+| 1. The mechanism: controlled fixtures - the first increment | E1, E5, E7 to E9, E11 for a restart, E13 for missing evidence, E14; S1 to S13, S15 to S20 and S22 to S26; F1 to F4, F9 to F13, F16, F22, and F17 as far as the manual route shows it | production, acceptance, measurement and payment work as specified |
 | 2. A FOGA cell takes part | the rows of the first, with a cell as the worker or as the demander; E12, F15 | a cell can use or organize the service |
 | 3. An external supplier | the rows of the first, with a worker that the operator does not hold; T1, T2 | supply from outside can connect. Not demand |
 | 4. An external customer's own request | S21, and the rows of the profile version that admits customers' own tasks, which this matrix does not have yet | one request from outside; paid with funds of value, one independent paid demand. Not supply, and not a market |
 
 Proposed (`decisions.md` P58, Q27): the milestone of A54 is met when acceptances 1, 2 and 4 have
-each been evidenced.
+each been evidenced, and when one chain of evidence joins them:
+
+| Id | Closing A54 | Expected observation | State |
+| --- | --- | --- | --- |
+| L1 | One complete chain of business evidence, its links joined by request and work ids or by parent and child | an external customer's request; a cell that used or organized the service for it; the standardized delivery; its independent re-check; the state of its payment; its GMU record; its actual cost - each link naming the one before it. Acceptances that were shown apart and cannot be joined in this way do not close A54. Nothing more is asked of the first increment by it | proposed; not run |
 
 ## 12. The first production profile
 
@@ -298,10 +306,15 @@ a row says otherwise.
 | S15 | A canonical result that is not a part of what was generated: re-ordered and re-escaped by the canonicalization, or counting more tokens than the provider reported as generated | recorded as it is: the delivered text and the canonical result each with its hash, `generated_tokens` with its origin, `canonical_delivery_tokens` from the public counter. No report states one as a part of the other unless the stream of tokens and the mapping were kept |
 | S16 | The units of a delivery computed by two implementations | integers only, one division, rounded down: the same figure, and for the plan's example 1,810. A change of scale, weight, limit, counter, template, canonicalization rule or rounding is another measurement version, and a recorded delivery keeps its own |
 | S17 | The fixture of a counted delivery is delivered again under another tender | another work id; the tender settles and pays, and those facts stay. The delivery is recorded as `duplicate-contribution` and names the receipt it repeats: no qualified units, no GMU measured or subsidized, no eligibility |
-| S18 | Another submission for a fixture already counted: by the same worker or by another, under the same specification or under another | as S17: the first accepted delivery of a content key is the one that counts, whoever delivers later and under whatever model |
+| S18 | Another submission for a fixture already counted: by the same worker or by another, under the same specification or under another | as S17. The content key names the task and no model, so it is the same key; the delivery whose confirmation the ledger recorded first is the one that counts, whoever delivers later and with whatever model |
 | S19 | A demander makes a new request, with a new request id, for a fixture already counted | as S17: the content key decides, not the request id |
 | S20 | One fixture cut into parts, each part tendered as a task | a part is not a member of the committed set: `not-a-task-unit`. What settles is recorded with that reason: no units, no GMU, no eligibility |
 | S21 | A customer buys the same service for the same content again (later, with the profile version that admits customers' own tasks) | that version states its own scope of deduplication. The rule for fixtures is not inherited, and a legitimate repeat purchase is not refused by it |
+| S22 | Two deliveries of one fixture: the one accepted first on its tender is confirmed second, the one accepted second is confirmed first | the one confirmed first takes the counting, in the transaction that records its receipt; the other is `duplicate-contribution` and names it. What decides is the order of confirmation on the ledger, and no report presents it as a reward for finishing first |
+| S23 | Two confirmations for one content key reach the ledger at the same moment | one takes the counting and the other is a duplicate, whichever order the block gives them: testing that the key is free and marking it are one step |
+| S24 | The same document under another instruction or another schema; the same task with another model, template or tokenizer | another task description and another key, which is a task unit only if the committed set holds it; the same key |
+| S25 | A confirmation for a fixture by a party that is not a demander the profile version names, or for a tender that no such demander issued | not a task of the profile: `not-a-task-unit`. It does not take the counting of the content key |
+| S26 | A Unit or a Grade record of the profile is written, at the build | it is validated against the pinned schema, and the tool and the result are on record; before that no record is called valid. No build, test or run fetches the standard, and nothing waits for its status (A67) |
 
 ## 13. Supply, funds and payment
 
@@ -329,8 +342,11 @@ Rows for `supply-and-payment.md`. All are proposed and not run.
 | F18 | What `settled` means on a channel | reached by the rule the adapter declared for its channel, with the channel's own state kept beside it as returned. A stage the channel does not have is recorded as absent; a capture that has not met the rule is `pending` | second |
 | F19 | Two purchases need the same room in a budget at the same moment | one is reserved; the other is declined or waits, as the policy says. What is held plus what is consumed never exceeds the limit | second |
 | F20 | A reservation whose payment is unknown; one whose request timed out; one whose payment definitely failed; one that the channel's release rule frees | kept; kept; released; released. A refund returns nothing to a budget unless the policy says so | second |
-| F21 | The worker stops between the reservation and the sending, and between the sending and the answer | at the next start the book is checked against the purchase records, and the purchase is reconciled on the identifier the channel knows it by. Nothing is sent twice, and nothing is freed by the stop | second |
+| F21 | The worker stops between the reservation and the note of the attempt, between that note and the sending, and between the sending and the answer (revised: v0.1.5 listed fewer points, and took up at a start only purchases already noted as sent) | at the next start every reservation that is not finished is taken up, a purchase that still shows `authorized` included. An attempt that was written counts as possibly sent and is reconciled on its identifiers. Nothing is sent twice, and nothing is freed by the stop | second |
 | F22 | The report over a period with prepaid credit | per provider: opening plus bought, less consumed, with adjustments, is the closing figure, and the provider's balance read back stands beside it. Cash out, the cost of the period and the change of credit reconcile. One payment appears as a source and as a use and is not summed | first |
+| F23 | A transaction sent again at the same nonce with a higher fee | one attempt with several transaction hashes, of which at most one is included; one purchase and one payment | second |
+| F24 | A new attempt for a purchase | opened only after the attempt before it failed definitely, with the budget tested again. An attempt whose result is unknown is reconciled, or sent again as itself; no second attempt is opened beside it | second |
+| F25 | A purchase that took several attempts | at most one payment that settled. What the failed attempts cost is on record as a cost of that purchase, and the report shows no second purchase | second |
 
 ## 14. What the production increments are to show, and what they will not
 
@@ -352,6 +368,10 @@ No increment and no acceptance shows, and none will claim:
   shows that one request and, paid with funds of value, that one independent paid demand. It
   shows neither the size of a market nor a repeat purchase nor sustainability;
 - demand from a supplier, or supply from a customer: the two are evidenced separately (A59);
+- that A54 is closed, from acceptances shown apart: one linked chain of evidence is needed as
+  well (row L1);
+- that a contribution was counted, from a work fact: a fact is a public trace and is in no
+  epoch's GMU (rows D18 to D21);
 - that related parties who are not declared, or one party behind several addresses, were
   identified: the rules that count a task unit once catch what can be recognized as the same
   (A57);

@@ -1,19 +1,23 @@
 # The First Production Service: Plan
 
-Design revision v0.1.5, after the review of v0.1.4 (`decisions.md` A55-A64). This is the
-executor's plan for the first production profile: deliverable B of the alignment of 2026-11-24
-(A54), carrying out `genesis-mining-mvp.md` 14.2 to 14.5 and `architecture.md` 5.3, 6.2 and 6.3.
-Those sections state what a production profile has to decide; this document proposes the
+Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67). This
+is the executor's plan for the first production profile: deliverable B of the alignment of
+2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.2 to 14.5 and `architecture.md` 5.3, 6.2
+and 6.3. Those sections state what a production profile has to decide; this document proposes the
 decisions for the first one.
 
-Nothing here is built, and nothing here changes round R2. The review answered the eight questions
-of v0.1.4 (`decisions.md` 5.3) and required corrections before this plan can serve as an
-implementation specification: to the measurement (section 5), to deduplication (section 7), to
-the scope of the first increment (sections 10 and 11), to what is said of an agent that buys
-(section 8), and to the way ERC-8506 is cited (section 4.2). They are applied here. What this
-revision adds on its own judgment to carry them out is marked as a proposal (P54, P55, P58, P59).
-Where this plan and `genesis-mining-mvp.md` 14 differ, that section governs. Where the text says
-"is", read "is proposed to be".
+Nothing here is built, and nothing here changes round R2. The review of v0.1.4 required
+corrections before this plan can serve as an implementation specification: to the measurement
+(section 5), to deduplication (section 7), to the scope of the first increment (sections 10 and
+11), to what is said of an agent that buys (section 8), and to the way ERC-8506 is cited (section
+4.2). The review of v0.1.5 asked that two things be written exactly: what a content key is made
+of, and which confirmation takes the one counting of a task unit (sections 4.1 and 7). They are
+applied here. On the questions this plan raises (Q17 to Q21, Q25, Q27, Q29) the advisor's
+recommendations are recorded with the questions and the owner's adoption of them is pending
+(`decisions.md` 12, and A66): where the text says that the review recommends something, it says
+no more than that. What this repository adds on its own judgment is marked as a proposal
+(P54, P55, P58, P59). Where this plan and `genesis-mining-mvp.md` 14 differ, that section governs.
+Where the text says "is", read "is proposed to be".
 
 The milestone it is written for (A54): a buyer makes a real request for intelligence service; a
 supply node completes a standardized delivery; a FOGA cell uses or organizes the service; an
@@ -42,10 +46,10 @@ useful work and not a larger reward.
 
 ## 2. The first profile: one bounded task class
 
-Working name `g1.inference` (not a name the kernel has registered). The task class, agreed by the
-review as the first controlled profile (A63, Q17): **structured extraction**. A request is a text
-document together with the profile's published instruction and output schema; a delivery is one
-JSON object that follows the schema and holds the fields extracted from the document.
+Working name `g1.inference` (not a name the kernel has registered). The task class, which the
+review recommends as the first controlled profile (Q17): **structured extraction**. A request is a
+text document together with the profile's published instruction and output schema; a delivery is
+one JSON object that follows the schema and holds the fields extracted from the document.
 
 Why this class first:
 
@@ -72,11 +76,14 @@ rejected or refused request can still have cost the worker something; that cost 
 worker's records and earns no contribution.
 
 **Task units.** The work of version 1 is enumerated beforehand. A task unit is one fixture of a
-published fixture set: one whole document with the whole schema and a committed reference answer.
-The set is committed by one root in the profile version before the first task is issued (P55): the
-root commits, for every fixture, to its input and to its reference. A request whose input is not a
-member of the set is not a task of the profile. A controlled fixture demonstrates the procedure;
-it is not evidence of external demand, and every record of the first increment says so.
+published fixture set: one task description - a whole document, with the instruction and the whole
+schema it is to be read under (section 4.1) - and a committed reference answer. The set is
+committed by one root in the profile version before the first task is issued (P55): the root
+commits, for every fixture, to its task description and to its reference. The profile version
+also names the demanders that issue its fixtures; in the first increment that is the designated
+test demander. A request whose task is not a member of the set, or that no such demander issued,
+is not a task of the profile. A controlled fixture demonstrates the procedure; it is not evidence
+of external demand, and every record of the first increment says so.
 
 A customer's own task - a document nobody made for a test, with no reference - is not part of
 version 1 and not part of the first increment. It needs a later version of the profile, with an
@@ -91,7 +98,7 @@ The table of `genesis-mining-mvp.md` 14.2, with what is proposed for the first p
 | Specification | Proposed for the first profile |
 | --- | --- |
 | Service | the task class of section 2. Input: UTF-8 text up to the context limit. Output: canonical JSON under the published schema, up to the output limit. Completion: a fulfillment submitted inside the tender's submission window |
-| Model and tokenizer | one model at a named revision whose weights are published and whose tokenizer is public (A63, Q19). The model, the tokenizer, the chat template and the serving configuration are each pinned by version, and the serving configuration actually used is recorded with each delivery. A hosted revision that cannot be inspected is labelled opaque |
+| Model and tokenizer | one model at a named revision whose weights are published and whose tokenizer is public (Q19). The model, the tokenizer, the chat template and the serving configuration are each pinned by version, and the serving configuration actually used is recorded with each delivery. A hosted revision that cannot be inspected is labelled opaque |
 | Execution | the decoding settings the profile fixes and a cap on generated tokens; the timeout is the tender's submission window; a worker's own retries belong to one request. Exact replay is not expected: the evaluation procedure of section 2 decides |
 | Quality | section 2 |
 | Service level | per request: delivery inside the submission window. Version 1 makes no commitment of availability: a tender is one request, not a standing service |
@@ -127,7 +134,7 @@ puts in each group:
 | --- | --- |
 | Domain and versions | the envelope's schema version; chain id; the PoUW deployment; the profile and its version; the evaluator's version; the measurement-rule version |
 | Work identity | the request id, the work id and the content key (below); the tender and the submission; the parent work, if any; the role (`intelligence-producer`); worker, demander and their declared operators |
-| Service specification | the identifiers of the specification's records; model, tokenizer and template revisions; the serving configuration as the worker states it; the commitment to the input; the requested limits |
+| Service specification | the identifiers of the specification's records; model, tokenizer and template revisions; the serving configuration as the worker states it; the task description, whose hash is the content key; the requested limits |
 | Supply provenance | external service or operated model; the provider or the endpoint class - never a credential; whether each fact is declared or verified |
 | Usage | the records of section 5, each with its counter and where the count came from |
 | Delivery | the delivered text as returned, and its hash; the canonical result, and its hash; the worker's outcome - completed, refused, timed out, or failed at the provider; the times of request and delivery |
@@ -138,16 +145,36 @@ puts in each group:
 
 Payment credentials, private keys and API secrets never enter an envelope or a manifest.
 
-### 4.1 The three identities of a piece of work
+### 4.1 The three identities of a piece of work, and the task description
 
-The review required that the identity of a request be kept apart from the identity of its order
-on chain (A57). Proposed (P54):
+The review of v0.1.4 required that the identity of a request be kept apart from the identity of
+its order on chain (A57). The review of v0.1.5 asked that the content key be defined on stated
+content: "the commitment to the input" could be read as the document alone, as the document with
+its instruction and schema, or as the input in the form one model's template gives it (Q25).
+Proposed (P54):
 
 | Identity | What it names | Fixed | Derived from |
 | --- | --- | --- | --- |
-| Request id | one request instance of one demander | before the first attempt | the demander, the specification, the commitment to the input, and a salt the demander chose |
+| Request id | one request instance of one demander | before the first attempt | the demander, the specification, the content key, and a salt the demander chose |
 | Work id | one order on chain: one submission to one tender | at the submission | `keccak256(chainId, tender contract, tokenId, submissionId)` |
-| Content key | what the profile counts as one contribution | by the content | in version 1, the commitment to the fixture's input (section 7) |
+| Content key | the task that the profile counts as one contribution | by the task | `keccak256` of the canonical task description |
+
+The task description is a record of this profile, in canonical form. It says what is asked, and
+nothing about who answers or with what:
+
+| Member | Content |
+| --- | --- |
+| `taskClass` | the task class and its version: structured extraction, version 1 |
+| `instruction` | the hash of the published instruction, as text addressed to any model |
+| `schema` | the hash of the output schema, in canonical form |
+| `document` | the hash of the document after the published text normalization |
+
+Two tasks are the same task exactly when their task descriptions are equal. The same document
+under another instruction or another schema is another task, with another key. Nothing else
+enters the key. The model, its chat template, its tokenizer and the limits belong to the
+specification and to the records of execution and of measurement; the worker, the demander, the
+tender, the request and the epoch belong to the order. The same task done by another worker, with
+another model or under another tender therefore keeps its key.
 
 A request keeps its request id through a retry, a second submission and a second tender: the
 tender's task document carries it and so does the envelope of every attempt. Recovery and the
@@ -157,8 +184,8 @@ deduplication reads.
 
 How envelope, tender and receipt correspond:
 
-- the tender's task binding cites the specification and the request id; the submission's result
-  hash commits to the delivered output;
+- the tender's task binding cites the specification, the task description and the request id; the
+  submission's result hash commits to the delivered output;
 - the worker states the envelope's hash for its submission; the demander's confirmation of the
   settled submission names the same hash; the receipt stores it. A count therefore enters the
   ledger's record only as both sides stated it, and the recount of section 6 computes it again
@@ -182,10 +209,21 @@ a dependency on the specification, which is this pin (P59):
 | `assets/erc-8506/schemas/source.schema.json` | SHA-256 `7125ca8c9aea85e635cfe7c043d5707f9884688f4062f06e9cf0aff0240cd3d7` |
 | `assets/erc-8506/schemas/receipt.schema.json` | SHA-256 `687786ea7fc15413336da9164152c2a8313de75e30a688f0701a42cbbe50c79b` |
 
+The files are cited by the paths they have at that commit. The specification's own links to its
+schemas name another directory, `assets/eip-8506/`, which the commit does not have; that is for
+the standard's repository to correct and does not touch the pin.
+
 The standard is a draft and may change. A later revision is adopted by a new pin, in a new
 version of the specification of this profile, and never silently. When the increment is built the
 four schema files are copied here byte for byte with a notice, as the ERC-8414 contracts are
 (P31). Nothing in ERC-8506 and nothing in FOGA has to change.
+
+The dependency is a light one and is kept so (A67). The pin names the owner's repository and a
+commit; it does not name the EIP repository, and nothing here depends on the standard's status or
+on its being merged there. No build, test or run of this repository fetches the standard: the
+schema files it uses are the copies. If the standard changes, is renumbered or stays a draft, the
+pinned copies serve as they are; and the envelope, the task description and every rule of this
+plan are this protocol's own.
 
 The mapping. Two records are conformant records of the standard; from two others only a
 vocabulary or the format of a member is taken, and the plan does not call the result one of the
@@ -193,12 +231,19 @@ standard's records:
 
 | In this plan | ERC-8506, at the pin | Members | What is claimed |
 | --- | --- | --- | --- |
-| The categories of generation usage and their counter (section 5) | a Unit record | `quantityKind` `inference-usage`; `modality` `text`; `basis`; `denomination`; `components`: `input` for `input_tokens`, `cache_read` for `cached_input_tokens`, `output` for `generated_tokens`; `relations`: `input` `includes` `cache_read`, and `output` is `additive` to both; `boundary`; `precision`; `rounding`; `counterRef` with the name, the version and the digest of the tokenizer | a conformant Unit, valid against the pinned schema |
-| The length of a canonical result (`canonical_delivery_tokens`) | a second Unit record | `quantityKind`: a declared kind of its own, because the quantity is a length of what was delivered and not usage; one component; `basis` and `boundary` say that the canonical form of the accepted result is counted; `counterRef` | a conformant Unit. No relation to the first is declared: the standard states a relation between two Units only through a Method, and none is claimed |
-| The model at its revision, its configuration, the requirements, and which evidence each claim has | a Grade record | `unit` (the first Unit), `ordering` `none`, `executionObject` (`kind`, `identity`, `config`), `requirements` (each with `scope` and `compensable`), `obligations`, `verificationPolicy` (`origin`, `metering`, `execution`, `quality`, `deliverySettlement`) | a conformant Grade, valid against the pinned schema |
+| The categories of generation usage and their counter (section 5) | a Unit record | `quantityKind` `inference-usage`; `modality` `text`; `basis`; `denomination`; `components`: `input` for `input_tokens`, `cache_read` for `cached_input_tokens`, `output` for `generated_tokens`; `relations`: `input` `includes` `cache_read`, and `output` is `additive` to both; `boundary`; `precision`; `rounding`; `counterRef` with the name, the version and the digest of the tokenizer | to be a conformant Unit: validated against the pinned schema when the record is written |
+| The length of a canonical result (`canonical_delivery_tokens`) | a second Unit record | `quantityKind`: a declared kind of its own, because the quantity is a length of what was delivered and not usage; one component; `basis` and `boundary` say that the canonical form of the accepted result is counted; `counterRef` | to be a conformant Unit, validated likewise. No relation to the first is declared: the standard states a relation between two Units only through a Method, and none is claimed |
+| The model at its revision, its configuration, the requirements, and which evidence each claim has | a Grade record | `unit` (the first Unit), `ordering` `none`, `executionObject` (`kind`, `identity`, `config`), `requirements` (each with `scope` and `compensable`), `obligations`, `verificationPolicy` (`origin`, `metering`, `execution`, `quality`, `deliverySettlement`) | to be a conformant Grade, validated likewise |
 | Supply provenance in the envelope | the Source record's vocabulary | the values of an issuance basis's `origin` (`own-capacity`, `transferable-upstream-quota` and the others) and of its `authorization`; `fulfillers` | the vocabulary only. Not a Source record: a Source states grounds on which units are issued, and the first increment issues none |
 | Usage, outcome and verification in the envelope | two members of the Receipt record | `claim` (`by`, `usage` in the order of the Unit's components, `outcome`, `executionObject`) and the entries of `evidence` (`proposition`, `mechanism`, `reliesOn`, `doesNotShow`, `ref`) | the format of these two members. Not a Receipt record: a Receipt's `request`, `acceptance` and `effect` describe a request on a home ledger, which the first increment does not have |
 | Canonical form and identifiers of the Units and the Grade | section 3.1 | RFC 8785 with the integer restriction; `keccak256` of the canonical bytes; the members `aito` and `kind`; CAIP-10 accounts | followed exactly. The envelope is a record of this protocol with a schema of its own, in the same canonical form |
+
+What is established now, and what is not (Q29). The source of the pin has been verified twice, by
+this repository and by the review of v0.1.5, each fetching the files itself: the specification
+and the four schema files at the commit carry the hashes above. The mapping is a design that the
+specification permits. No Unit or Grade record of this profile exists yet. They are written when
+the model is chosen, they are validated against the pinned schemas then, and nothing is called
+valid before that.
 
 The entitlement ledger of ERC-8506 comes into the plan later, for supply that is metered and
 prepaid (`supply-and-payment.md` 9). A conformant Source and a conformant Receipt come with it.
@@ -214,9 +259,9 @@ apart, and each report says which applies:
 | Controlled access | an auditor the parties admit, under their conditions | the same, by that auditor only; a public auditor cannot check it and the report says so |
 | Commitment only | the two parties | that the delivery settled and what was stated about it. Not that a count or a check is right |
 
-In the first increment the fixtures are documents made for the test, and they are public (A63,
-Q21). What is published together: the content of every fixture; the versions of the
-specification, the evaluator, the counter, the template and the canonicalization rule; the
+In the first increment the fixtures are documents made for the test, and they are public (Q21).
+What is published together: the task description and the content of every fixture; the versions
+of the specification, the evaluator, the counter, the template and the canonicalization rule; the
 commitments - the root of the fixture set and the commitment to each reference; the procedure by
 which a third party repeats the checks and the counts; and a statement of where the content is
 kept and until when. When required evidence cannot be retrieved, the delivery is marked
@@ -232,7 +277,7 @@ escaping, and with them the boundaries between tokens.
 
 | Record | What it is | Counter and origin |
 | --- | --- | --- |
-| `input_tokens` | the count of the request as the model receives it: instruction, schema and document, template applied | the specification's public counter, from the committed input: can be counted again |
+| `input_tokens` | the count of the request as the model receives it: instruction, schema and document, template applied | the specification's public counter, from the committed task under the specification's template: can be counted again |
 | `cached_input_tokens` | the part of the input a provider served from a cache. Included in `input_tokens`; never added to it | the provider's report |
 | `generated_tokens` | the raw usage of generation for the request, reasoning included | the provider's report, or the count of the party that runs the model |
 | The delivered text | what the worker returned, as returned, and its hash | - |
@@ -266,7 +311,7 @@ schema bounds it; a repeated request cannot (section 7); a padded input is bound
 `inputLimit` and, in version 1, cannot occur at all, because the inputs are the fixtures. A
 request that failed may have cost the worker something and counts nothing.
 
-**The reward rule of the first increment** (A63, Q20). A fixed GMU for each task unit that is
+**The reward rule of the first increment** (Q20). A fixed GMU for each task unit that is
 delivered, accepted and counted - the kernel's own formula, with a `baseGmu` of the profile -
 while the qualified units are recorded in the envelope, stated by both sides and recomputed by
 the recount. The units are for observation and recomputation. They are not a completed SIG
@@ -325,37 +370,58 @@ Proposed for the next version of the ledger (P50), which a ruling requires befor
   receipt needs today (`genesis-mining-mvp.md` 7.5), unchanged - the native-asset rule included -
   and more: the tender's task is bound to the profile's specification; the envelope's hash was
   stated by the worker and confirmed by the demander; the submission settled by the route the
-  profile names; and the two rules below.
+  profile names; and the rules below.
 
-**The fixed GMU belongs to a complete task unit, and to its first accepted delivery** (A57). A
+**The fixed GMU belongs to a complete task unit, and a task unit is counted once** (A57). A
 fixed GMU per delivery would otherwise pay for the same work as often as it was wrapped again:
 a second tender for the same request has another work id. The rules (P54, P55):
 
 1. A delivery counts only for a task unit of the profile. In version 1 that is a member of the
-   committed fixture set, and membership is shown when the contribution is recorded. A part of a
-   fixture is not a fixture: a document cut into ten is ten inputs that are not task units, and
-   earns nothing under the profile (reason `not-a-task-unit`).
-2. A task unit counts once. The first accepted delivery of a content key is the one that counts.
-   A later accepted delivery of the same content key - under another submission, another tender
-   or another request id - is recorded as what it is and names the receipt it repeats. Its
-   transaction and its payment are facts and stay. It adds no qualified units, no GMU, measured
-   or subsidized, and no eligibility (reason `duplicate-contribution`).
-3. A retry is not a new request: it keeps the request id (section 4.1) and, like any later
-   delivery of the same content, falls under rule 2.
+   committed fixture set, issued by a demander the profile version names; membership is shown
+   when the contribution is recorded. A part of a fixture is not a fixture: a document cut into
+   ten is ten inputs that are not task units, and earns nothing under the profile (reason
+   `not-a-task-unit`).
+2. A task unit counts once, and the order that decides is the order of confirmation on the PoUW
+   ledger. The counting of a content key is taken by the first confirmation the ledger records
+   that is rightful - made by the owner of the tender or by its delegate, for a submission that
+   settled by the route the profile names - and that meets every condition of a receipt under
+   the profile. The ledger tests that the key is free and marks it counted in the transaction
+   that records the receipt, so that two confirmations cannot both take it.
+3. Any other accepted delivery of that content key - under another submission, another tender or
+   another request id, by another worker or with another model, and whenever it was accepted -
+   is recorded as what it is and names the receipt that took the counting. Its transaction and
+   its payment are facts and stay. It adds no qualified units, no GMU, measured or subsidized,
+   and no eligibility (reason `duplicate-contribution`).
+4. A retry is not a new request: it keeps the request id (section 4.1) and, like any other
+   delivery of the same task, falls under rule 3.
+
+The order of rule 2 is that of confirmation, not that of acceptance on the tender: a receipt
+exists only when the demander confirms, and the two orders can differ. Where one delivery is
+accepted first and confirmed second, the other takes the counting. The rule is chosen because one
+contract can carry it out with certainty in one transaction. It is not a ranking by merit or by
+time of completion, and it does not protect whoever settled first; if that is ever to be
+protected, it is another rule, to be designed and ruled. It is also a different matter from
+binding an answer to its worker before the answer is public (section 3): both have to be built.
+
+Taking the counting is measurement. Whether the receipt is subsidized as well is decided by the
+kernel's rules, as for any receipt (`genesis-mining-mvp.md` 7.5), and a counting that was taken
+is not given back because the receipt was not subsidized.
 
 The scope of rule 2 in version 1: one deployment of the ledger, every specification registered on
-it. The content key of a fixture is the commitment to its input, without the specification. The
-reason is particular to fixtures: the first accepted delivery makes the reference answer public,
-and a later delivery of the same fixture, under any model, shows nothing. A new specification
-therefore needs fixtures of its own. For the same reason a fixture whose reference has been
-revealed is not committed again, in a later set or on a later deployment; the published sets let
-an audit check that.
+it. The content key names the task and no model (section 4.1), so the same fixture under another
+specification has the same key. The reason is particular to fixtures: the first accepted delivery
+makes the reference answer public, and a later delivery of the same fixture, under any model,
+shows nothing. A new specification therefore needs fixtures of its own. For the same reason a
+fixture whose reference has been revealed is not committed again, in a later set or on a later
+deployment; the published sets let an audit check that.
 
-That scope is a property of this profile version and is not inherited. A later version that
-admits customers' own tasks states its own - for instance the same content from the same demander
-or its declared operator within a stated period - so that two customers who each need the same
-document read, or one customer who needs it again later, are not refused for ever by a rule made
-for fixtures.
+Counting once is the reward policy of a finite set of fixtures. It does not say that a second
+service of the same content has no economic value, and no later profile inherits it. A customer's
+repeat purchase, the evaluation of another model on the same task and a recomputation for
+verification can each have a rule of their own in a later version - for instance the same content
+from the same demander or its declared operator within a stated period - so that two customers
+who each need the same document read, or one customer who needs it again later, are not refused
+for ever by a rule made for fixtures.
 
 GMU is the profile's `baseGmu` for the delivery that counts, within the caps, as today; for every
 other delivery it is zero, and the receipt says why.
@@ -418,7 +484,7 @@ to do so was obtained; the protocol records the statement and does not vouch for
 
 | Piece | Where it belongs |
 | --- | --- |
-| The first specification: its records, the instruction, the schema and the template; the evaluator, the counter and the canonicalization rule; a fixture set with its root | this repository |
+| The first specification: its records, the instruction, the schema and the template; the evaluator, the counter and the canonicalization rule; a fixture set with its task descriptions and its root | this repository |
 | The next version of the ledger, with the role, the work id, the parent, the envelope commitment and the content key in a receipt; the `g1.inference` profile and its adapter | this repository; the content of that version is `decisions.md` Q13, Q16 and Q26 |
 | A reference worker (takes a task, calls the model service, checks its own delivery, writes the envelope, submits), a reference demander (issues fixtures, confirms) and the recount | this repository's client. FOGA is not modified |
 | The operating report of the worker | this repository's client; `supply-and-payment.md` 8 |
