@@ -1,0 +1,64 @@
+{
+  "schema": "finchain-pouw.deployment/1",
+  "name": "finchain-sepolia-r2",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "operator-wallet-integration"
+  ],
+  "chainId": 85422,
+  "rpc": "https://rpc.finchain.one",
+  "logChunk": 50000,
+  "deployBlock": 523456,
+  "protocol": "0.1.3",
+  "contracts": {
+    "GenesisPolicy": "0xbbA769732086EC8A4b84C30d279B7F50d6945f7f",
+    "SeedSource": "0x3965E6d2081EF6F4e7eEa0B5fAE834Eb8ddCAB92",
+    "GenesisLedger": "0xd2B9b935e7CaDefc2bDc4D13Af2356FF456Bffb9",
+    "AuditV1": "0x3C41533A76Ac89c4e9CF2619bc269131107Ce876",
+    "TenderAdapter8414": "0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599"
+  },
+  "code": {
+    "GenesisPolicy": {
+      "contract": "GenesisPolicy",
+      "codeHash": "0x76a7f03512194a78e284102a8cea56c2af430b3907793d7a85d06fcf1ba502ba",
+      "deployTx": "0x263cc823bca4a204ce21e44ddbd1c2d656199332d7208caf4e5ef830d8f123e2",
+      "block": 523456
+    },
+    "SeedSource": {
+      "contract": "L1BlockSeedSource",
+      "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102",
+      "deployTx": "0x9a572123a9340c04886f77e5118eb8de353c6597f8a976d6f3905ddb516d7e5d",
+      "block": 523457
+    },
+    "GenesisLedger": {
+      "contract": "GenesisLedger",
+      "codeHash": "0x2bae5ec09d1fc90049488b748606f13b4b3d36784321d8d6f831741d9c77b57f",
+      "deployTx": "0xbaf4b5379c50d9df309dd61c5a80aa36f4ff8e07fc376402b54b05337ae24c1b",
+      "block": 523458
+    },
+    "AuditV1": {
+      "contract": "AuditV1",
+      "codeHash": "0xfc7f05ddfbf5b79c58dfab21ca88d84c28c88b6b421d8ad6468c4632aed6e4bc",
+      "deployTx": "0x69cec96e888531cb649be4ed99148482deb0dd845accbc838f05fe4e58c39a46",
+      "block": 523459
+    },
+    "TenderAdapter8414": {
+      "contract": "TenderAdapter8414",
+      "codeHash": "0x35a259e93bde49ecbd8b4329f2b46cb500f7cff8c41c0834dbb199f325806adf",
+      "deployTx": "0xbd0b7309f26da8f10d8e29a0bd2d87144c39fb8a252809e35a16eb7a46d25c6d",
+      "block": 523460
+    }
+  },
+  "external": {
+    "taskToken8414": {
+      "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+      "deployBlock": 61392,
+      "codeHash": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+    }
+  },
+  "clock": {
+    "genesisTime": 1795462480,
+    "epochDuration": 7200
+  }
+}

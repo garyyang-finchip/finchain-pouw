@@ -1,0 +1,2853 @@
+{
+  "schema": "finchain-pouw.local-run/2",
+  "environment": "local-devnet",
+  "recordedAt": "2026-11-24T08:10:42.704Z",
+  "what": "Rehearsal of round R2 with the commands of a public deployment: keys, deployment from the committed builds, verification, an operator's round over two epochs (controlled self-test, then standard) with a settled block that lags, close records, audits; then two contract accounts taking part as themselves on a deployment of their own",
+  "ok": true,
+  "host": {
+    "node": "v22.23.5",
+    "platform": "linux/x64"
+  },
+  "tools": {
+    "hardhat": "2.29.2",
+    "ethers": "6.17.0",
+    "solc": "0.8.24"
+  },
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.3"
+  },
+  "sources": {
+    "contracts/GenesisLedger.sol": "e983ebfa9ed874555f1953f4d119ecb1bdd2364141e487152d779078095f8e2c",
+    "contracts/GenesisPolicy.sol": "aa2cbbe21af747e75d9adbaceb5e410b208870715237db67aaa9cac8c10dd5be",
+    "contracts/GenesisTypes.sol": "fc348902a9e27b8905f8088a796a06014b4f7e68813f8fe8e0962d6d215b788e",
+    "contracts/TenderAdapter8414.sol": "f45c4883500b98cc22e523b23c606775ada3d9c74dc40c2f3471e5c5e0176d37",
+    "contracts/functions/AuditV1.sol": "7d799f867d437ce527287bdfce199b4a34ba942a7b6923239d114563edf7ca21",
+    "contracts/interfaces/IG0Function.sol": "6deaa90e5ec5848fb5494518b34b070d54fddc11fe776a297cad7bc5f12e5702",
+    "contracts/interfaces/IGenesisLedger.sol": "72cfb8593ea278f48dfd0d69d63161b6482a413fbcae2c5e88d46b79e1b125eb",
+    "contracts/interfaces/IGenesisPolicy.sol": "d74d0f82f2c4dbf8fff9e89892f28a049abd24f69c6222c803430858bc09236f",
+    "contracts/interfaces/ISeedSource.sol": "9f5809bcaf4bf5f9173072c591d608fc518b462dd0387800605c7c20db753fc5",
+    "contracts/interfaces/ITaskTender8414.sol": "ee97cd60e17e6399c9b2b9cc3c84383fc52a736cc17cf2fe78db48d33ed4c198",
+    "contracts/seed/L1BlockSeedSource.sol": "e95686987243519fb8c8fe8b1f48fbd1c353ffdd7d05926ac8bab664c2e327fb",
+    "contracts/seed/PrevBlockSeedSource.sol": "21042d3af92f33288c5e5b212963273ce2dc9ad97c2f6e3f369a05e1c23e7081",
+    "contracts/testing/FixedSeedSource.sol": "010dc64a8197c74f52d8b4cb5d00d7965b667ebc025407585786182605ca7aa6",
+    "contracts/testing/MockL1Block.sol": "0f2de4ca9f42456421f0bf621ae19fc5e9454e56e507a90908bdd01f900ad41b",
+    "contracts/testing/TestAccount.sol": "9208dba074861e261049fe88df44cd322a0ec55be8796e037abf7fd333dc7416",
+    "contracts/testing/TestToken.sol": "9781ca54714aed3423322add13f0f82465d9b7e0cf411ee1929c0b6428b27f6f",
+    "contracts/vendor/erc8414/NOTICE": "313825fc74d8c1eab57f94bc2478b9cf7cfb927f6f0a38ce5946e599cc24e533",
+    "contracts/vendor/erc8414/SHA256SUMS": "57523f908f5725e4b3c9629d167e9752ef2fe9f78fbfbf30c9860d0ab5937b1e",
+    "contracts/vendor/erc8414/TaskToken.sol": "33d4376c8c5047f075df3c7d94cdbd8fa8f8c26dc3909f7490f0210d2f878e87",
+    "contracts/vendor/erc8414/TaskVault.sol": "ac1e11e4f9fb15c94756ca1439eaf94dd5d134d1830f311e4f5988b0f9775cce",
+    "contracts/vendor/erc8414/interfaces/IOnchainTaskDocument.sol": "0c94caa483fb0d001362e18ae25d46e070bcd95f6026fd33383d0bed120e9ba4",
+    "contracts/vendor/erc8414/interfaces/ITaskTender.sol": "8d1d7d3eaa43486531139cbec63ac885e57a4b01d6c5e59383dae861f62aa72d",
+    "contracts/vendor/erc8414/interfaces/ITaskToken.sol": "6de3c29eff09dfe102e164e166a878b67661e5c76dea5c5eddf9c26bd9163394",
+    "contracts/vendor/erc8414/interfaces/ITaskVerifier.sol": "766fb35255cb0dd5672f1ae87eaa86342eee19b6c74b7fea18e1f91d0629ce38",
+    "build/AuditV1.json": "11e89233eadfd74eee1e3abaa142c1ddc001f1e179c2ad115d96f2edc6e22829",
+    "build/GenesisLedger.json": "44b6be8feb72cae82433abcc4689bb520a78cf0699a40c99681ee5cb9cfe94af",
+    "build/GenesisPolicy.json": "db89a01eaa98b9ca0c8e35ba9f323c6cf52d478f638b33ac9df5a57bd9cdd924",
+    "build/L1BlockSeedSource.json": "926ccf6875b4a248f2d7dc746301b1261a0f6772e9230e0fdfa5c8ed57c6b7c8",
+    "build/PrevBlockSeedSource.json": "112947f4fa69b185e14884d7fc66ae89a40d017d6b552a4a5f20849a81e8c103",
+    "build/TenderAdapter8414.json": "463645cf5dd40bf8bef982bed3cbd8abda50c3a1a84ab0f0272084f17ccd49b1",
+    "client/abi/AuditV1.json": "25c47e312e83cd2e017a8e99e36d3de53ee5504064f7c2a9c2fab6cb5981997f",
+    "client/abi/GenesisLedger.json": "2b8e8e5bcf08df930a1e29d12807152cbd93720ccbd2bb91cd688c7ba5665604",
+    "client/abi/GenesisPolicy.json": "cec0ffd4b31be8df53dc1f224fa3440f2fa8e610c943d11cdca7108c031febc9",
+    "client/abi/ITaskTender8414.json": "5aab39757e16e4be0b22827dd2acc436adbf224c96dbce7fd9f8ae2725aa438b",
+    "client/abi/TenderAdapter8414.json": "5ca26ee9b08ac87ee91792c48d6926cee2d7831fd2341a45351f457713ce86d4",
+    "client/lib/genesis.js": "39f89fc9e8ccd6715babd2b366ececac17b9864862b67b63d6771b9bc3b85492",
+    "client/lib/report.js": "18e59e7b90d0c712c8e10659dfbda60153f76a850e0ee44deac25fc03d86d679",
+    "client/pouw.js": "fefc98c67a62b872ee3bd55f180eba1fd301044ee52d87d1165b7b05ba744fb0",
+    "scripts/deploy.js": "a1b52176130b3f3b59dea768f6757c603bcd98895986dc0ed35995b754972b59",
+    "scripts/export-abi.js": "4eca6617d361a5c0b5f664447372e12210a78e8fa42680b4e8a758759a55ac09",
+    "scripts/identity-check.js": "a984e2d176abe32c0cad2ff69aa85bfc76354f27226ed52e8cc7395a24b4e492",
+    "scripts/keys.js": "404cbab5e3e19c3c9804703208b9949e4f1f0152b2fd14a90d35aa2a93e3a5ef",
+    "scripts/lib/common.js": "565389d48dd8214b2afe35743eca6ad27cfc4a8a8e7f75b5a2fb4cd920d16aaa",
+    "scripts/lib/deploy.js": "e96203b9fac9ed19edd589e2b029c5c964c4d2d06691ebad57ef904eac01d50b",
+    "scripts/lib/tender.js": "c94cc092b3c67b3ae51277cc7791ba72589dcd650cba1409f822d73e5d3411c8",
+    "scripts/local-run.js": "605c730e97515ddd3884e4a2628fcb09ef0d51761111107a50cdebc1d1d71c13",
+    "scripts/round.js": "973e3d9399ee63ac1359e64438aa013130999dce9b35bc8c47de3756b4c193d9",
+    "deployments/finchain-sepolia-r2.config.json": "1484b9f5723f49f1aa6d5cbf9ff5fb48f572a8c8cfb7382a25963811e69bc240",
+    "hardhat.config.js": "a85e583ca310008c67f4413273bb17b261c87b016c987ad21d48f0e784a217d3",
+    "package.json": "9ee3e2365610b1dab7db5f537e08c173fc933cdd862f38e7db6a0dc23af66c11",
+    "package-lock.json": "cbe1ecf4ce6f1fe060c04baf14cb133ada8dc6015ebc003a04e10726e6c99977"
+  },
+  "checks": [
+    {
+      "check": "keys are not made inside the repository's checkout",
+      "ok": true
+    },
+    {
+      "check": "a key file is its owner's alone, and a second run keeps every key",
+      "ok": true
+    },
+    {
+      "check": "without --yes the deployment is planned and nothing is sent",
+      "ok": true
+    },
+    {
+      "check": "the kernel is deployed from the committed builds and read back as configured",
+      "ok": true
+    },
+    {
+      "check": "a second deployment over an existing manifest is refused",
+      "ok": true
+    },
+    {
+      "check": "pouw verify: the code on chain is the committed builds, wired as the manifest says",
+      "ok": true
+    },
+    {
+      "check": "pouw verify differs (exit status 2) when the manifest records another code hash",
+      "ok": true
+    },
+    {
+      "check": "before genesis the round does nothing and says when to come back (exit status 3)",
+      "ok": true
+    },
+    {
+      "check": "epoch 0 (controlled self-test): a test tender in each direction is settled and confirmed, and both wallets do the audit job",
+      "ok": true
+    },
+    {
+      "check": "run again in the same epoch, the round finds its work on chain and does nothing twice",
+      "ok": true
+    },
+    {
+      "check": "a key that does not own a tender cannot confirm it: refused with NotDemander",
+      "ok": true
+    },
+    {
+      "check": "a second submission for the same instance is refused with AlreadySubmitted",
+      "ok": true
+    },
+    {
+      "check": "an audit of an epoch that has not ended is refused (exit status 3)",
+      "ok": true
+    },
+    {
+      "check": "a close record for a running epoch is refused with EpochNotEnded",
+      "ok": true
+    },
+    {
+      "check": "a key file that others can read is refused before anything is sent",
+      "ok": true
+    },
+    {
+      "check": "epoch 0 has ended but is not settled: an audit waits (exit status 3)",
+      "ok": true
+    },
+    {
+      "check": "epoch 1 before epoch 0 is settled: the tenders are done, the audit jobs wait (exit status 3)",
+      "ok": true
+    },
+    {
+      "check": "with --wait the round waits for the settled block and then does the audit jobs: each recomputes epoch 0 in full",
+      "ok": true
+    },
+    {
+      "check": "epoch 1 (standard): the tenders between declared-related wallets are measured and not subsidized",
+      "ok": true
+    },
+    {
+      "check": "after the round's last epoch the round writes its close record and starts no new work",
+      "ok": true
+    },
+    {
+      "check": "epoch 0: the audit - a process with the manifest and the endpoint, no key - agrees with the ledger on every figure",
+      "ok": true
+    },
+    {
+      "check": "epoch 0: every row of the audit's table equals the ledger's view",
+      "ok": true
+    },
+    {
+      "check": "epoch 1: the audit - a process with the manifest and the endpoint, no key - agrees with the ledger on every figure",
+      "ok": true
+    },
+    {
+      "check": "epoch 1: every row of the audit's table equals the ledger's view",
+      "ok": true
+    },
+    {
+      "check": "epoch 0 is a controlled self-test: budget 1000 as 100 / 900, each wallet 25 + 225 test points - the capped share of either pool - and half the budget unallocated",
+      "ok": true
+    },
+    {
+      "check": "epoch 1 is standard: each wallet 25 test points from the audit job; the tenders count 100 GMU measured and none subsidized",
+      "ok": true
+    },
+    {
+      "check": "the audit adds the table up per declared operator: one operator, two addresses, twice the share an address can have",
+      "ok": true
+    },
+    {
+      "check": "every record carries the deployment's labels",
+      "ok": true
+    },
+    {
+      "check": "no contract of the kernel holds funds; the bounties were paid by the tenders' own vaults",
+      "ok": true
+    },
+    {
+      "check": "the identity check reads that the agents are contract accounts, that the tender is the account's and that a key alone would not be accepted",
+      "ok": true
+    },
+    {
+      "check": "pouw work --account: the worker of record is the account, driven by its key, and the admitted account is subsidized",
+      "ok": true
+    },
+    {
+      "check": "the same key sending by itself is another worker: recorded under the key's own address, measured, not admitted, not subsidized",
+      "ok": true
+    },
+    {
+      "check": "a key the account does not obey is refused before anything is sent",
+      "ok": true
+    },
+    {
+      "check": "a tender owned by an account is not confirmed by the account's key sending by itself: refused with NotDemander",
+      "ok": true
+    },
+    {
+      "check": "pouw bridge --account: confirmed by the owning account for the delivering account; declared-related, subsidized under the controlled self-test",
+      "ok": true
+    },
+    {
+      "check": "a tender delivered before the deployment's first epoch is recorded and measured, and earns nothing",
+      "ok": true
+    },
+    {
+      "check": "the audit of the accounts' epoch agrees with the ledger: three workers of record - two accounts and one key",
+      "ok": true
+    }
+  ],
+  "operatorWallets": {
+    "configuration": {
+      "schema": "finchain-pouw.deploy-config/1",
+      "name": "local-run",
+      "environment": "local-devnet",
+      "labels": [
+        "controlled-self-test",
+        "operator-wallet-integration"
+      ],
+      "chainId": 31337,
+      "rpc": "http://127.0.0.1:18546",
+      "logChunk": 40,
+      "epochDuration": 7200,
+      "seedSource": "L1BlockSeedSource",
+      "taskToken8414": {
+        "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "deployBlock": 2
+      },
+      "params": [
+        {
+          "activeFromEpoch": 0,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": true
+        },
+        {
+          "activeFromEpoch": 1,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": false
+        }
+      ],
+      "profiles": [
+        {
+          "name": "g0.ref",
+          "pool": "g0",
+          "baseGmu": 10,
+          "maxGmuPerWorkerPerEpoch": 10,
+          "jobsPerEpoch": 1
+        },
+        {
+          "name": "g1.tender",
+          "pool": "g1",
+          "baseGmu": 50,
+          "maxGmuPerWorkerPerEpoch": 200
+        }
+      ],
+      "parties": [
+        {
+          "key": "wallet-a",
+          "admitted": true,
+          "operator": 1,
+          "fundEth": "0.005"
+        },
+        {
+          "key": "wallet-b",
+          "admitted": true,
+          "operator": 1,
+          "fundEth": "0.005"
+        }
+      ],
+      "round": {
+        "parties": [
+          "wallet-a",
+          "wallet-b"
+        ],
+        "epochs": 2,
+        "rewardEth": "0.0005",
+        "judgmentWindow": 3600
+      },
+      "notes": [
+        "The parameters, profiles, parties and round of deployments/finchain-sepolia-r2.config.json, on a development network."
+      ]
+    },
+    "deployment": {
+      "schema": "finchain-pouw.deployment-record/1",
+      "environment": "local-devnet",
+      "labels": [
+        "controlled-self-test",
+        "operator-wallet-integration"
+      ],
+      "deployment": "local-run",
+      "chainId": "31337",
+      "endpointHost": "127.0.0.1:18546",
+      "recordedAt": "2026-11-24T08:10:10.953Z",
+      "ok": true,
+      "steward": "0x3685a884d8F5847345De3eFA82F58Ff3a7850959",
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.3"
+      },
+      "host": {
+        "node": "v22.23.5",
+        "platform": "linux/x64"
+      },
+      "builds": {
+        "build/AuditV1.json": "11e89233eadfd74eee1e3abaa142c1ddc001f1e179c2ad115d96f2edc6e22829",
+        "build/GenesisLedger.json": "44b6be8feb72cae82433abcc4689bb520a78cf0699a40c99681ee5cb9cfe94af",
+        "build/GenesisPolicy.json": "db89a01eaa98b9ca0c8e35ba9f323c6cf52d478f638b33ac9df5a57bd9cdd924",
+        "build/L1BlockSeedSource.json": "926ccf6875b4a248f2d7dc746301b1261a0f6772e9230e0fdfa5c8ed57c6b7c8",
+        "build/TenderAdapter8414.json": "463645cf5dd40bf8bef982bed3cbd8abda50c3a1a84ab0f0272084f17ccd49b1"
+      },
+      "clock": {
+        "genesisTime": "1795508711",
+        "genesis": "2026-11-24T08:25:11Z",
+        "epochDuration": "7200"
+      },
+      "parameters": [
+        {
+          "activeFromEpoch": 0,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": true,
+          "mode": "controlled-self-test"
+        },
+        {
+          "activeFromEpoch": 1,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": false,
+          "mode": "standard"
+        }
+      ],
+      "profiles": [
+        {
+          "name": "g0.ref",
+          "pool": 0,
+          "baseGmu": 10,
+          "maxGmuPerWorkerPerEpoch": 10,
+          "jobsPerEpoch": 1,
+          "activeFromEpoch": 0,
+          "module": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+        },
+        {
+          "name": "g1.tender",
+          "pool": 1,
+          "baseGmu": 50,
+          "maxGmuPerWorkerPerEpoch": 200,
+          "jobsPerEpoch": 0,
+          "activeFromEpoch": 0,
+          "module": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+        }
+      ],
+      "parties": [
+        {
+          "name": "wallet-a",
+          "key": "wallet-a",
+          "admitted": true,
+          "operator": 1,
+          "fundEth": "0.005",
+          "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+        },
+        {
+          "name": "wallet-b",
+          "key": "wallet-b",
+          "admitted": true,
+          "operator": 1,
+          "fundEth": "0.005",
+          "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598"
+        }
+      ],
+      "transactions": [
+        {
+          "step": "deploy GenesisPolicy",
+          "txHash": "0xb9b236c835a694f5d57852da1c948b36a16063c550a4bd5cb26d02102d85e214",
+          "block": 10,
+          "gasUsed": "2325133",
+          "address": "0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7"
+        },
+        {
+          "step": "deploy L1BlockSeedSource",
+          "txHash": "0x352eb44f0f9d008094fc86845e76c899e133058d652d2fda0f84298a39c2feda",
+          "block": 11,
+          "gasUsed": "162339",
+          "address": "0xC2BbE44fA8a9b206d00698F652A0440352a76a50"
+        },
+        {
+          "step": "deploy GenesisLedger",
+          "txHash": "0xec140a96d9fcee93d83cbe0e5caa557cbcf5817b6831d2081bf55a266585eff8",
+          "block": 12,
+          "gasUsed": "3133427",
+          "address": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98"
+        },
+        {
+          "step": "deploy AuditV1",
+          "txHash": "0xc584b84a67876a8d9a57dba5456f1fdaa55dca6ced9a37c865a2fc6946e24e32",
+          "block": 13,
+          "gasUsed": "296959",
+          "address": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+        },
+        {
+          "step": "deploy TenderAdapter8414",
+          "txHash": "0x1763a2117f9dc67e310e507e552b56569e83ec599a6f067a071206e2e96f0416",
+          "block": 14,
+          "gasUsed": "603607",
+          "address": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+        },
+        {
+          "step": "profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0",
+          "txHash": "0xc257153b9521afe923e8825b6019fb97ca2a26e8c3beb3ab2f4ce9519c4aebb4",
+          "block": 15,
+          "gasUsed": "190047"
+        },
+        {
+          "step": "profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0",
+          "txHash": "0x2be1f2243e8358510d8c615768e8be671d1934d0fd437837745076e5a3a2e88f",
+          "block": 16,
+          "gasUsed": "190083"
+        },
+        {
+          "step": "parameters from epoch 1: standard",
+          "txHash": "0xf3a86a70793de5534db24e3c430601a4a8833b622874b252e61b3a8bb4b57fbc",
+          "block": 17,
+          "gasUsed": "86610"
+        },
+        {
+          "step": "admit 0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+          "txHash": "0xce0add992f38221394fb20fe52f266ebe54dcf93003aa97bab303bfb0f87b43d",
+          "block": 18,
+          "gasUsed": "48688"
+        },
+        {
+          "step": "declare 0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820 under operator 1",
+          "txHash": "0xc5367133ccf5137d13d48e8dc3a1eea50c4d8a4c42bfee85f77f4e2ffebb3a42",
+          "block": 19,
+          "gasUsed": "31476"
+        },
+        {
+          "step": "admit 0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+          "txHash": "0x37ee2e6de5ec768097ead35a8f068fcffd32829881ca3d67bc358925e3b33c41",
+          "block": 20,
+          "gasUsed": "48688"
+        },
+        {
+          "step": "declare 0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598 under operator 1",
+          "txHash": "0x8fbbe68ab6340dfee70cabf68f4b25e02b764cd3c4ff37364b6a3bdd4273c3a7",
+          "block": 21,
+          "gasUsed": "31476"
+        },
+        {
+          "step": "fund 0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820 with 0.005",
+          "txHash": "0xc8dd03256d0a7bc696db446be76a6a793b57904384b1b7f663ed716cc5ec7615",
+          "block": 22,
+          "gasUsed": "21000"
+        },
+        {
+          "step": "fund 0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598 with 0.005",
+          "txHash": "0x569f849adbbd6b1375945942ef900ebf7ea2972ed11b758ef0f86b78d473a9bc",
+          "block": 23,
+          "gasUsed": "21000"
+        }
+      ],
+      "gasUsed": "7190533",
+      "verification": {
+        "code": [
+          {
+            "what": "GenesisPolicy at 0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7: the code on chain is this repository's build of GenesisPolicy",
+            "ok": true
+          },
+          {
+            "what": "GenesisPolicy: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0x8d66bf589bca1c78adbe28ebccab01489b67815542bc861ec1c516f0cacb3462"
+          },
+          {
+            "what": "SeedSource at 0xC2BbE44fA8a9b206d00698F652A0440352a76a50: the code on chain is this repository's build of L1BlockSeedSource",
+            "ok": true
+          },
+          {
+            "what": "SeedSource: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+          },
+          {
+            "what": "GenesisLedger at 0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98: the code on chain is this repository's build of GenesisLedger",
+            "ok": true
+          },
+          {
+            "what": "GenesisLedger: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0xa72d7728c9f413b802d4da610deb71e1f5711f981599437d8432b67382f8b06a"
+          },
+          {
+            "what": "AuditV1 at 0x6972C977ce8d65E0b2870a640f58F43272aBb08f: the code on chain is this repository's build of AuditV1",
+            "ok": true
+          },
+          {
+            "what": "AuditV1: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0xffe0b768004673f5f3b19738164ded309ba72c0feba6f6bfc6ad828a7e9d3b0b"
+          },
+          {
+            "what": "TenderAdapter8414 at 0x1281932CCf2C0b690f21Da2fDb565406d7956a47: the code on chain is this repository's build of TenderAdapter8414",
+            "ok": true
+          },
+          {
+            "what": "TenderAdapter8414: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0xf2162565943de8942054b0434dea7b3b2be6c83a0068db7480b781de0c54c9eb"
+          },
+          {
+            "what": "the manifest names every contract of the deployment and records its code",
+            "ok": true
+          },
+          {
+            "what": "the ledger's policy is the manifest's GenesisPolicy",
+            "ok": true,
+            "detail": "0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7"
+          },
+          {
+            "what": "the ledger's seed source is the manifest's SeedSource",
+            "ok": true,
+            "detail": "0xC2BbE44fA8a9b206d00698F652A0440352a76a50"
+          },
+          {
+            "what": "the policy's clock is the manifest's",
+            "ok": true,
+            "detail": "genesis 1795508711, epochs of 7200 s"
+          },
+          {
+            "what": "the audit function reads this ledger",
+            "ok": true
+          },
+          {
+            "what": "the audit function is audit-v1",
+            "ok": true
+          },
+          {
+            "what": "the adapter reports to this ledger",
+            "ok": true
+          },
+          {
+            "what": "the adapter reads the manifest's ERC-8414 contract",
+            "ok": true,
+            "detail": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+          },
+          {
+            "what": "the adapter records under g1.tender",
+            "ok": true
+          },
+          {
+            "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+            "ok": true,
+            "detail": "0x3620adedae026f9f4ca3418aadcc0483f4fa78ef5281384a6844dc21de901774"
+          },
+          {
+            "what": "epoch 0: the g0.ref profile's function is the manifest's AuditV1",
+            "ok": true,
+            "detail": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+          },
+          {
+            "what": "epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414",
+            "ok": true,
+            "detail": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+          }
+        ],
+        "policy": [
+          {
+            "what": "the parameters of epoch 0 are the configuration's (controlled-self-test)",
+            "ok": true
+          },
+          {
+            "what": "the parameters of epoch 1 are the configuration's (standard)",
+            "ok": true
+          },
+          {
+            "what": "the g0.ref profile of epoch 0 is the configuration's",
+            "ok": true
+          },
+          {
+            "what": "the g1.tender profile of epoch 0 is the configuration's",
+            "ok": true
+          },
+          {
+            "what": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820: admitted, operator 1, from epoch 0",
+            "ok": true
+          },
+          {
+            "what": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598: admitted, operator 1, from epoch 0",
+            "ok": true
+          }
+        ]
+      },
+      "manifest": {
+        "schema": "finchain-pouw.deployment/1",
+        "name": "local-run",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "chainId": 31337,
+        "rpc": "http://127.0.0.1:18546",
+        "logChunk": 40,
+        "deployBlock": 10,
+        "protocol": "0.1.3",
+        "contracts": {
+          "GenesisPolicy": "0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7",
+          "SeedSource": "0xC2BbE44fA8a9b206d00698F652A0440352a76a50",
+          "GenesisLedger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+          "AuditV1": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f",
+          "TenderAdapter8414": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+        },
+        "code": {
+          "GenesisPolicy": {
+            "contract": "GenesisPolicy",
+            "codeHash": "0x8d66bf589bca1c78adbe28ebccab01489b67815542bc861ec1c516f0cacb3462",
+            "deployTx": "0xb9b236c835a694f5d57852da1c948b36a16063c550a4bd5cb26d02102d85e214",
+            "block": 10
+          },
+          "SeedSource": {
+            "contract": "L1BlockSeedSource",
+            "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102",
+            "deployTx": "0x352eb44f0f9d008094fc86845e76c899e133058d652d2fda0f84298a39c2feda",
+            "block": 11
+          },
+          "GenesisLedger": {
+            "contract": "GenesisLedger",
+            "codeHash": "0xa72d7728c9f413b802d4da610deb71e1f5711f981599437d8432b67382f8b06a",
+            "deployTx": "0xec140a96d9fcee93d83cbe0e5caa557cbcf5817b6831d2081bf55a266585eff8",
+            "block": 12
+          },
+          "AuditV1": {
+            "contract": "AuditV1",
+            "codeHash": "0xffe0b768004673f5f3b19738164ded309ba72c0feba6f6bfc6ad828a7e9d3b0b",
+            "deployTx": "0xc584b84a67876a8d9a57dba5456f1fdaa55dca6ced9a37c865a2fc6946e24e32",
+            "block": 13
+          },
+          "TenderAdapter8414": {
+            "contract": "TenderAdapter8414",
+            "codeHash": "0xf2162565943de8942054b0434dea7b3b2be6c83a0068db7480b781de0c54c9eb",
+            "deployTx": "0x1763a2117f9dc67e310e507e552b56569e83ec599a6f067a071206e2e96f0416",
+            "block": 14
+          }
+        },
+        "external": {
+          "taskToken8414": {
+            "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+            "deployBlock": 2,
+            "codeHash": "0x3620adedae026f9f4ca3418aadcc0483f4fa78ef5281384a6844dc21de901774"
+          }
+        },
+        "clock": {
+          "genesisTime": 1795508711,
+          "epochDuration": 7200
+        }
+      },
+      "notes": [
+        "The parameters, profiles, parties and round of deployments/finchain-sepolia-r2.config.json, on a development network."
+      ]
+    },
+    "verification": {
+      "schema": "finchain-pouw.deployment-check/1",
+      "environment": "local-devnet",
+      "labels": [
+        "controlled-self-test",
+        "operator-wallet-integration"
+      ],
+      "deployment": "local-run",
+      "chainId": "31337",
+      "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+      "settledTag": "finalized",
+      "endpointHost": "127.0.0.1:18546",
+      "recordedAt": "2026-11-24T08:10:11.531Z",
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.3"
+      },
+      "ok": true,
+      "epoch": "0",
+      "started": false,
+      "steward": "0x3685a884d8F5847345De3eFA82F58Ff3a7850959",
+      "paused": false,
+      "code": {
+        "GenesisPolicy": {
+          "address": "0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7",
+          "contract": "GenesisPolicy",
+          "codeHash": "0x8d66bf589bca1c78adbe28ebccab01489b67815542bc861ec1c516f0cacb3462"
+        },
+        "SeedSource": {
+          "address": "0xC2BbE44fA8a9b206d00698F652A0440352a76a50",
+          "contract": "L1BlockSeedSource",
+          "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+        },
+        "GenesisLedger": {
+          "address": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+          "contract": "GenesisLedger",
+          "codeHash": "0xa72d7728c9f413b802d4da610deb71e1f5711f981599437d8432b67382f8b06a"
+        },
+        "AuditV1": {
+          "address": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f",
+          "contract": "AuditV1",
+          "codeHash": "0xffe0b768004673f5f3b19738164ded309ba72c0feba6f6bfc6ad828a7e9d3b0b"
+        },
+        "TenderAdapter8414": {
+          "address": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47",
+          "contract": "TenderAdapter8414",
+          "codeHash": "0xf2162565943de8942054b0434dea7b3b2be6c83a0068db7480b781de0c54c9eb"
+        }
+      },
+      "checks": [
+        {
+          "what": "GenesisPolicy at 0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7: the code on chain is this repository's build of GenesisPolicy",
+          "ok": true
+        },
+        {
+          "what": "GenesisPolicy: the code hash is the one the manifest records",
+          "ok": true,
+          "detail": "0x8d66bf589bca1c78adbe28ebccab01489b67815542bc861ec1c516f0cacb3462"
+        },
+        {
+          "what": "SeedSource at 0xC2BbE44fA8a9b206d00698F652A0440352a76a50: the code on chain is this repository's build of L1BlockSeedSource",
+          "ok": true
+        },
+        {
+          "what": "SeedSource: the code hash is the one the manifest records",
+          "ok": true,
+          "detail": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+        },
+        {
+          "what": "GenesisLedger at 0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98: the code on chain is this repository's build of GenesisLedger",
+          "ok": true
+        },
+        {
+          "what": "GenesisLedger: the code hash is the one the manifest records",
+          "ok": true,
+          "detail": "0xa72d7728c9f413b802d4da610deb71e1f5711f981599437d8432b67382f8b06a"
+        },
+        {
+          "what": "AuditV1 at 0x6972C977ce8d65E0b2870a640f58F43272aBb08f: the code on chain is this repository's build of AuditV1",
+          "ok": true
+        },
+        {
+          "what": "AuditV1: the code hash is the one the manifest records",
+          "ok": true,
+          "detail": "0xffe0b768004673f5f3b19738164ded309ba72c0feba6f6bfc6ad828a7e9d3b0b"
+        },
+        {
+          "what": "TenderAdapter8414 at 0x1281932CCf2C0b690f21Da2fDb565406d7956a47: the code on chain is this repository's build of TenderAdapter8414",
+          "ok": true
+        },
+        {
+          "what": "TenderAdapter8414: the code hash is the one the manifest records",
+          "ok": true,
+          "detail": "0xf2162565943de8942054b0434dea7b3b2be6c83a0068db7480b781de0c54c9eb"
+        },
+        {
+          "what": "the manifest names every contract of the deployment and records its code",
+          "ok": true
+        },
+        {
+          "what": "the ledger's policy is the manifest's GenesisPolicy",
+          "ok": true,
+          "detail": "0x4E0E1AD3e7344Ab88593DC77d4489f0B9666a8f7"
+        },
+        {
+          "what": "the ledger's seed source is the manifest's SeedSource",
+          "ok": true,
+          "detail": "0xC2BbE44fA8a9b206d00698F652A0440352a76a50"
+        },
+        {
+          "what": "the policy's clock is the manifest's",
+          "ok": true,
+          "detail": "genesis 1795508711, epochs of 7200 s"
+        },
+        {
+          "what": "the audit function reads this ledger",
+          "ok": true
+        },
+        {
+          "what": "the audit function is audit-v1",
+          "ok": true
+        },
+        {
+          "what": "the adapter reports to this ledger",
+          "ok": true
+        },
+        {
+          "what": "the adapter reads the manifest's ERC-8414 contract",
+          "ok": true,
+          "detail": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+        },
+        {
+          "what": "the adapter records under g1.tender",
+          "ok": true
+        },
+        {
+          "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+          "ok": true,
+          "detail": "0x3620adedae026f9f4ca3418aadcc0483f4fa78ef5281384a6844dc21de901774"
+        },
+        {
+          "what": "epoch 0: the g0.ref profile's function is the manifest's AuditV1",
+          "ok": true,
+          "detail": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+        },
+        {
+          "what": "epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414",
+          "ok": true,
+          "detail": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+        }
+      ]
+    },
+    "rounds": [
+      {
+        "schema": "finchain-pouw.round/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "endpointHost": "127.0.0.1:18546",
+        "settledTag": "finalized",
+        "recordedAt": "2026-11-24T08:10:12.522Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "host": {
+          "node": "v22.23.5",
+          "platform": "linux/x64"
+        },
+        "parties": [
+          {
+            "name": "wallet-a",
+            "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "250000000000000000000"
+          },
+          {
+            "name": "wallet-b",
+            "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "250000000000000000000"
+          }
+        ],
+        "epoch": "0",
+        "mode": "controlled-self-test",
+        "did": [
+          {
+            "step": "tender",
+            "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "tokenId": "1",
+            "submissionId": "1",
+            "reward": "500000000000000",
+            "tender": [
+              {
+                "step": "mint",
+                "txHash": "0x651fa162fbbdd32aa039cdadf3ad033a1e6ce0250b44a14b7c44c7230d40b8cd",
+                "block": 34,
+                "gasUsed": "727586"
+              },
+              {
+                "step": "fund",
+                "txHash": "0xe7e498cc4af4a7b402c2bad5d2c929e03e70db8739bf75bc59daf10bd89e95b4",
+                "block": 35,
+                "gasUsed": "114373"
+              },
+              {
+                "step": "deliver",
+                "txHash": "0xf058cb3fae9b51a64bb6c4a3e19eaad86144e2e2b8d1769490046c484753ccae",
+                "block": 36,
+                "gasUsed": "170831"
+              },
+              {
+                "step": "accept",
+                "txHash": "0xc3617e74ed8c0dad83f062eee1e0a7548aa0a48cc95b734c66d599bd1fd498e4",
+                "block": 37,
+                "gasUsed": "92272"
+              }
+            ],
+            "bridge": {
+              "receiptId": "1",
+              "epoch": "0",
+              "eligibility": "eligible",
+              "relation": "declared-related",
+              "gmuMeasured": "50",
+              "gmuSubsidized": "50",
+              "txHash": "0x936221c63648ee6a4783f76e9f8230ee159fc3a9767328b6ee2dd012765b926e",
+              "gasUsed": "665553"
+            }
+          },
+          {
+            "step": "tender",
+            "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "tokenId": "2",
+            "submissionId": "1",
+            "reward": "500000000000000",
+            "tender": [
+              {
+                "step": "mint",
+                "txHash": "0x3499c477c8384972a2aec8205a82b7bbe9386cef6c63b2516113008ddd667c39",
+                "block": 39,
+                "gasUsed": "727586"
+              },
+              {
+                "step": "fund",
+                "txHash": "0x22ac4e28f5cf68520866b9d75dc50ec2a0e3b2ed7afa0f8b6f72016a144ceeca",
+                "block": 40,
+                "gasUsed": "114373"
+              },
+              {
+                "step": "deliver",
+                "txHash": "0x871c538b6348da08510ffd2e139889ae432fdae70053322ce03021c49d9aa9bb",
+                "block": 41,
+                "gasUsed": "170831"
+              },
+              {
+                "step": "accept",
+                "txHash": "0x95ea92a60d78ef1e814a4793951cd45f56abc62a8463fd23939873e9ff6d2d58",
+                "block": 42,
+                "gasUsed": "92272"
+              }
+            ],
+            "bridge": {
+              "receiptId": "2",
+              "epoch": "0",
+              "eligibility": "eligible",
+              "relation": "declared-related",
+              "gmuMeasured": "50",
+              "gmuSubsidized": "50",
+              "txHash": "0x6e838f46e070521a9fcc9ef032ff2641d04d6ae0a89e3fff9171b84532800cd4",
+              "gasUsed": "541966"
+            }
+          },
+          {
+            "step": "work",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "epoch": "0",
+            "audited": null,
+            "receiptsAudited": 0,
+            "auditedTableHash": null,
+            "receiptId": "3",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "txHash": "0x30cdc44e01c1e8384e78127533709d91cb65274af6c81b9b79b26659578d03bf",
+            "gasUsed": "389839"
+          },
+          {
+            "step": "work",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "epoch": "0",
+            "audited": null,
+            "receiptsAudited": 0,
+            "auditedTableHash": null,
+            "receiptId": "4",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "txHash": "0x2a24bfe4bfc351620d1e8115d3bb412da839a2b2278dfb44eb5c1da69b5ab52d",
+            "gasUsed": "389839"
+          }
+        ],
+        "found": [],
+        "waiting": [],
+        "next": [
+          "epoch 1 runs from 2026-11-24T10:25:11Z to 2026-11-24T12:25:11Z: run this command again in it. Its audit job needs the finalized block past 2026-11-24T10:25:11Z; with --wait the command waits for that"
+        ],
+        "missed": [],
+        "summary": {
+          "receipts": "4",
+          "measured": {
+            "g0": "20",
+            "g1": "100"
+          },
+          "subsidized": {
+            "g0": "20",
+            "g1": "100"
+          }
+        }
+      },
+      {
+        "schema": "finchain-pouw.round/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "endpointHost": "127.0.0.1:18546",
+        "settledTag": "finalized",
+        "recordedAt": "2026-11-24T08:10:16.040Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "host": {
+          "node": "v22.23.5",
+          "platform": "linux/x64"
+        },
+        "parties": [
+          {
+            "name": "wallet-a",
+            "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "250000000000000000000"
+          },
+          {
+            "name": "wallet-b",
+            "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "250000000000000000000"
+          }
+        ],
+        "epoch": "0",
+        "mode": "controlled-self-test",
+        "did": [],
+        "found": [
+          {
+            "step": "tender",
+            "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "receiptId": "1",
+            "status": {
+              "verdict": 1,
+              "ineligible": 0,
+              "relation": 1,
+              "gmuMeasured": "50",
+              "gmuSubsidized": "50",
+              "verifier": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+            }
+          },
+          {
+            "step": "tender",
+            "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "receiptId": "2",
+            "status": {
+              "verdict": 1,
+              "ineligible": 0,
+              "relation": 1,
+              "gmuMeasured": "50",
+              "gmuSubsidized": "50",
+              "verifier": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+            }
+          },
+          {
+            "step": "work",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "receiptId": "3",
+            "status": {
+              "verdict": 1,
+              "ineligible": 0,
+              "relation": 0,
+              "gmuMeasured": "10",
+              "gmuSubsidized": "10",
+              "verifier": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+            }
+          },
+          {
+            "step": "work",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "receiptId": "4",
+            "status": {
+              "verdict": 1,
+              "ineligible": 0,
+              "relation": 0,
+              "gmuMeasured": "10",
+              "gmuSubsidized": "10",
+              "verifier": "0x6972C977ce8d65E0b2870a640f58F43272aBb08f"
+            }
+          }
+        ],
+        "waiting": [],
+        "next": [
+          "epoch 1 runs from 2026-11-24T10:25:11Z to 2026-11-24T12:25:11Z: run this command again in it. Its audit job needs the finalized block past 2026-11-24T10:25:11Z; with --wait the command waits for that"
+        ],
+        "missed": [],
+        "summary": {
+          "receipts": "4",
+          "measured": {
+            "g0": "20",
+            "g1": "100"
+          },
+          "subsidized": {
+            "g0": "20",
+            "g1": "100"
+          }
+        }
+      },
+      {
+        "schema": "finchain-pouw.round/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "endpointHost": "127.0.0.1:18546",
+        "settledTag": "finalized",
+        "recordedAt": "2026-11-24T08:10:18.364Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "host": {
+          "node": "v22.23.5",
+          "platform": "linux/x64"
+        },
+        "parties": [
+          {
+            "name": "wallet-a",
+            "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "0"
+          },
+          {
+            "name": "wallet-b",
+            "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "0"
+          }
+        ],
+        "epoch": "1",
+        "mode": "standard",
+        "did": [
+          {
+            "step": "close",
+            "epoch": "0",
+            "by": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "txHash": "0x62bed3a37f4d1bbbf5bd00e40c92e2903d6210627fa34def212e4716639c5c2b",
+            "block": 58,
+            "gasUsed": "57013"
+          },
+          {
+            "step": "tender",
+            "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "tokenId": "3",
+            "submissionId": "1",
+            "reward": "500000000000000",
+            "tender": [
+              {
+                "step": "mint",
+                "txHash": "0x3bd5c9720e1b03b5d16e11ef6df51a7d85fa3dcb76f5d4137b6fbbeb79c3cfb8",
+                "block": 59,
+                "gasUsed": "710474"
+              },
+              {
+                "step": "fund",
+                "txHash": "0x9173973a2c6bcb6740013dee03cec2cb6841e55f2b35884ea09417bf60e071a1",
+                "block": 60,
+                "gasUsed": "114373"
+              },
+              {
+                "step": "deliver",
+                "txHash": "0x5a7dbacf94039ca9650421ae1cf2f1a7aa2d4300951f95840da7f3b972571326",
+                "block": 61,
+                "gasUsed": "170831"
+              },
+              {
+                "step": "accept",
+                "txHash": "0xd7923cd592be63a808bfb2d074fc3decf2a80335d91be7fe5b1634c52ac1e99f",
+                "block": 62,
+                "gasUsed": "92272"
+              }
+            ],
+            "bridge": {
+              "receiptId": "5",
+              "epoch": "1",
+              "eligibility": "declared-related-not-subsidized",
+              "relation": "declared-related",
+              "gmuMeasured": "50",
+              "gmuSubsidized": "0",
+              "txHash": "0xbd37f4e3976727a3770261ecf5a953080e01df7d59161cee2c694cc1b107a838",
+              "gasUsed": "531630"
+            }
+          },
+          {
+            "step": "tender",
+            "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "tokenId": "4",
+            "submissionId": "1",
+            "reward": "500000000000000",
+            "tender": [
+              {
+                "step": "mint",
+                "txHash": "0x311b3935dc7a98faa99b6a6f29e2327a2e46e0583cd751e4ff53de285121bd3b",
+                "block": 64,
+                "gasUsed": "710486"
+              },
+              {
+                "step": "fund",
+                "txHash": "0xc7ac16d06aad53da97628ad5a05d5acf7d49a5039e58be1cefd1b1e43ff663d9",
+                "block": 65,
+                "gasUsed": "114373"
+              },
+              {
+                "step": "deliver",
+                "txHash": "0x150a0570996e3425385692efce301d91d2a3117c68ad2ad1295507d889d2aeae",
+                "block": 66,
+                "gasUsed": "170831"
+              },
+              {
+                "step": "accept",
+                "txHash": "0x56314e686655586fbf2cf57cbe60a2f7526659df7b30c85c8872cb199747c57c",
+                "block": 67,
+                "gasUsed": "92272"
+              }
+            ],
+            "bridge": {
+              "receiptId": "6",
+              "epoch": "1",
+              "eligibility": "declared-related-not-subsidized",
+              "relation": "declared-related",
+              "gmuMeasured": "50",
+              "gmuSubsidized": "0",
+              "txHash": "0x577e79c87d3ef01ba3c6c52604da08266f7d1f46b09d3bbc4493e61b7b5d8c64",
+              "gasUsed": "440427"
+            }
+          }
+        ],
+        "found": [],
+        "waiting": [
+          {
+            "step": "work",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "reason": "the finalized block is 7173 s short of the end of epoch 0"
+          },
+          {
+            "step": "work",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "reason": "the finalized block is 7173 s short of the end of epoch 0"
+          }
+        ],
+        "next": [
+          "run this command again once the finalized block has passed 2026-11-24T10:25:11Z - before 2026-11-24T12:25:11Z, when epoch 1 ends"
+        ],
+        "missed": [],
+        "summary": {
+          "receipts": "2",
+          "measured": {
+            "g0": "0",
+            "g1": "100"
+          },
+          "subsidized": {
+            "g0": "0",
+            "g1": "0"
+          }
+        }
+      },
+      {
+        "schema": "finchain-pouw.round/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "endpointHost": "127.0.0.1:18546",
+        "settledTag": "finalized",
+        "recordedAt": "2026-11-24T08:10:21.591Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "host": {
+          "node": "v22.23.5",
+          "platform": "linux/x64"
+        },
+        "parties": [
+          {
+            "name": "wallet-a",
+            "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "25000000000000000000"
+          },
+          {
+            "name": "wallet-b",
+            "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "admitted": true,
+            "operator": "1",
+            "provisional": "25000000000000000000"
+          }
+        ],
+        "epoch": "1",
+        "mode": "standard",
+        "did": [
+          {
+            "step": "work",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "epoch": "1",
+            "audited": "0",
+            "receiptsAudited": 4,
+            "auditedTableHash": "0x325cf637768aee995ad5f6093163309838978e320718c5eda22bf3b39225f9a8",
+            "receiptId": "7",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "txHash": "0x5c6c28f75749caf19ce2befd1d72fd2d7230a5529077e176e9df006b936145a3",
+            "gasUsed": "417163"
+          },
+          {
+            "step": "work",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "epoch": "1",
+            "audited": "0",
+            "receiptsAudited": 4,
+            "auditedTableHash": "0x325cf637768aee995ad5f6093163309838978e320718c5eda22bf3b39225f9a8",
+            "receiptId": "8",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "txHash": "0xcae7357d0b2c773cda8c40e9e88642e7fb775604e5fa4e8b4c0e5ff98aa90140",
+            "gasUsed": "417163"
+          }
+        ],
+        "found": [
+          {
+            "step": "tender",
+            "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "receiptId": "5",
+            "status": {
+              "verdict": 1,
+              "ineligible": 5,
+              "relation": 1,
+              "gmuMeasured": "50",
+              "gmuSubsidized": "0",
+              "verifier": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+            }
+          },
+          {
+            "step": "tender",
+            "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "receiptId": "6",
+            "status": {
+              "verdict": 1,
+              "ineligible": 5,
+              "relation": 1,
+              "gmuMeasured": "50",
+              "gmuSubsidized": "0",
+              "verifier": "0x1281932CCf2C0b690f21Da2fDb565406d7956a47"
+            }
+          }
+        ],
+        "waiting": [],
+        "next": [
+          "epoch 1 ends 2026-11-24T12:25:11Z: run this command once more after that, for its close record"
+        ],
+        "missed": [],
+        "summary": {
+          "receipts": "4",
+          "measured": {
+            "g0": "20",
+            "g1": "100"
+          },
+          "subsidized": {
+            "g0": "20",
+            "g1": "0"
+          }
+        }
+      },
+      {
+        "schema": "finchain-pouw.round/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "endpointHost": "127.0.0.1:18546",
+        "settledTag": "finalized",
+        "recordedAt": "2026-11-24T08:10:24.403Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "host": {
+          "node": "v22.23.5",
+          "platform": "linux/x64"
+        },
+        "parties": [
+          {
+            "name": "wallet-a",
+            "address": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+          },
+          {
+            "name": "wallet-b",
+            "address": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598"
+          }
+        ],
+        "epoch": "2",
+        "mode": null,
+        "did": [
+          {
+            "step": "close",
+            "epoch": "1",
+            "by": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "txHash": "0xed9763cbe5aa9726d2eb67d90c64049452d085f56b61ee2d294f00b4edf3dcbf",
+            "block": 83,
+            "gasUsed": "53975"
+          }
+        ],
+        "found": [],
+        "waiting": [],
+        "next": [
+          "the round's epochs 0-1 are closed. Audit each one once the finalized block has passed its end (epoch 1: 2026-11-24T12:25:11Z): node client/pouw.js audit <epoch> --manifest out/local-run/manifest.json"
+        ],
+        "missed": []
+      }
+    ],
+    "audits": [
+      {
+        "schema": "finchain-pouw.audit/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "domain": "0xa55811ef7dab63909b68ac9fda37f67ff8d45f3ac88191666809e8b483ec4275",
+        "epoch": "0",
+        "epochStart": "1795508711",
+        "epochEnd": "1795515911",
+        "settledTag": "finalized",
+        "settledBlock": 84,
+        "endpointHost": "127.0.0.1:18546",
+        "recordedAt": "2026-11-24T08:10:25.680Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "ok": true,
+        "findings": [],
+        "mode": "controlled-self-test",
+        "paramsVersion": 1,
+        "params": {
+          "activeFromEpoch": "0",
+          "budgetBase": "1000000000000000000000",
+          "halvingInterval": "8",
+          "splitG0Bps": "1000",
+          "workerCapBps": "2500",
+          "minBountyWei": "100000000000000",
+          "maxSubsidizedPerDemander": "3",
+          "maxSubsidizedPerPair": "1",
+          "subsidizeDeclaredRelated": true
+        },
+        "budget": "1000000000000000000000",
+        "pools": {
+          "g0": "100000000000000000000",
+          "g1": "900000000000000000000"
+        },
+        "seed": "0xc4cc417d922ba3369ca40dcb727995855889263c94abe288b9097432304944fc",
+        "digest": "0xde3f649ab4c3aa606bb30667ca364fbd82c7b51e455d406b9baf479d6cca26d6",
+        "receiptCount": "4",
+        "measured": {
+          "g0": "20",
+          "g1": "100"
+        },
+        "subsidized": {
+          "g0": "20",
+          "g1": "100"
+        },
+        "subject": "0x95e719f4597e970d9fd9c8b367480e84d942e9aac8360b8d4c3adf2bfbdc8550",
+        "sealed": true,
+        "allocated": "500000000000000000000",
+        "unallocated": "500000000000000000000",
+        "tableHash": "0x325cf637768aee995ad5f6093163309838978e320718c5eda22bf3b39225f9a8",
+        "table": [
+          {
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 2,
+            "measured": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "allocation": "250000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "225000000000000000000"
+          },
+          {
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 2,
+            "measured": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "allocation": "250000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "225000000000000000000"
+          }
+        ],
+        "operators": [
+          {
+            "operator": 1,
+            "addresses": [
+              "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+            ],
+            "allocation": "500000000000000000000"
+          }
+        ],
+        "undeclaredAddresses": 0,
+        "g1": {
+          "receipts": 2,
+          "subsidized": 2,
+          "byRelation": {
+            "declared-related": 2
+          },
+          "bySettlement": {
+            "judged": 2
+          },
+          "subsidizedByRelation": {
+            "declared-related": 2
+          },
+          "subsidizedBySettlement": {
+            "judged": 2
+          }
+        },
+        "observations": [],
+        "receipts": [
+          {
+            "id": "1",
+            "pool": "g1",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "counterparty": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "contributionId": "0x9e132010294a17756756eaa96e7c8586fd9c044cd449f688453a9eb310257e9e",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "50",
+            "blockNumber": 38,
+            "txHash": "0x936221c63648ee6a4783f76e9f8230ee159fc3a9767328b6ee2dd012765b926e",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "1",
+              "submissionId": "1",
+              "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "judge": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "judgeAtSettlement": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+            }
+          },
+          {
+            "id": "2",
+            "pool": "g1",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "counterparty": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "contributionId": "0xcd5e93c9b3ca9b80f3b914cfc23ab05fb05e975abe7c296557a0737d8e41e4ae",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "50",
+            "blockNumber": 43,
+            "txHash": "0x6e838f46e070521a9fcc9ef032ff2641d04d6ae0a89e3fff9171b84532800cd4",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "2",
+              "submissionId": "1",
+              "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "judge": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "judgeAtSettlement": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598"
+            }
+          },
+          {
+            "id": "3",
+            "pool": "g0",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0x4096e3fe3f28baf6458d79625654161f7a26ab9f2a3bb94eb8e7c44f5289d8ba",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 44,
+            "txHash": "0x30cdc44e01c1e8384e78127533709d91cb65274af6c81b9b79b26659578d03bf"
+          },
+          {
+            "id": "4",
+            "pool": "g0",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0x2ad5857fbdd621a75625e0fb32934327ef40974d9a72dfa3e11abc1ca3f0588d",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 45,
+            "txHash": "0x2a24bfe4bfc351620d1e8115d3bb412da839a2b2278dfb44eb5c1da69b5ab52d"
+          }
+        ],
+        "reading": [
+          "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+          "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+          "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+          "This epoch subsidized declared-related parties: it is a controlled self-test and no evidence of external demand.",
+          "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+          "Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch.",
+          "The parties are wallets held by an operator. No agent's contract account took part: this is not a record of an agent mining as itself."
+        ]
+      },
+      {
+        "schema": "finchain-pouw.audit/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "operator-wallet-integration"
+        ],
+        "deployment": "local-run",
+        "chainId": "31337",
+        "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+        "domain": "0xa55811ef7dab63909b68ac9fda37f67ff8d45f3ac88191666809e8b483ec4275",
+        "epoch": "1",
+        "epochStart": "1795515911",
+        "epochEnd": "1795523111",
+        "settledTag": "finalized",
+        "settledBlock": 88,
+        "endpointHost": "127.0.0.1:18546",
+        "recordedAt": "2026-11-24T08:10:26.542Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "ok": true,
+        "findings": [],
+        "mode": "standard",
+        "paramsVersion": 2,
+        "params": {
+          "activeFromEpoch": "1",
+          "budgetBase": "1000000000000000000000",
+          "halvingInterval": "8",
+          "splitG0Bps": "1000",
+          "workerCapBps": "2500",
+          "minBountyWei": "100000000000000",
+          "maxSubsidizedPerDemander": "3",
+          "maxSubsidizedPerPair": "1",
+          "subsidizeDeclaredRelated": false
+        },
+        "budget": "1000000000000000000000",
+        "pools": {
+          "g0": "100000000000000000000",
+          "g1": "900000000000000000000"
+        },
+        "seed": "0x38294a87b55afc86542eb5f06350c3893271f3179896de97c38d379e30bbf8eb",
+        "digest": "0x11a3d3bdf8f7acdd1a64685aaa1de6e57aae63ca41dd68c4592884693e11b575",
+        "receiptCount": "4",
+        "measured": {
+          "g0": "20",
+          "g1": "100"
+        },
+        "subsidized": {
+          "g0": "20",
+          "g1": "0"
+        },
+        "subject": "0xb85491ec8452bd0f5d05325a2747d7b19b2ef53175a09e7e8be56eb3e9a34bf8",
+        "sealed": true,
+        "allocated": "50000000000000000000",
+        "unallocated": "950000000000000000000",
+        "tableHash": "0x7f03f3cda40b26078a0ad30fde8851ab18d52173f9633ca02091ef5ed9829e01",
+        "table": [
+          {
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 2,
+            "measured": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "0"
+            },
+            "allocation": "25000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "0"
+          },
+          {
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 2,
+            "measured": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "0"
+            },
+            "allocation": "25000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "0"
+          }
+        ],
+        "operators": [
+          {
+            "operator": 1,
+            "addresses": [
+              "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+            ],
+            "allocation": "50000000000000000000"
+          }
+        ],
+        "undeclaredAddresses": 0,
+        "g1": {
+          "receipts": 2,
+          "subsidized": 0,
+          "byRelation": {
+            "declared-related": 2
+          },
+          "bySettlement": {
+            "judged": 2
+          },
+          "subsidizedByRelation": {},
+          "subsidizedBySettlement": {}
+        },
+        "observations": [],
+        "receipts": [
+          {
+            "id": "5",
+            "pool": "g1",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "counterparty": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "contributionId": "0xb4bd952d1aefa0c2606d96fe126b8fe1274078c2f43ec93a2df39ec75576f8e9",
+            "verdict": "accepted",
+            "eligibility": "declared-related-not-subsidized",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "0",
+            "blockNumber": 63,
+            "txHash": "0xbd37f4e3976727a3770261ecf5a953080e01df7d59161cee2c694cc1b107a838",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "3",
+              "submissionId": "1",
+              "demander": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "judge": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+              "judgeAtSettlement": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820"
+            }
+          },
+          {
+            "id": "6",
+            "pool": "g1",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "counterparty": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "contributionId": "0xefe05bd92dd532168352cd3156375a3cc4e88d994651bbead880fd77ef964c52",
+            "verdict": "accepted",
+            "eligibility": "declared-related-not-subsidized",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "0",
+            "blockNumber": 68,
+            "txHash": "0x577e79c87d3ef01ba3c6c52604da08266f7d1f46b09d3bbc4493e61b7b5d8c64",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "4",
+              "submissionId": "1",
+              "demander": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "judge": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+              "judgeAtSettlement": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598"
+            }
+          },
+          {
+            "id": "7",
+            "pool": "g0",
+            "worker": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0x7c8995ae3f31c971a15712e7621b31551bfbb38065e55ef434fd7d8c228aaefc",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 75,
+            "txHash": "0x5c6c28f75749caf19ce2befd1d72fd2d7230a5529077e176e9df006b936145a3"
+          },
+          {
+            "id": "8",
+            "pool": "g0",
+            "worker": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0xf7d64e416c2d37b29b8a077f06b24ece6c09c9a5e122df718bddea5b2e1baca4",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 79,
+            "txHash": "0xcae7357d0b2c773cda8c40e9e88642e7fb775604e5fa4e8b4c0e5ff98aa90140"
+          }
+        ],
+        "reading": [
+          "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+          "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+          "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+          "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand.",
+          "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+          "Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch.",
+          "The parties are wallets held by an operator. No agent's contract account took part: this is not a record of an agent mining as itself."
+        ]
+      }
+    ]
+  },
+  "contractAccounts": {
+    "identities": {
+      "schema": "finchain-pouw.identity-check/1",
+      "name": "local-run",
+      "chainId": "31337",
+      "endpointHost": "127.0.0.1:18546",
+      "recordedAt": "2026-11-24T08:10:31.363Z",
+      "block": {
+        "latest": 108,
+        "finalized": 108
+      },
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.3"
+      },
+      "host": {
+        "node": "v22.23.5",
+        "platform": "linux/x64"
+      },
+      "accountsAreKeys": false,
+      "parties": [
+        {
+          "name": "agent-x",
+          "account": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "wallet": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+          "accountIsContract": true,
+          "walletIsContract": false,
+          "accountVersion": null,
+          "owner": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+          "operator": null,
+          "walletIsOwner": true,
+          "walletIsOperator": false,
+          "walletTransactions": 3
+        },
+        {
+          "name": "agent-y",
+          "account": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+          "wallet": "0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669",
+          "accountIsContract": true,
+          "walletIsContract": false,
+          "accountVersion": null,
+          "owner": "0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669",
+          "operator": null,
+          "walletIsOwner": true,
+          "walletIsOperator": false,
+          "walletTransactions": 1
+        }
+      ],
+      "tenders": [
+        {
+          "tokenId": "5",
+          "contract": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+          "owner": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "ownerIs": "the account of agent-x",
+          "ownerIsContract": true,
+          "acceptanceAuthority": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "acceptanceAuthorityIs": "the account of agent-x",
+          "acceptanceAuthorityIsContract": true,
+          "submissions": [
+            {
+              "submissionId": "1",
+              "fulfiller": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+              "fulfillerIs": "the account of agent-y",
+              "status": "accepted",
+              "machineSettled": false,
+              "submittedAt": "2026-11-24T12:25:42Z"
+            }
+          ],
+          "bridge": {
+            "acceptedSender": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "aKeySendingByItselfIsAccepted": false
+          }
+        }
+      ],
+      "conclusions": [
+        "agent-x: the identity on chain is the contract account 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853; the key 0x7b0Df9A7A8168644b175876A28059fe63104E28a is its owner. A transaction the key sends by itself comes from 0x7b0Df9A7A8168644b175876A28059fe63104E28a: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.",
+        "agent-y: the identity on chain is the contract account 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318; the key 0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669 is its owner. A transaction the key sends by itself comes from 0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.",
+        "tender 5 is owned by 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 (the account of agent-x): the adapter accepts its confirmation from that address only, and that address is a contract - a key sending by itself is refused (NotDemander).",
+        "tender 5, submission 1 (accepted) was delivered by 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 (the account of agent-y): that is the worker a receipt would name.",
+        "tender 5 is judged by 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 (the account of agent-x).",
+        "Here the agents' identities are contract accounts and the keys are other addresses. Taking part with keys alone is an operator-wallet integration; it is not the agents taking part as themselves, and the two are to be accepted separately."
+      ]
+    },
+    "configuration": {
+      "schema": "finchain-pouw.deploy-config/1",
+      "name": "local-run-accounts",
+      "environment": "local-devnet",
+      "labels": [
+        "controlled-self-test",
+        "contract-account-integration"
+      ],
+      "chainId": 31337,
+      "rpc": "http://127.0.0.1:18546",
+      "logChunk": 40,
+      "epochDuration": 7200,
+      "seedSource": "L1BlockSeedSource",
+      "taskToken8414": {
+        "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "deployBlock": 2
+      },
+      "params": [
+        {
+          "activeFromEpoch": 0,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": true
+        }
+      ],
+      "profiles": [
+        {
+          "name": "g0.ref",
+          "pool": "g0",
+          "baseGmu": 10,
+          "maxGmuPerWorkerPerEpoch": 10,
+          "jobsPerEpoch": 1
+        },
+        {
+          "name": "g1.tender",
+          "pool": "g1",
+          "baseGmu": 50,
+          "maxGmuPerWorkerPerEpoch": 200
+        }
+      ],
+      "parties": [
+        {
+          "name": "the account of agent-x",
+          "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "admitted": true,
+          "operator": 1
+        },
+        {
+          "name": "the account of agent-y",
+          "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+          "admitted": true,
+          "operator": 1
+        }
+      ],
+      "notes": [
+        "Two contract accounts of one operator, admitted as themselves. The accounts stand in for agents whose identity on chain is a contract account; they are the test account of contracts/testing."
+      ]
+    },
+    "deployment": {
+      "schema": "finchain-pouw.deployment-record/1",
+      "environment": "local-devnet",
+      "labels": [
+        "controlled-self-test",
+        "contract-account-integration"
+      ],
+      "deployment": "local-run-accounts",
+      "chainId": "31337",
+      "endpointHost": "127.0.0.1:18546",
+      "recordedAt": "2026-11-24T08:10:35.474Z",
+      "ok": true,
+      "steward": "0x3685a884d8F5847345De3eFA82F58Ff3a7850959",
+      "client": {
+        "name": "finchain-pouw",
+        "version": "0.1.3"
+      },
+      "host": {
+        "node": "v22.23.5",
+        "platform": "linux/x64"
+      },
+      "builds": {
+        "build/AuditV1.json": "11e89233eadfd74eee1e3abaa142c1ddc001f1e179c2ad115d96f2edc6e22829",
+        "build/GenesisLedger.json": "44b6be8feb72cae82433abcc4689bb520a78cf0699a40c99681ee5cb9cfe94af",
+        "build/GenesisPolicy.json": "db89a01eaa98b9ca0c8e35ba9f323c6cf52d478f638b33ac9df5a57bd9cdd924",
+        "build/L1BlockSeedSource.json": "926ccf6875b4a248f2d7dc746301b1261a0f6772e9230e0fdfa5c8ed57c6b7c8",
+        "build/TenderAdapter8414.json": "463645cf5dd40bf8bef982bed3cbd8abda50c3a1a84ab0f0272084f17ccd49b1"
+      },
+      "clock": {
+        "genesisTime": "1795524047",
+        "genesis": "2026-11-24T12:40:47Z",
+        "epochDuration": "7200"
+      },
+      "parameters": [
+        {
+          "activeFromEpoch": 0,
+          "budgetPoints": "1000",
+          "halvingInterval": 8,
+          "splitG0Bps": 1000,
+          "workerCapBps": 2500,
+          "minBountyEth": "0.0001",
+          "maxSubsidizedPerDemander": 3,
+          "maxSubsidizedPerPair": 1,
+          "subsidizeDeclaredRelated": true,
+          "mode": "controlled-self-test"
+        }
+      ],
+      "profiles": [
+        {
+          "name": "g0.ref",
+          "pool": 0,
+          "baseGmu": 10,
+          "maxGmuPerWorkerPerEpoch": 10,
+          "jobsPerEpoch": 1,
+          "activeFromEpoch": 0,
+          "module": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+        },
+        {
+          "name": "g1.tender",
+          "pool": 1,
+          "baseGmu": 50,
+          "maxGmuPerWorkerPerEpoch": 200,
+          "jobsPerEpoch": 0,
+          "activeFromEpoch": 0,
+          "module": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+        }
+      ],
+      "parties": [
+        {
+          "name": "the account of agent-x",
+          "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "admitted": true,
+          "operator": 1
+        },
+        {
+          "name": "the account of agent-y",
+          "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+          "admitted": true,
+          "operator": 1
+        }
+      ],
+      "transactions": [
+        {
+          "step": "deploy GenesisPolicy",
+          "txHash": "0xa60a33ae31f39796f23dfeeb4a0053493656306ea32ef56144e9f5fdc8e85397",
+          "block": 114,
+          "gasUsed": "2325133",
+          "address": "0x9DB2A0Ef8A86A97d512b8d4573aab73389f63ee7"
+        },
+        {
+          "step": "deploy L1BlockSeedSource",
+          "txHash": "0x9b1edf1fab97f67fe5163a3cd426f099a93b8bb81ad18fdb10ccc5f16de02cc3",
+          "block": 115,
+          "gasUsed": "162339",
+          "address": "0xe86F5E0F890ff212e94001Afb3e02B967895410E"
+        },
+        {
+          "step": "deploy GenesisLedger",
+          "txHash": "0x343eaf832c1bdbf6790b6c4b56aa4f2feda67052d5ea7ac778143d86a17060bc",
+          "block": 116,
+          "gasUsed": "3133427",
+          "address": "0x0ed67cd3764E7a42B8b709A76E12283328e006b7"
+        },
+        {
+          "step": "deploy AuditV1",
+          "txHash": "0x1075253b822fdf5e26b7c458bccb541d64aa49342475d099e0873dbe01ef4c25",
+          "block": 117,
+          "gasUsed": "296959",
+          "address": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+        },
+        {
+          "step": "deploy TenderAdapter8414",
+          "txHash": "0xfeb136b047fbf8f4ec041cad865d5caa18737b18f5e267203b52e0412041b3d0",
+          "block": 118,
+          "gasUsed": "603607",
+          "address": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+        },
+        {
+          "step": "profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0",
+          "txHash": "0x03e56444198c586f1b32ef8a40fdf6816352310417606c18581d680ea42b6290",
+          "block": 119,
+          "gasUsed": "190047"
+        },
+        {
+          "step": "profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0",
+          "txHash": "0x3e85b528b714a2b2b449953fc53b1550d2e43e5d80760368d386f6cc54e0dd4c",
+          "block": 120,
+          "gasUsed": "190083"
+        },
+        {
+          "step": "admit 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "txHash": "0xd7993b5d1fb5e009d8ab47958067c6671bc57e335ee7206c3c0c94b45400b317",
+          "block": 121,
+          "gasUsed": "48688"
+        },
+        {
+          "step": "declare 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 under operator 1",
+          "txHash": "0xc20e502d03eaf0a40840707b9a1628ba9cf7227333fff6ad4d4bf4a58e3229bd",
+          "block": 122,
+          "gasUsed": "31476"
+        },
+        {
+          "step": "admit 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+          "txHash": "0x4c2e123d24f84ad60a1c4dd39cd82659b71703917ca3b7ac4e4d89f35e1861fe",
+          "block": 123,
+          "gasUsed": "48688"
+        },
+        {
+          "step": "declare 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 under operator 1",
+          "txHash": "0x377a9d3451c8ed641f6741aa493be6a216c99bc826cbf1798b406761143c917c",
+          "block": 124,
+          "gasUsed": "31476"
+        }
+      ],
+      "gasUsed": "7061923",
+      "verification": {
+        "code": [
+          {
+            "what": "GenesisPolicy at 0x9DB2A0Ef8A86A97d512b8d4573aab73389f63ee7: the code on chain is this repository's build of GenesisPolicy",
+            "ok": true
+          },
+          {
+            "what": "GenesisPolicy: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0xe8338d948523bd894b67bfb8537c0f7ff2f7061c205cd253f9e214bcd446e714"
+          },
+          {
+            "what": "SeedSource at 0xe86F5E0F890ff212e94001Afb3e02B967895410E: the code on chain is this repository's build of L1BlockSeedSource",
+            "ok": true
+          },
+          {
+            "what": "SeedSource: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+          },
+          {
+            "what": "GenesisLedger at 0x0ed67cd3764E7a42B8b709A76E12283328e006b7: the code on chain is this repository's build of GenesisLedger",
+            "ok": true
+          },
+          {
+            "what": "GenesisLedger: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0x7128a40530494761e7574a60088fdafbf09c4622763ddad1551af0c88493b87a"
+          },
+          {
+            "what": "AuditV1 at 0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05: the code on chain is this repository's build of AuditV1",
+            "ok": true
+          },
+          {
+            "what": "AuditV1: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0xe4303ec5a66d4282c2b8c47c3db1de6fb3789364dcb0e9d87908c9caf396d2fc"
+          },
+          {
+            "what": "TenderAdapter8414 at 0x831952A246b6019d46Cd2C780e6970B80209f3Ad: the code on chain is this repository's build of TenderAdapter8414",
+            "ok": true
+          },
+          {
+            "what": "TenderAdapter8414: the code hash is the one the manifest records",
+            "ok": true,
+            "detail": "0x1fdce44245cab737b38e582e27d1170a06527f0354d3911d933ed594b178f651"
+          },
+          {
+            "what": "the manifest names every contract of the deployment and records its code",
+            "ok": true
+          },
+          {
+            "what": "the ledger's policy is the manifest's GenesisPolicy",
+            "ok": true,
+            "detail": "0x9DB2A0Ef8A86A97d512b8d4573aab73389f63ee7"
+          },
+          {
+            "what": "the ledger's seed source is the manifest's SeedSource",
+            "ok": true,
+            "detail": "0xe86F5E0F890ff212e94001Afb3e02B967895410E"
+          },
+          {
+            "what": "the policy's clock is the manifest's",
+            "ok": true,
+            "detail": "genesis 1795524047, epochs of 7200 s"
+          },
+          {
+            "what": "the audit function reads this ledger",
+            "ok": true
+          },
+          {
+            "what": "the audit function is audit-v1",
+            "ok": true
+          },
+          {
+            "what": "the adapter reports to this ledger",
+            "ok": true
+          },
+          {
+            "what": "the adapter reads the manifest's ERC-8414 contract",
+            "ok": true,
+            "detail": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+          },
+          {
+            "what": "the adapter records under g1.tender",
+            "ok": true
+          },
+          {
+            "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+            "ok": true,
+            "detail": "0x3620adedae026f9f4ca3418aadcc0483f4fa78ef5281384a6844dc21de901774"
+          },
+          {
+            "what": "epoch 0: the g0.ref profile's function is the manifest's AuditV1",
+            "ok": true,
+            "detail": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+          },
+          {
+            "what": "epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414",
+            "ok": true,
+            "detail": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+          }
+        ],
+        "policy": [
+          {
+            "what": "the parameters of epoch 0 are the configuration's (controlled-self-test)",
+            "ok": true
+          },
+          {
+            "what": "the g0.ref profile of epoch 0 is the configuration's",
+            "ok": true
+          },
+          {
+            "what": "the g1.tender profile of epoch 0 is the configuration's",
+            "ok": true
+          },
+          {
+            "what": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853: admitted, operator 1, from epoch 0",
+            "ok": true
+          },
+          {
+            "what": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318: admitted, operator 1, from epoch 0",
+            "ok": true
+          }
+        ]
+      },
+      "manifest": {
+        "schema": "finchain-pouw.deployment/1",
+        "name": "local-run-accounts",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "contract-account-integration"
+        ],
+        "chainId": 31337,
+        "rpc": "http://127.0.0.1:18546",
+        "logChunk": 40,
+        "deployBlock": 114,
+        "protocol": "0.1.3",
+        "contracts": {
+          "GenesisPolicy": "0x9DB2A0Ef8A86A97d512b8d4573aab73389f63ee7",
+          "SeedSource": "0xe86F5E0F890ff212e94001Afb3e02B967895410E",
+          "GenesisLedger": "0x0ed67cd3764E7a42B8b709A76E12283328e006b7",
+          "AuditV1": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05",
+          "TenderAdapter8414": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+        },
+        "code": {
+          "GenesisPolicy": {
+            "contract": "GenesisPolicy",
+            "codeHash": "0xe8338d948523bd894b67bfb8537c0f7ff2f7061c205cd253f9e214bcd446e714",
+            "deployTx": "0xa60a33ae31f39796f23dfeeb4a0053493656306ea32ef56144e9f5fdc8e85397",
+            "block": 114
+          },
+          "SeedSource": {
+            "contract": "L1BlockSeedSource",
+            "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102",
+            "deployTx": "0x9b1edf1fab97f67fe5163a3cd426f099a93b8bb81ad18fdb10ccc5f16de02cc3",
+            "block": 115
+          },
+          "GenesisLedger": {
+            "contract": "GenesisLedger",
+            "codeHash": "0x7128a40530494761e7574a60088fdafbf09c4622763ddad1551af0c88493b87a",
+            "deployTx": "0x343eaf832c1bdbf6790b6c4b56aa4f2feda67052d5ea7ac778143d86a17060bc",
+            "block": 116
+          },
+          "AuditV1": {
+            "contract": "AuditV1",
+            "codeHash": "0xe4303ec5a66d4282c2b8c47c3db1de6fb3789364dcb0e9d87908c9caf396d2fc",
+            "deployTx": "0x1075253b822fdf5e26b7c458bccb541d64aa49342475d099e0873dbe01ef4c25",
+            "block": 117
+          },
+          "TenderAdapter8414": {
+            "contract": "TenderAdapter8414",
+            "codeHash": "0x1fdce44245cab737b38e582e27d1170a06527f0354d3911d933ed594b178f651",
+            "deployTx": "0xfeb136b047fbf8f4ec041cad865d5caa18737b18f5e267203b52e0412041b3d0",
+            "block": 118
+          }
+        },
+        "external": {
+          "taskToken8414": {
+            "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+            "deployBlock": 2,
+            "codeHash": "0x3620adedae026f9f4ca3418aadcc0483f4fa78ef5281384a6844dc21de901774"
+          }
+        },
+        "clock": {
+          "genesisTime": 1795524047,
+          "epochDuration": 7200
+        }
+      },
+      "notes": [
+        "Two contract accounts of one operator, admitted as themselves. The accounts stand in for agents whose identity on chain is a contract account; they are the test account of contracts/testing."
+      ]
+    },
+    "steps": [
+      {
+        "step": "pouw work --account (agent-x)",
+        "worker": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "key": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "account": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "epoch": "0",
+        "audited": null,
+        "receiptsAudited": 0,
+        "auditedTableHash": null,
+        "instance": "0xa4c81e06d4764e76ee18eb0fcb57d136681c3a7c5a5410da123b3069d58a73c1",
+        "output": "0x158c5e3d25957a5475e60bad1cbb8790e56ccddba70659a7c5dc96c3534b7950",
+        "receiptId": "1",
+        "status": {
+          "verdict": 1,
+          "ineligible": 0,
+          "relation": 0,
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "verifier": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+        },
+        "txHash": "0x7e834eb1430ea4c6d57e9286664c8fdb314a8f819622df183f4df2a976632119",
+        "gasUsed": "463005"
+      },
+      {
+        "step": "pouw work --account (agent-y)",
+        "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "key": "0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669",
+        "account": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "epoch": "0",
+        "audited": null,
+        "receiptsAudited": 0,
+        "auditedTableHash": null,
+        "instance": "0x279b1d616ab93bc8ac14ea89fb0fd69392f9b4453784074796ba8d1222d5cb28",
+        "output": "0x7bcbdc3a276fd5f9d10e56d1d00c670698baaebfe425b2d9667f9cf04c0852ea",
+        "receiptId": "2",
+        "status": {
+          "verdict": 1,
+          "ineligible": 0,
+          "relation": 0,
+          "gmuMeasured": "10",
+          "gmuSubsidized": "10",
+          "verifier": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+        },
+        "txHash": "0x17da6b5f7ac520ae80aa1e0d26809b8d21181b1650190ea9fe4f720938b6d99a",
+        "gasUsed": "394605"
+      },
+      {
+        "step": "pouw work, the key of agent-x alone",
+        "worker": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "key": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "account": null,
+        "epoch": "0",
+        "audited": null,
+        "receiptsAudited": 0,
+        "auditedTableHash": null,
+        "instance": "0x8e722807b09b0466fdda4158845613a8ee8ca01c1e1878377963e0d4081c751d",
+        "output": "0x4cb6bc5037aea6d0ec47c83feb45d7e3248b2a82aed20670cfc816484cf63eb8",
+        "receiptId": "3",
+        "status": {
+          "verdict": 1,
+          "ineligible": 2,
+          "relation": 0,
+          "gmuMeasured": "10",
+          "gmuSubsidized": "0",
+          "verifier": "0x27f658f8fcCdbCaD382390AcF28Bf97818f8af05"
+        },
+        "txHash": "0x6d74ce8526da878ccfb9037c5c45fcad07d8792473917efdb0931b0f7aea0a43",
+        "gasUsed": "337864"
+      },
+      {
+        "step": "pouw bridge --account",
+        "demander": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "key": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "account": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "adapter": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad",
+        "receiptId": "4",
+        "epoch": "0",
+        "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "status": {
+          "verdict": 1,
+          "ineligible": 0,
+          "relation": 1,
+          "gmuMeasured": "50",
+          "gmuSubsidized": "50",
+          "verifier": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+        },
+        "txHash": "0xd6ab6b424f2d03b3cf8c6bfef234ec55ce7b6ea08e9546491ca6fbd958f92664",
+        "gasUsed": "561389"
+      },
+      {
+        "step": "pouw bridge --account, the tender from before the deployment",
+        "demander": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "key": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "account": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "adapter": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad",
+        "receiptId": "5",
+        "epoch": "0",
+        "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "status": {
+          "verdict": 1,
+          "ineligible": 4,
+          "relation": 1,
+          "gmuMeasured": "50",
+          "gmuSubsidized": "0",
+          "verifier": "0x831952A246b6019d46Cd2C780e6970B80209f3Ad"
+        },
+        "txHash": "0x57c14d71f5a2ad1abd072c2ae97a92751d489b17c081de5a00f6afa7101a0b51",
+        "gasUsed": "424370"
+      }
+    ],
+    "audits": [
+      {
+        "schema": "finchain-pouw.audit/1",
+        "environment": "local-devnet",
+        "labels": [
+          "controlled-self-test",
+          "contract-account-integration"
+        ],
+        "deployment": "local-run-accounts",
+        "chainId": "31337",
+        "ledger": "0x0ed67cd3764E7a42B8b709A76E12283328e006b7",
+        "domain": "0x3abb86babb500f76238866c11068686b34aff6ebde87a9c8aa0f309fac005441",
+        "epoch": "0",
+        "epochStart": "1795524047",
+        "epochEnd": "1795531247",
+        "settledTag": "finalized",
+        "settledBlock": 151,
+        "endpointHost": "127.0.0.1:18546",
+        "recordedAt": "2026-11-24T08:10:41.810Z",
+        "client": {
+          "name": "finchain-pouw",
+          "version": "0.1.3"
+        },
+        "ok": true,
+        "findings": [],
+        "mode": "controlled-self-test",
+        "paramsVersion": 1,
+        "params": {
+          "activeFromEpoch": "0",
+          "budgetBase": "1000000000000000000000",
+          "halvingInterval": "8",
+          "splitG0Bps": "1000",
+          "workerCapBps": "2500",
+          "minBountyWei": "100000000000000",
+          "maxSubsidizedPerDemander": "3",
+          "maxSubsidizedPerPair": "1",
+          "subsidizeDeclaredRelated": true
+        },
+        "budget": "1000000000000000000000",
+        "pools": {
+          "g0": "100000000000000000000",
+          "g1": "900000000000000000000"
+        },
+        "seed": "0x36be4ab0dee577d0f936ed73e02823f81dc869f435ba6d8e9722b6bc8bbaf470",
+        "digest": "0xd84c44b6ae1176fc23a1559d1956f17693827792608ab91a1c29130ff9beab88",
+        "receiptCount": "5",
+        "measured": {
+          "g0": "30",
+          "g1": "100"
+        },
+        "subsidized": {
+          "g0": "20",
+          "g1": "50"
+        },
+        "subject": "0x3ab7b8efd6e0a2ed32312cd0b0e812ad10a15a059bcf2a2dc7d4d1df19569238",
+        "sealed": true,
+        "allocated": "275000000000000000000",
+        "unallocated": "725000000000000000000",
+        "tableHash": "0x3ce29413fae29234b01a436c4e96edc278938cb73ed790c189c39e5f7dd75ec9",
+        "table": [
+          {
+            "worker": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+            "operator": 0,
+            "admitted": false,
+            "receipts": 1,
+            "measured": {
+              "g0": "10",
+              "g1": "0"
+            },
+            "subsidized": {
+              "g0": "0",
+              "g1": "0"
+            },
+            "allocation": "0",
+            "allocationG0": "0",
+            "allocationG1": "0"
+          },
+          {
+            "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 3,
+            "measured": {
+              "g0": "10",
+              "g1": "100"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "50"
+            },
+            "allocation": "250000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "225000000000000000000"
+          },
+          {
+            "worker": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "operator": 1,
+            "admitted": true,
+            "receipts": 1,
+            "measured": {
+              "g0": "10",
+              "g1": "0"
+            },
+            "subsidized": {
+              "g0": "10",
+              "g1": "0"
+            },
+            "allocation": "25000000000000000000",
+            "allocationG0": "25000000000000000000",
+            "allocationG1": "0"
+          }
+        ],
+        "operators": [
+          {
+            "operator": 1,
+            "addresses": [
+              "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+              "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+            ],
+            "allocation": "275000000000000000000"
+          }
+        ],
+        "undeclaredAddresses": 1,
+        "g1": {
+          "receipts": 2,
+          "subsidized": 1,
+          "byRelation": {
+            "declared-related": 2
+          },
+          "bySettlement": {
+            "judged": 2
+          },
+          "subsidizedByRelation": {
+            "declared-related": 1
+          },
+          "subsidizedBySettlement": {
+            "judged": 1
+          }
+        },
+        "observations": [],
+        "receipts": [
+          {
+            "id": "1",
+            "pool": "g0",
+            "worker": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0xaeb559d7c8e4b5eb2f936f948f550fd1330bb51627b690311ac5a68a6f7cbd5d",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 131,
+            "txHash": "0x7e834eb1430ea4c6d57e9286664c8fdb314a8f819622df183f4df2a976632119"
+          },
+          {
+            "id": "2",
+            "pool": "g0",
+            "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0x360ae6cecadd306bce0400a722f05bc3b8e50cd01004faef72e9b74410a6d7ba",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "10",
+            "blockNumber": 134,
+            "txHash": "0x17da6b5f7ac520ae80aa1e0d26809b8d21181b1650190ea9fe4f720938b6d99a"
+          },
+          {
+            "id": "3",
+            "pool": "g0",
+            "worker": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "contributionId": "0xc862676b1c0e85a544b91c251c5224c06413ce160deac4fb0c4c111e37489423",
+            "verdict": "accepted",
+            "eligibility": "worker-not-admitted",
+            "relation": "none-found",
+            "gmuMeasured": "10",
+            "gmuSubsidized": "0",
+            "blockNumber": 136,
+            "txHash": "0x6d74ce8526da878ccfb9037c5c45fcad07d8792473917efdb0931b0f7aea0a43"
+          },
+          {
+            "id": "4",
+            "pool": "g1",
+            "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+            "counterparty": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "contributionId": "0x0029d9532eb864ba64d3cda3758e2517fdfa54d2168677f04ec17193db97702d",
+            "verdict": "accepted",
+            "eligibility": "eligible",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "50",
+            "blockNumber": 145,
+            "txHash": "0xd6ab6b424f2d03b3cf8c6bfef234ec55ce7b6ea08e9546491ca6fbd958f92664",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "6",
+              "submissionId": "1",
+              "demander": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "judge": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "judgeAtSettlement": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+            }
+          },
+          {
+            "id": "5",
+            "pool": "g1",
+            "worker": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+            "counterparty": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "contributionId": "0x0917de52906d66b11b0d4f00c9288ba5abde3ff47d481b79f8e1ab7d104a78bd",
+            "verdict": "accepted",
+            "eligibility": "delivered-before-genesis",
+            "relation": "declared-related",
+            "gmuMeasured": "50",
+            "gmuSubsidized": "0",
+            "blockNumber": 147,
+            "txHash": "0x57c14d71f5a2ad1abd072c2ae97a92751d489b17c081de5a00f6afa7101a0b51",
+            "tender": {
+              "source": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "tokenId": "5",
+              "submissionId": "1",
+              "demander": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "judge": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "asset": "0x0000000000000000000000000000000000000000",
+              "reward": "500000000000000",
+              "settlement": "judged",
+              "ownerAtSettlement": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "judgeAtSettlement": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+            }
+          }
+        ],
+        "reading": [
+          "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+          "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+          "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+          "This epoch subsidized declared-related parties: it is a controlled self-test and no evidence of external demand.",
+          "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+          "Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch."
+        ]
+      }
+    ]
+  },
+  "gasUsed": {
+    "deployment": "7190533",
+    "work": [
+      "389839",
+      "389839",
+      "417163",
+      "417163"
+    ],
+    "tender": [
+      {
+        "mint": "727586",
+        "fund": "114373",
+        "deliver": "170831",
+        "accept": "92272",
+        "bridge": "665553"
+      },
+      {
+        "mint": "727586",
+        "fund": "114373",
+        "deliver": "170831",
+        "accept": "92272",
+        "bridge": "541966"
+      },
+      {
+        "mint": "710474",
+        "fund": "114373",
+        "deliver": "170831",
+        "accept": "92272",
+        "bridge": "531630"
+      },
+      {
+        "mint": "710486",
+        "fund": "114373",
+        "deliver": "170831",
+        "accept": "92272",
+        "bridge": "440427"
+      }
+    ],
+    "close": [
+      "57013",
+      "53975"
+    ],
+    "workThroughAccount": [
+      "463005",
+      "394605"
+    ],
+    "bridgeThroughAccount": [
+      "561389",
+      "424370"
+    ]
+  },
+  "transcript": [
+    {
+      "step": "keys made by scripts/keys.js outside the repository; the steward funded by the chain's operator",
+      "addresses": {
+        "steward": "0x3685a884d8F5847345De3eFA82F58Ff3a7850959",
+        "wallet-a": "0x984936FE2F6c4B0F461b8748F6BCC069ebF7e820",
+        "wallet-b": "0x27EE0575683e64Aa25B3C2609D38E9Fe0BFA5598",
+        "agent-x": "0x7b0Df9A7A8168644b175876A28059fe63104E28a",
+        "agent-y": "0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669"
+      }
+    },
+    {
+      "step": "deployed by scripts/deploy.js: policy, seed source, ledger, audit function, adapter; two profiles; two parameter versions; two wallets admitted, declared under one operator, funded",
+      "manifest": "out/local-run/manifest.json",
+      "ledger": "0xD066C678B2FDb813E6656B1Da4C95b3a69B79a98",
+      "transactions": 14,
+      "gasUsed": "7190533"
+    },
+    {
+      "step": "epoch 0: scripts/round.js - two test tenders (mint, fund, deliver, accept, pouw bridge), two audit jobs (pouw work)",
+      "receipts": "4"
+    },
+    {
+      "step": "epoch 1: scripts/round.js, first while epoch 0 was not settled, then with --wait",
+      "receipts": "4"
+    },
+    {
+      "step": "scripts/identity-check.js: accounts, keys and the owner and worker of a tender, read from the chain",
+      "conclusions": [
+        "agent-x: the identity on chain is the contract account 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853; the key 0x7b0Df9A7A8168644b175876A28059fe63104E28a is its owner. A transaction the key sends by itself comes from 0x7b0Df9A7A8168644b175876A28059fe63104E28a: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.",
+        "agent-y: the identity on chain is the contract account 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318; the key 0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669 is its owner. A transaction the key sends by itself comes from 0x6044d3ea1075AB670ab2AE4f003d3dA9698dd669: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.",
+        "tender 5 is owned by 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 (the account of agent-x): the adapter accepts its confirmation from that address only, and that address is a contract - a key sending by itself is refused (NotDemander).",
+        "tender 5, submission 1 (accepted) was delivered by 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 (the account of agent-y): that is the worker a receipt would name.",
+        "tender 5 is judged by 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 (the account of agent-x).",
+        "Here the agents' identities are contract accounts and the keys are other addresses. Taking part with keys alone is an operator-wallet integration; it is not the agents taking part as themselves, and the two are to be accepted separately."
+      ]
+    },
+    {
+      "step": "the accounts take part as themselves: pouw work --account, pouw bridge --account",
+      "receipts": 5
+    }
+  ],
+  "notes": [
+    "Every key was made for this run by scripts/keys.js in a temporary directory and deleted after it. All parties belong to whoever ran the script, and are declared under one operator for that reason.",
+    "The record is evidence that the commands of a public deployment work end to end and that an independent recomputation agrees with the ledger. It is not evidence of independent participation, of demand, or of any amount of computation.",
+    "Keys, deployment, verification, rounds, audits and the identity check ran as separate processes against an endpoint, as on a public chain. The script moved the node's clock, set the stand-in for the L1Block predeploy, deployed the ERC-8414 reference contract, funded the steward, and held back the endpoint's finalized block for a while in epoch 1.",
+    "Blocks were mined every 250 ms, not one per transaction: transactions waited in the pool as they do on a public chain. Epochs are the two hours of the round's configuration, on the node's clock.",
+    "The contract accounts are the test account of contracts/testing: one owner key and an execute call. They show that the kernel and the client treat an account as the party; they are not an agent's node, and nothing here was done through one.",
+    "The test tenders settle a fixed result and carry no task."
+  ]
+}

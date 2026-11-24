@@ -1,0 +1,21 @@
+{
+  "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+  "tenders": {
+    "0:0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810:0x50Bf871C120E19C129B439d7F3864d143699a1eA": {
+      "tokenId": "6",
+      "submissionId": "1"
+    },
+    "0:0x50Bf871C120E19C129B439d7F3864d143699a1eA:0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810": {
+      "tokenId": "7",
+      "submissionId": "1"
+    },
+    "1:0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810:0x50Bf871C120E19C129B439d7F3864d143699a1eA": {
+      "tokenId": "8",
+      "submissionId": "1"
+    },
+    "1:0x50Bf871C120E19C129B439d7F3864d143699a1eA:0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810": {
+      "tokenId": "9",
+      "submissionId": "1"
+    }
+  }
+}

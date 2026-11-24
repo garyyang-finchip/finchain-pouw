@@ -12,17 +12,20 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.8: a revision of the documents that records the owner's adoption of the
-advisor's recommendations on Q17 to Q29 (A70). The software is release 0.1.3, unchanged - no
-contract, interface, client, script, configuration, runbook or deployment changes with it.
+Design revision v0.1.9: a revision of the documents that records the run of round R2a on
+Finchain Sepolia, its evidence and the review of that run (A72), and where the consolidated
+documents of v0.1.8 came from (A71). The software is release 0.1.3, unchanged - no contract,
+interface, client, script, configuration or deployment changes with it. The runbook's command
+blocks are unchanged: v0.1.8 as consolidated made its fallback and evidence instructions
+explicit, and this revision adds the condition on the finality of the close records.
 Sections 2 and 3 record the two reviews of the kernel - of v0.1.1, and of v0.1.2 with round R1 -
 and how each ruling was applied; section 4 records the alignment of 2026-11-24 on the production
-line; sections 5 and 6 record the reviews of v0.1.4, of v0.1.5 and of v0.1.6, how each is
-applied, and the adoption that followed; sections 7 and 8 give the state of the earlier
-proposals; section 9 lists what v0.1.3 proposed, section 10 what v0.1.4 proposed and section 11
-what v0.1.5 proposed, each as it stands after the reviews and the adoption; section 12 holds the
-questions put to the owner - those still open, and those adopted, each with the advisor's
-recommendation as it was adopted; section 13 the illustrative figures.
+line; sections 5 and 6 record the reviews of v0.1.4 to v0.1.7, how each is applied, the adoption
+that followed, and the review of the run of round R2a; sections 7 and 8 give the state of the
+earlier proposals; section 9 lists what v0.1.3 proposed, section 10 what v0.1.4 proposed and
+section 11 what v0.1.5 proposed, each as it stands after the reviews and the adoption; section 12
+holds the questions put to the owner - those still open, and those adopted, each with the
+advisor's recommendation as it was adopted; section 13 the illustrative figures.
 
 ## 1. Approved
 
@@ -98,6 +101,8 @@ recommendation as it was adopted; section 13 the illustrative figures.
 | A68 | The review of design revision v0.1.6, and the owner's instruction on it. The owner relayed the review and asked for the update at once. The revision of the documents in v0.1.6 is accepted, and the main findings of the round before it are closed: the record of recommendations apart from approvals; who takes the one counting; what a content key is made of; work facts apart from receipts; attempts and the recovery of a crash; the linked chain that closes A54; the light dependency on ERC-8506 and the validation of its records at the build. The demander that a profile version names is reasonable in its scope - it binds the first controlled fixture profile and is no admission rule of the network - and stays a proposal under Q25. FOGA's independence is intact: no change or release of FOGA and no ERC-8506 contract became a condition of round R2a. Round R2a continues. After it, the next review in depth is of the implementation of the new ledger and of the first production increment. The instruction covers design revision v0.1.7. It adopts none of the recommendations on Q17-Q29. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A69 | The running of round R2a, corrected and made exact. (a) The budget of an epoch is counted from the first epoch of its parameter version. With the configuration of round R2a the standard version begins in epoch 1 with a halving interval of 8: epochs 1 to 8 have 1,000 test points, and epoch 9 is the first with 500. The executor's operating instruction that the first halving was epoch 8 was wrong by one epoch. The contract is right and is not changed to fit an instruction; a standard round worked from epoch 9 on changes the expected figures, and neither invalidates the round nor asks for a new deployment. (b) `--epochs n` is an upper bound - the round works in epochs 0 to n - 1, by default 2 - so a standard round in epoch k is run, and closed, with `--epochs k+1`. (c) Closing an epoch sends a transaction and is not called read-only. (d) The five minutes an epoch must still have are the threshold below which nothing is started, not an assurance that what is started completes. (e) The audit job of epoch k recomputes epoch k - 1. Where that epoch is empty, the record says that an empty epoch was recomputed: that shows the procedure and is no recomputation of epoch 0's receipts. (f) The independent audit covers epoch 0 and the epoch in which the standard round was in fact worked. The host's audits, the input of the hosted job and the evidence name the same epochs, and receipts recorded across an epoch boundary are covered where they were recorded. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A70 | The owner adopts the advisor's recommendations on Q17 to Q29, each as it is recorded with its question (12.2), its conditions included. He first asked the executor whether it had an evident objection to any of them; it had none, and it named what the adoption carries with it (6.7). The choices these questions put up - P42 to P45, P47, P48, P50, P51 and P54 to P60, as they stand after the reviews - are approved as design: the plans that carry them out are what the next version of the ledger and the production increments are built against and reviewed with. With Q26 the choice that A64 left is made: the facts of a piece of work are kept apart from the confirmation that leads to the subsidy (P60, in the place of P40). The second item of Q16 is settled by that, and work whose demander does not confirm is in no epoch's GMU, measured or subsidized. Nothing is built, deployed or spent by the adoption. Each implementation still goes design, ruling, code; the limits of A53 stand; Q13 to Q15 and the rest of Q16 are not ruled by it. | owner, 2026-11-24: his own statement to the executor, made after the executor answered that it had no evident objection |
+| A71 | The review of design revision v0.1.7, and the consolidated documents of v0.1.8. The review accepts v0.1.7 and closes three matters of the round before: the fallback of the runbook of round R2a, as it is written; the rightful delegate of a named demander, in the plan and in row S25; the budget that fees belong to, as rule 12 of `supply-and-payment.md` 4.3 with row F26. It finds that the record kept the review's acceptance apart from the owner's adoption. Its principle for what follows: a matter that is still open holds up the work that depends on it and no other - Q13 to Q29 are not one gate for all later work, a necessary upgrade of the ledger does not wait for every production field, and the providers of the second increment are chosen when it opens. At the owner's request the advisor then wrote the consolidated documents of v0.1.8: the nine documents, with the executor's v0.1.8 and the remaining clarifications, as one set. The owner relayed them with the instruction to walk through, take in and update; the executor checked the nine files against the advisor's checksums and took them as the repository's documents (6.9). | review of design revision v0.1.7 and the advisor's consolidated documents, relayed by the owner with the instruction to walk through, take in and update, 2026-11-24 |
+| A72 | The review of the run of round R2a, and what closes the round. The review rebuilt the host's two record archives from the text they were sent as and found their hashes and the manifest's as stated; found the five builds of the deployment record to be the committed ones; and recomputed both epochs' totals, caps and allocations from the receipts: they are as reported. It supports the manifest as the input of the hosted audit and finds nothing in the kernel that has to be done again. One matter is to be closed with evidence. An audit of release 0.1.3 reads the receipts up to the finalized block and the `sealed` flag at the latest block, so that a report whose finalized block is before a close record does not show that the close record is final. The figures are not in question: an epoch that has ended cannot change, and a close record changes no figure. The round is closed on conditions read from the chain and not on an estimate of time: (1) the finalized block the hosted audit reads up to is not before the close record's block; (2) that block's number, hash and time are on record; (3) so are the receipt of the close transaction and the `EpochSealed` event of the right ledger, with the receipt's block hash equal to the chain's and its block within the finalized block read; (4) the same for epoch 0. An earlier report stays as it was made, with the mixed reading said. The hosted run passes when both of its jobs succeeded - an artifact is also uploaded by a job that failed - its `run.json` names the repository, the commit, the manifest and the epochs, its deployment check and both audits say `ok` for the right chain and ledger, the reports agree with the host's in full, and the table hashes are equal; a table hash covers the workers' addresses and their allocations and nothing else. What the round then establishes, and no more: the kernel ran both parameter modes on Finchain Sepolia as a controlled self-test of one operator's wallets, and another environment, with the same reference client and the same public endpoint, checked the deployed code and wiring and recomputed the finalized history. The deployment check reads at the latest block and is described so. Recording the block and the source of each read is for the next version of the client. What the review names as next, once the round is closed: to converge Q13, Q14 and the rest of Q16, the parts of the first production increment that need no new ledger going on beside that. That is an order of work it recommends, and it rules on none of those questions. | review of the run of round R2a, relayed by the owner for the executor to go through, 2026-11-24 |
 
 The rulings of the reviews and of the alignment are recorded here in condensed form from the
 owner's relay of them. A review's own text governs wherever a wording here falls short of it, and
@@ -106,7 +111,11 @@ for A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining
 review of v0.1.5 and A68-A69 the review of v0.1.6, each with the owner's instruction on it. What
 a review recommends on an open question is not in this table: it is with its question in section
 12 until the owner adopts it (A66). A70 is such an adoption. It rests on the owner's own
-statement, and the recommendations it adopts stay worded with their questions (12.2).
+statement, and the recommendations it adopts stay worded with their questions (12.2). A71
+condenses the review of v0.1.7 and says where the consolidated documents of v0.1.8 came from;
+A72 condenses the review of the run of round R2a. The owner relayed that review for the executor
+to go through, and himself made the second hosted run and the close evidence that it asks for.
+Neither entry says that the round is accepted.
 
 ## 2. The formal review of v0.1.1 and how it was applied
 
@@ -161,8 +170,14 @@ The reviewer read the code of round R1 and ruled on it without running the tests
 dependencies could not be installed in the reviewer's environment in time. Since v0.1.3 the tests
 and the rehearsal can be run on a hosted runner, from a clean checkout, by starting one job
 (`.github/workflows/ci.yml`), so that a reader does not depend on an installation of their own.
-The workflow is in place; its first hosted run is pending (A62). When it has run, the run's URL,
-its commit and its result are added here.
+The workflow first ran on a hosted runner on 2026-11-24: run ci #2,
+`https://github.com/garyyang-finchip/finchain-pouw/actions/runs/45353665914`, on commit
+`fa765af13f16f2f2b024a2576f665c9b8785ba7e`, status success. Its `test` job ran `npm test` and the
+rehearsal from a clean checkout; the rehearsal's record is
+`evidence/local-run-20261124T081042Z.json`, 37 checks. Run ci #3 repeated it on the same commit,
+also with success. A ci #1 is listed as failed: it belongs to the commit in which the workflow
+file was created empty, and an empty workflow file has no job to run (`evidence/r2a/README.md`
+7).
 
 ### 3.1 The rulings
 
@@ -352,7 +367,7 @@ review, and stay open (section 12); the second item of Q16 has since been settle
 | `supply-and-payment.md` 9: "The kernel's rule stays until a new policy replaces it", followed by a parameter version that lists assets | A policy, its implementation, and only then parameters (A62) |
 | The same section: payments by x402 "are usually made on another chain" | On the same chain or on another supported one; the mechanism described is one example, and an adapter pins its own (A62) |
 
-## 6. The reviews of design revisions v0.1.5 and v0.1.6, and the adoption that followed
+## 6. The reviews of v0.1.5 to v0.1.7, the adoption, and the review of the run of round R2a
 
 The owner relayed the advisor's review of design revision v0.1.5 with the instruction to carry
 out what it asks. Its verdict and the scope of the revision that applied it, v0.1.6, are A65; the
@@ -366,6 +381,10 @@ documents only (6.4 to 6.6).
 
 On the same day the owner adopted the advisor's recommendations on Q17 to Q29 (A70). Design
 revision v0.1.8 records the adoption, in documents only (6.7).
+
+The advisor's review of v0.1.7 and the consolidated documents of v0.1.8 followed (A71; 6.8 and
+6.9). Round R2a was then run and its run reviewed (A72; 6.10). Design revision v0.1.9 records
+both, with the records of the round under `evidence/r2a/`.
 
 ### 6.1 What the review checked, and what it did not
 
@@ -496,6 +515,72 @@ deployment or acceptance result. Production acceptance is labelled planned and n
 fee-budget rule in P57 is already part of the adopted design; concrete budget assignments and
 limits are configuration work for the second increment, not a fresh approval of the rule.
 
+### 6.9 The review of v0.1.7, and where the consolidated documents came from
+
+The review of design revision v0.1.7 (A71) took the package and found the hash this repository
+had stated; seven files, each replacing an existing one; the software still 0.1.3, and no
+contract, client, script or configuration in the package. It fetched commit 9fdd1ce from GitHub
+itself and compared the files one by one. It found the eleven command blocks of the runbook
+unchanged, word for word, and what was added to be instructions for a later standard round. It
+compared the commit the host of round R2a ran from, d8c7a20, with 9fdd1ce and found only
+documents between them, so that uploading the revision changed neither the deployed contracts
+nor the running programs. It did not run the tests: that 83 pass is this repository's result.
+These limits are the review's own statement.
+
+It closes three matters and asks for one wording. The consolidated documents carry all four:
+
+| Matter | State after the review of v0.1.7 | Where |
+| --- | --- | --- |
+| The fallback of the runbook of round R2a (A69) | closed: written as the software behaves | `r2-runbook.md` steps 5 to 7 |
+| The rightful delegate of a named demander (6.6) | closed: in the plan and in the acceptance | `production-service.md` 7; row S25 |
+| The budget that fees belong to (6.6) | closed as design: rule 12 is part of the adopted design, and what is left is configuration | `supply-and-payment.md` 4.3; row F26; section 11 |
+| The halving, as the roadmap worded it | said by ranges of epochs, so that "from epoch 9" is not read as for ever | `roadmap.md` 4; `r2-runbook.md` step 5 |
+
+The consolidated documents of v0.1.8 (6.8) were written by the advisor at the owner's request,
+from commit 274aafa and the executor's v0.1.8 package: nine documents as one set, with the
+checksum of each. The owner relayed them with the instruction to walk through, take in and
+update. The executor found the archive's SHA-256 and the nine files' as the advisor had listed
+them; the Approved table and the head of this document unchanged, word for word; one subsection
+added, 6.8; the runbook's eleven command blocks unchanged; and no file outside the nine different
+from the repository's. It took the nine files as they were. On reading them it noted four
+points, which this revision corrects where it changes the document concerned:
+
+| Point | Corrected as | Where |
+| --- | --- | --- |
+| The head of this document still said that v0.1.8 changed no runbook: true of the executor's package, not of the consolidated set | the head says what each revision did to the runbook | the head of this document |
+| The recommendation on Q28, as adopted, still ends "to be settled when it is coded", beside the statement that the fee-budget rule is adopted design | the cell keeps the recommendation's words and points to the later state | 12.2, Q28 |
+| Four prose lines were longer than the hundred characters the documents are wrapped to | the two in this document are wrapped; those in `architecture.md` and in `genesis-mining-mvp.md` wait for a revision that changes those documents | sections 8 and 12 |
+| 6.8 did not say who wrote the consolidated documents, and the review of v0.1.7 was not recorded with what it checked | this subsection, and A71 | 6.9 |
+
+### 6.10 The review of the run of round R2a, and how it is applied
+
+The run is recorded under `evidence/r2a/`, whose index sets what was observed against what was
+expected. The review (A72) had the host's records, the manifest package and this repository at
+commit 9e40033, and no hosted run; what it checked is in A72. Run ci #2 had been made when the
+review reached the executor. Run ci #3 and the close evidence were made afterwards, as the
+review asks.
+
+| Requirement of the review | Carried out as | Where |
+| --- | --- | --- |
+| The hosted audit reads up to a finalized block that is not before the close record of epoch 1; an estimate of time is not the condition | Run ci #2 had been started before that block was final: its audits read up to block 545910, and the close record is in block 546161. It is kept, and a second run was made. Run ci #3's audits read up to block 547050 | `evidence/r2a/README.md` 6, 7 |
+| The cut-off block's number, hash and time; the receipts of the close transactions; the `EpochSealed` events of the right ledger; block hashes equal to the chain's; the blocks within the finalized block read - for epoch 1 and for epoch 0 | One record, read from the chain by a one-off read-only command on the host of the round, with seventeen checks, all `ok`. The command is kept beside it | `evidence/r2a/r2a-close-evidence.json`, `close-evidence.command.txt` |
+| The earlier reports stay as made, with the mixed reading said | The host's audits and ci #2's are kept unchanged; the index says which block each read up to and that their `sealed` flag was read later | `evidence/r2a/README.md` 6 |
+| The hosted run is judged by more than two `MATCH` lines | The run pages' status, `run.json`, the deployment check, both audits compared with the host's field by field, the table hashes; an artifact alone is not taken as a pass | `evidence/r2a/README.md` 7, 8 |
+| What a table hash covers; what the deployment check reads | Said where the hashes and the check are reported, and in the runbook | `evidence/r2a/README.md` 5, 6; `r2-runbook.md` steps 7 and 8 |
+| The three limits of what the round shows: a controlled self-test whatever the mode of an epoch; another environment, not another implementation or another source of the chain's state; wallets, not agents, and no production task | Said at the head of the index and in what the rounds show | `evidence/r2a/README.md` 1, 10; `README.md` |
+| The condition, for later rounds | The runbook and the acceptance of round R2 name the finality of the close records | `r2-runbook.md` steps 6 to 8; `acceptance-matrix.md` 9 |
+| The client records the block and the source of each read | Not in release 0.1.3: noted for the next version of the client | `evidence/r2a/README.md` 11 |
+
+What the executor had said, for the record. It had asked the owner to start the hosted job after
+a stated time of day: an estimate of when the close record of epoch 1 would be final, and not a
+condition read from the chain. Run ci #2 was started before that time. Before the review
+arrived, the executor then told the owner that this run need not be repeated, because no figure
+depends on the close record. The figures do not depend on it. The finality of the close record
+still has to be shown by itself, as the review requires, and the second run was made.
+
+The state of round R2a after this revision: run, with its records in the repository. Its
+acceptance is for the reviewers and the owner to give, and is not recorded here.
+
 ## 7. The proposals of v0.1.0 and v0.1.1, and their state
 
 | Id | Proposal (short) | State after the review |
@@ -543,11 +628,12 @@ upstream commit and the hashes of the files.
 | P30 | Tests and build use Hardhat with the solc-js compiler pinned in `package.json`; tests are JavaScript | The Foundry binaries could not be installed in the build environment. Nothing is downloaded at test time | `README.md` |
 | P31 | The ERC-8414 reference contracts are copied byte for byte, pinned to the commit the World locks, as test fixtures | The adapter is tested against the standard itself, not a stand-in | `contracts/vendor/erc8414/NOTICE` |
 
-Kept for later rulings at that revision, not implemented (`genesis-mining-mvp.md` 13): the `g0.ver` state machine,
-`g0.cal`, the paging rule, a cap per declared operator, a freshness window for bridging, the
-conditions on a seed for a valuable subsidy, receipts without the demander, the binding of the
-settlement-time authority, the delegation signed by an account. For work without demander
-confirmation, the current design is P60, adopted under A70 in place of P40.
+Kept for later rulings at that revision, not implemented (`genesis-mining-mvp.md` 13): the
+`g0.ver` state machine, `g0.cal`, the paging rule, a cap per declared operator, a freshness
+window for bridging, the conditions on a seed for a valuable subsidy, receipts without the
+demander, the binding of the settlement-time authority, the delegation signed by an account. For
+work without demander confirmation, the current design is P60, adopted under A70 in place of
+P40.
 
 ## 9. Proposed in v0.1.3
 
@@ -642,11 +728,11 @@ not require the rule to be adopted again.
 Q13 and Q14 remain open. Q15 remains open for the wider R2 audit arrangement and does not
 reopen the in-force R2a hosted-runner route (P38, implementing A39). Q16 is partly settled:
 work facts apart from receipts are adopted through Q26 (P60, A70); the remaining implementation
-and packaging choices are still open (12.1). On Q17 to Q29 the advisor gave recommendations, in the reviews of
-v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor recommendation
-recorded; owner adoption pending - and none was an approval (A66). The owner adopted all thirteen
-on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as adopted. What is
-adopted is design, and nothing of it is built.
+and packaging choices are still open (12.1). On Q17 to Q29 the advisor gave recommendations, in
+the reviews of v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor
+recommendation recorded; owner adoption pending - and none was an approval (A66). The owner
+adopted all thirteen on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as
+adopted. What is adopted is design, and nothing of it is built.
 
 ### 12.1 Open for the owner's ruling
 
@@ -654,7 +740,7 @@ adopted is design, and nothing of it is built.
 | --- | --- | --- | --- |
 | Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA | None recorded. The review of v0.1.4 asks that this converge before the next ledger version is designed (Q22) |
 | Q14 | Whether round R2b is run on the present kernel. That is possible only by driving a cell's `execute` with the cell's own key from the reference client, with the cell's node stopped for the duration | No. R2a now, on the present kernel; R2b on the next ledger version | None recorded |
-| Q15 | The independent machine of R2: a hosted CI runner (P38) | Keep the in-force R2a route. Decide its application to R2b and any additional audit arrangement in that round's scope | No separate ruling on the wider R2 audit arrangement is recorded. R2a's hosted-runner route is already implemented and in force under P38 to satisfy A39; this open question neither suspends that run nor requires it to be repeated. It does not assert that a hosted run has passed |
+| Q15 | The independent machine of R2: a hosted CI runner (P38) | Keep the in-force R2a route. Decide its application to R2b and any additional audit arrangement in that round's scope | No separate ruling on the wider R2 audit arrangement is recorded. R2a's hosted-runner route is already implemented and in force under P38 to satisfy A39; this open question neither suspends that run nor requires it to be repeated. It does not assert that a hosted run has passed; the hosted runs of round R2a are in `evidence/r2a/README.md` 7 |
 | Q16 | The content of the next ledger version, before R3: the declared-operator cap (A35, P41), work facts apart from receipts (P60, adopted), the delegation (P35), and settlement-time authority (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value. The remaining choices are still put up for a ruling | Partly settled. Q26 adopts work facts apart from receipts (P60, A70). A35 already requires the declared-operator cap before R3, and A38 requires settlement-time authority to be bound before any subsidy of value. Still open are the cap's implementation and packaging (P41), the contract-account route (Q13, P35), and the mechanism and staging for settlement-time authority (P36); A70 does not adopt them |
 
 ### 12.2 Adopted by the owner on 2026-11-24 (A70)
@@ -676,7 +762,7 @@ suggested before the recommendation was given.
 | Q25 | The identities of a piece of work, and the rules of task units and of the one counting in profile version 1 (P54, P55): a request id, a work id and a content key; a committed fixture set; one counting per fixture and per deployment of the ledger, taken by the first rightful confirmation; a scope that a later profile version does not inherit | Confirm for version 1 of the profile | Support on conditions, and only for the first controlled fixture profile. The content key is defined on stated content, so that another worker, model or tender does not change it and a change of the task is judged by a stated rule. The counting goes to the record that meets the conditions of acceptance, is submitted by the rightful confirming party and is the first to be confirmed in the ledger; this is said not to be a ranking of who finished first; a case with acceptance and confirmation in opposite orders is among the tests. The policy is not narrowed against later repeat purchases, evaluations of other models or recomputations (review of v0.1.5). Both conditions are written into P54 and P55. The review of v0.1.6 finds them met as written, and the demander a profile version names reasonable in scope: it binds the first controlled fixture profile only; its check is of the demander that is represented, so that a rightful delegate is not refused |
 | Q26 | The next version of the ledger as one design (Q22): the items of Q16; for the production line, the role, the work id, the parent, the envelope commitment and the content key in a receipt, with the two reasons of P55; and work facts apart from receipts (P60) | Decide Q13 and P60 first: they fix who may record what, and with what state. Then one version. If the production fields are not ruled by then, the ledger is built without them and they follow by the same versioned switch | Support for work facts apart from receipts. A fact has a stable id and its own rule against duplicates; a fact cannot consume the production content key; a confirmation is linked to the same work, is possible without a fact and is never blocked by one, adds nothing when repeated and rewrites no frozen epoch. The trade-off is to be said plainly: without the demander's confirmation the work is in no epoch's GMU (review of v0.1.5). Written into P60; the review of v0.1.6 finds it written so |
 | Q27 | When the milestone of A54 is met (P58): the mechanism, a cell taking part and a customer's own request, each evidenced on its own; a customer's own request after the first increment, with a later version of the profile | Confirm. An external supplier is evidenced when there is one - the third party of round R3 may be it - and is not a condition of A54 | Agree: the mechanism, a cell taking part and an external customer's request together form A54, and an external supplier need not be a condition. When A54 is closed there is at least one complete chain of business evidence, linked by request and work ids or by parent and child (review of v0.1.5). Written into P58; the review of v0.1.6 finds it written so |
-| Q28 | The purchase record in three parts and the budget book (P56, P57), as the specification the second increment is built to | Confirm the records now. The providers are chosen when the second increment is opened (Q24) | Holds in the main. Before the second increment is coded: the purchase is kept apart from its attempts and from each attempt's record on its channel; an unknown result is reconciled or sent again as the same attempt; a new attempt only after a definite failure; at most one payment that succeeds, the fees of failed attempts being cost; a start takes up every reservation that is not finished, `authorized` included (review of v0.1.5). Written into P56 and P57. The review of v0.1.6 finds the main gaps closed; to be settled when it is coded: the budget that fees belong to, and the raising of the fee reservation before a resending at a higher fee |
+| Q28 | The purchase record in three parts and the budget book (P56, P57), as the specification the second increment is built to | Confirm the records now. The providers are chosen when the second increment is opened (Q24) | Holds in the main. Before the second increment is coded: the purchase is kept apart from its attempts and from each attempt's record on its channel; an unknown result is reconciled or sent again as the same attempt; a new attempt only after a definite failure; at most one payment that succeeds, the fees of failed attempts being cost; a start takes up every reservation that is not finished, `authorized` included (review of v0.1.5). Written into P56 and P57. The review of v0.1.6 finds the main gaps closed; to be settled when it is coded: the budget that fees belong to, and the raising of the fee reservation before a resending at a higher fee. Both were then written as rule 12 of `supply-and-payment.md` 4.3 (v0.1.7), and the review of v0.1.7 closes the matter: the rule is adopted design, and the concrete budgets and limits are configuration (A71; section 11) |
 | Q29 | The pin and the mapping of ERC-8506 (P59): two records conformant, two used for a vocabulary and two members | Confirm. If the standard has moved when the increment is built, the owner chooses whether the pin moves with it, in a new version of the specification | Support for the pin and for the limited reuse; the review fetched the pinned files and found the five hashes. The instances are validated against the schemas when the model is chosen and they are written; until then the source is verified and the mapping can hold, and no more is said (review of v0.1.5). Maintained by the review of v0.1.6 |
 
 ## 13. Illustrative (figures used to explain, not parameters)

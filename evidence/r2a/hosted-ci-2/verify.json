@@ -1,0 +1,152 @@
+{
+  "schema": "finchain-pouw.deployment-check/1",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "operator-wallet-integration"
+  ],
+  "deployment": "finchain-sepolia-r2",
+  "chainId": "85422",
+  "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+  "settledTag": "finalized",
+  "endpointHost": "rpc.finchain.one",
+  "recordedAt": "2026-11-24T08:09:36.769Z",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.3"
+  },
+  "ok": true,
+  "epoch": "2",
+  "started": true,
+  "steward": "0x6c3901B8865D97742166a88B953113D9418240AA",
+  "paused": false,
+  "code": {
+    "GenesisPolicy": {
+      "address": "0x6681DC69737C434b774A89Bdcb6d5C0a6C900825",
+      "contract": "GenesisPolicy",
+      "codeHash": "0xfe58350da808d4a33aff91bc3d757edbdc5773a8b9d103b0d27e69596ec5de20"
+    },
+    "SeedSource": {
+      "address": "0x9147C3a2c626303DA493dFF3189511C862013548",
+      "contract": "L1BlockSeedSource",
+      "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+    },
+    "GenesisLedger": {
+      "address": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+      "contract": "GenesisLedger",
+      "codeHash": "0x3aae139410ad6687f4990cc7543edf51e056d53b1c200e59feb3b117046b5ae2"
+    },
+    "AuditV1": {
+      "address": "0xA569d3e3D494Bcf049cD8cA12f394fD403e1E70D",
+      "contract": "AuditV1",
+      "codeHash": "0x6d2c06c227f7f6203630fccd5032d9673607b41fc3df5a1f8babd3ff3d37c962"
+    },
+    "TenderAdapter8414": {
+      "address": "0xC49a45ac2889fe32bE2beD0bA10fF33d3Ac028c6",
+      "contract": "TenderAdapter8414",
+      "codeHash": "0xc66bb50a7ab038f49fae1a72a3bedb706abc8d1dbf758c06629a6cdc434098fa"
+    }
+  },
+  "checks": [
+    {
+      "what": "GenesisPolicy at 0x6681DC69737C434b774A89Bdcb6d5C0a6C900825: the code on chain is this repository's build of GenesisPolicy",
+      "ok": true
+    },
+    {
+      "what": "GenesisPolicy: the code hash is the one the manifest records",
+      "ok": true,
+      "detail": "0xfe58350da808d4a33aff91bc3d757edbdc5773a8b9d103b0d27e69596ec5de20"
+    },
+    {
+      "what": "SeedSource at 0x9147C3a2c626303DA493dFF3189511C862013548: the code on chain is this repository's build of L1BlockSeedSource",
+      "ok": true
+    },
+    {
+      "what": "SeedSource: the code hash is the one the manifest records",
+      "ok": true,
+      "detail": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+    },
+    {
+      "what": "GenesisLedger at 0x7180CdDA4aE494f551d196146E6fcCB717675F1a: the code on chain is this repository's build of GenesisLedger",
+      "ok": true
+    },
+    {
+      "what": "GenesisLedger: the code hash is the one the manifest records",
+      "ok": true,
+      "detail": "0x3aae139410ad6687f4990cc7543edf51e056d53b1c200e59feb3b117046b5ae2"
+    },
+    {
+      "what": "AuditV1 at 0xA569d3e3D494Bcf049cD8cA12f394fD403e1E70D: the code on chain is this repository's build of AuditV1",
+      "ok": true
+    },
+    {
+      "what": "AuditV1: the code hash is the one the manifest records",
+      "ok": true,
+      "detail": "0x6d2c06c227f7f6203630fccd5032d9673607b41fc3df5a1f8babd3ff3d37c962"
+    },
+    {
+      "what": "TenderAdapter8414 at 0xC49a45ac2889fe32bE2beD0bA10fF33d3Ac028c6: the code on chain is this repository's build of TenderAdapter8414",
+      "ok": true
+    },
+    {
+      "what": "TenderAdapter8414: the code hash is the one the manifest records",
+      "ok": true,
+      "detail": "0xc66bb50a7ab038f49fae1a72a3bedb706abc8d1dbf758c06629a6cdc434098fa"
+    },
+    {
+      "what": "the manifest names every contract of the deployment and records its code",
+      "ok": true
+    },
+    {
+      "what": "the ledger's policy is the manifest's GenesisPolicy",
+      "ok": true,
+      "detail": "0x6681DC69737C434b774A89Bdcb6d5C0a6C900825"
+    },
+    {
+      "what": "the ledger's seed source is the manifest's SeedSource",
+      "ok": true,
+      "detail": "0x9147C3a2c626303DA493dFF3189511C862013548"
+    },
+    {
+      "what": "the policy's clock is the manifest's",
+      "ok": true,
+      "detail": "genesis 1795489148, epochs of 7200 s"
+    },
+    {
+      "what": "the audit function reads this ledger",
+      "ok": true
+    },
+    {
+      "what": "the audit function is audit-v1",
+      "ok": true
+    },
+    {
+      "what": "the adapter reports to this ledger",
+      "ok": true
+    },
+    {
+      "what": "the adapter reads the manifest's ERC-8414 contract",
+      "ok": true,
+      "detail": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908"
+    },
+    {
+      "what": "the adapter records under g1.tender",
+      "ok": true
+    },
+    {
+      "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+      "ok": true,
+      "detail": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+    },
+    {
+      "what": "epoch 2: the g0.ref profile's function is the manifest's AuditV1",
+      "ok": true,
+      "detail": "0xA569d3e3D494Bcf049cD8cA12f394fD403e1E70D"
+    },
+    {
+      "what": "epoch 2: the g1.tender profile's adapter is the manifest's TenderAdapter8414",
+      "ok": true,
+      "detail": "0xC49a45ac2889fe32bE2beD0bA10fF33d3Ac028c6"
+    }
+  ]
+}

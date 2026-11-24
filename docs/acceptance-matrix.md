@@ -1,7 +1,7 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.8, after the reviews of v0.1.4, v0.1.5 and v0.1.6 and the owner's adoption
-of the recommendations on Q17 to Q29 (`decisions.md` A55-A70).
+Design revision v0.1.9, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
+recommendations on Q17 to Q29, and the run of round R2a with its review (`decisions.md` A55-A72).
 Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
 added for the next version of the ledger (D18 to D21, A64). Sections 11 to 14 are deliverable D
 of the alignment of 2026-11-24 (A54): the staged acceptance of the production extension,
@@ -37,9 +37,8 @@ at finalized state by a machine that is not the operator's. Evidence is a record
 
 Tests are named by file: `policy`, `g0`, `g1`, `epoch`, `audit`, `account`, `deploy`, `round`,
 `boundaries` stand for `test/<name>.test.js`. All of them, and the rehearsal, can also be run on a
-hosted runner from a clean checkout (`.github/workflows/ci.yml`). That workflow is in place and
-its first hosted run is pending; the run's URL, its commit and its result are recorded when it
-has run (`decisions.md` 3).
+hosted runner from a clean checkout (`.github/workflows/ci.yml`). That workflow first ran there
+on 2026-11-24, with success; the run, its commit and its record are in `decisions.md` 3.
 
 ## 1. Normal operation
 
@@ -197,7 +196,14 @@ Round R2a is accepted when:
    and both are closed (N3). The standard epoch is epoch 1, or the later epoch in which the
    standard round was in fact completed (`r2-runbook.md`, step 5). Any additional epoch holding
    a receipt of the round is recorded and closed too. Combining receipts from partial epochs
-   does not satisfy the four-receipt expectation of a complete standard epoch;
+   does not satisfy the four-receipt expectation of a complete standard epoch. Each close
+   record is shown to be in the finalized chain: by the receipt of its transaction, which
+   succeeded; by the `EpochSealed` event of the deployment's ledger in that receipt; by the
+   receipt's block hash, equal to the chain's for that block; and by its block, which is not
+   after the finalized block that the hosted audit of its epoch read up to. The number, the
+   hash and the time of that finalized block are on record. An estimate of elapsed time does
+   not show any of this, and neither does the `sealed` flag of an audit of release 0.1.3, which
+   is read at the latest block (A72);
 4. the hosted runner's audits, at finalized state, say `ok` for epoch 0, the actual standard
    epoch and every additional receipt-bearing epoch. Expected figures follow `roadmap.md` 4
    with the budget and receipts actually in force. For the same deployment and epoch, the
@@ -209,6 +215,14 @@ Round R2a is accepted when:
 A process listing or a successful background-wrapper exit is not evidence that the round
 completed. Each audit identifies its ledger, chain and clock; records from an unused deployment
 stay with that deployment and cannot satisfy the replacement deployment's acceptance.
+
+The hosted run passes when both of its jobs succeeded - an artifact is also uploaded by a job
+that failed - and its records say `ok`. A `tableHash` covers the workers' addresses and their
+allocations and nothing else, so the host's and the runner's reports are compared in full (A72).
+
+Round R2a was run on 2026-11-24. `evidence/r2a/README.md` 8 sets each of the five conditions
+against its evidence. The acceptance itself is for the reviewers and the owner to give, and this
+matrix does not record it before it is given.
 
 Round R2b is not accepted by any of this. It is accepted when the Cell Accounts of the two cells
 are the admitted parties, the workers of record and the owners that confirm the cells' own

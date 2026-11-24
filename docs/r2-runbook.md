@@ -195,24 +195,45 @@ Every audit must say `MATCH`. For a complete round the figures to expect are the
 `roadmap.md`, section 4, adjusted for the budget in force. A partial epoch can also audit as
 `MATCH`: that verifies its actual records, not that the complete-round acceptance was met.
 
+An audit of this release recomputes an epoch from the events up to the finalized block, and
+reads the ledger's own summary of that epoch, the `sealed` flag included, at the latest block.
+Made before the block of a close record is in the finalized chain, it reports the epoch as
+sealed all the same. Such a report shows the figures: an epoch that has ended takes no further
+receipt, and a close record changes no figure. It does not show that the close record is final
+(A72).
+
 ## Step 7. The independent audit
 
 The host's audit is the operator checking itself. The audit that counts is made by a machine that
 is not the operator's (A39, step 4):
 
 1. the manifest goes into the repository as `deployments/finchain-sepolia-r2.json`;
-2. on GitHub: Actions, the `ci` workflow, "Run workflow", with the manifest
+2. the job is started once the finalized block has reached the block of the last close record,
+   which the round record of step 6 names. An audit prints the finalized block it read up to
+   as `settled block` and records it as `settledBlock`: the condition is met when the hosted
+   audits' `settledBlock` is not before the block of the close record. An estimate of elapsed
+   time is not the condition. A run that was started too early is kept, and the job is run
+   again;
+3. on GitHub: Actions, the `ci` workflow, "Run workflow", with the manifest
    `deployments/finchain-sepolia-r2.json` and the actual epochs to audit: normally `0 1`, or
    `0 k` for a later standard round, with any further receipt-bearing epoch included. Substitute
    the actual epoch numbers for these placeholders. The host's audits, this input and the
    evidence name the same epochs. Auditing epoch 0 and an empty epoch 1 can produce two `MATCH`
    results while leaving the actual standard round unexamined;
-3. the job installs the client only, runs `pouw verify` and `pouw audit` for the selected epochs
+4. the job installs the client only, runs `pouw verify` and `pouw audit` for the selected epochs
    against the manifest's public endpoint, and keeps `run.json` (the commit and the run),
-   `verify.json` and one `audit-epoch-<number>.json` per selected epoch as the artifact `audit`.
+   `verify.json` and one `audit-epoch-<number>.json` per selected epoch as the artifact `audit`;
+5. the close evidence is read from the chain: for each close record the receipt of its
+   transaction, the `EpochSealed` event of the deployment's ledger and the hash of its block,
+   set against the block the hosted audits read up to, with that block's hash and time. Release
+   0.1.3 has no command for it: round R2a used the read-only command kept in
+   `evidence/r2a/close-evidence.command.txt`.
 
 For the same deployment and epoch, the host's and the runner's audits agree when they hold the
-same `tableHash`. Anyone can repeat the job from a fork of the repository.
+same `tableHash`. A `tableHash` covers the workers' addresses and their allocations only, so the
+reports are compared in full as well. The run passes when both of its jobs succeeded and its
+records say `ok`: a job that failed uploads its artifact too. Anyone can repeat the job from a
+fork of the repository.
 
 ## Step 8. The records
 
@@ -236,7 +257,8 @@ What is submitted as the evidence of round R2a, each record labelled `public-tes
 | identity check | step 1 | the accounts and keys of the two cells, and whose tender 5 is |
 | deployment record, manifest | step 3 | what was deployed, from which builds, with which code hashes, in which transactions; the read-back |
 | round records | steps 4 to 6 | every transaction of the round, with its actual epoch |
-| audits of the actual epochs, and the deployment check, from the hosted runner | step 7 | that a machine with no key and no node, from the finalized chain, finds the deployed code to be this repository's and every receipt, total and allocation to be as the ledger says |
+| audits of the actual epochs, and the deployment check, from the hosted runner | step 7 | that a machine with no key and no node finds the deployed code and its wiring to be this repository's - a check read at the latest block - and recomputes from the finalized chain every receipt, total and allocation as the ledger says |
+| close evidence | step 7 | that each close record is in the finalized chain: the receipt of its transaction, the ledger's `EpochSealed` event, the hash of its block, and the block the hosted audits read up to |
 
 It claims neither computation nor independent demand, and no agent took part in it.
 
@@ -250,7 +272,8 @@ For a genesis time G:
 | G to G + 2 h | step 4, once |
 | G + 2 h to G + 4 h | step 5, once; start well before the epoch ends. `--wait` waits for epoch 0 to be finalized; about G + 2 h 25 min is an estimate, not a guarantee |
 | after G + 4 h | step 6, the close record |
-| after about G + 4 h 25 min | step 6, the audits; step 7 |
+| after about G + 4 h 25 min | step 6, the audits |
+| once the finalized block has reached the block of the last close record | step 7. The condition is read from the audit records, not from the clock |
 
 ## When something goes wrong
 

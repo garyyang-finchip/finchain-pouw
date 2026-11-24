@@ -1,0 +1,390 @@
+{
+  "schema": "finchain-pouw.deployment-record/1",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "operator-wallet-integration"
+  ],
+  "deployment": "finchain-sepolia-r2",
+  "chainId": "85422",
+  "endpointHost": "rpc.finchain.one",
+  "recordedAt": "2026-11-23T19:20:11.504Z",
+  "ok": true,
+  "steward": "0x6c3901B8865D97742166a88B953113D9418240AA",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.3"
+  },
+  "host": {
+    "node": "v22.22.0",
+    "platform": "linux/x64"
+  },
+  "builds": {
+    "build/AuditV1.json": "11e89233eadfd74eee1e3abaa142c1ddc001f1e179c2ad115d96f2edc6e22829",
+    "build/GenesisLedger.json": "44b6be8feb72cae82433abcc4689bb520a78cf0699a40c99681ee5cb9cfe94af",
+    "build/GenesisPolicy.json": "db89a01eaa98b9ca0c8e35ba9f323c6cf52d478f638b33ac9df5a57bd9cdd924",
+    "build/L1BlockSeedSource.json": "926ccf6875b4a248f2d7dc746301b1261a0f6772e9230e0fdfa5c8ed57c6b7c8",
+    "build/TenderAdapter8414.json": "463645cf5dd40bf8bef982bed3cbd8abda50c3a1a84ab0f0272084f17ccd49b1"
+  },
+  "clock": {
+    "genesisTime": "1795462480",
+    "genesis": "2026-11-23T19:34:40Z",
+    "epochDuration": "7200"
+  },
+  "parameters": [
+    {
+      "activeFromEpoch": 0,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": true,
+      "mode": "controlled-self-test"
+    },
+    {
+      "activeFromEpoch": 1,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": false,
+      "mode": "standard"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "g0.ref",
+      "pool": 0,
+      "baseGmu": 10,
+      "maxGmuPerWorkerPerEpoch": 10,
+      "jobsPerEpoch": 1,
+      "activeFromEpoch": 0,
+      "module": "0x3C41533A76Ac89c4e9CF2619bc269131107Ce876"
+    },
+    {
+      "name": "g1.tender",
+      "pool": 1,
+      "baseGmu": 50,
+      "maxGmuPerWorkerPerEpoch": 200,
+      "jobsPerEpoch": 0,
+      "activeFromEpoch": 0,
+      "module": "0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599"
+    }
+  ],
+  "parties": [
+    {
+      "name": "wallet-a",
+      "key": "wallet-a",
+      "admitted": true,
+      "operator": 1,
+      "fundEth": "0.005",
+      "address": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810"
+    },
+    {
+      "name": "wallet-b",
+      "key": "wallet-b",
+      "admitted": true,
+      "operator": 1,
+      "fundEth": "0.005",
+      "address": "0x50Bf871C120E19C129B439d7F3864d143699a1eA"
+    }
+  ],
+  "transactions": [
+    {
+      "step": "deploy GenesisPolicy",
+      "txHash": "0x263cc823bca4a204ce21e44ddbd1c2d656199332d7208caf4e5ef830d8f123e2",
+      "block": 523456,
+      "gasUsed": "2325133",
+      "address": "0xbbA769732086EC8A4b84C30d279B7F50d6945f7f"
+    },
+    {
+      "step": "deploy L1BlockSeedSource",
+      "txHash": "0x9a572123a9340c04886f77e5118eb8de353c6597f8a976d6f3905ddb516d7e5d",
+      "block": 523457,
+      "gasUsed": "162339",
+      "address": "0x3965E6d2081EF6F4e7eEa0B5fAE834Eb8ddCAB92"
+    },
+    {
+      "step": "deploy GenesisLedger",
+      "txHash": "0xbaf4b5379c50d9df309dd61c5a80aa36f4ff8e07fc376402b54b05337ae24c1b",
+      "block": 523458,
+      "gasUsed": "3133427",
+      "address": "0xd2B9b935e7CaDefc2bDc4D13Af2356FF456Bffb9"
+    },
+    {
+      "step": "deploy AuditV1",
+      "txHash": "0x69cec96e888531cb649be4ed99148482deb0dd845accbc838f05fe4e58c39a46",
+      "block": 523459,
+      "gasUsed": "296959",
+      "address": "0x3C41533A76Ac89c4e9CF2619bc269131107Ce876"
+    },
+    {
+      "step": "deploy TenderAdapter8414",
+      "txHash": "0xbd0b7309f26da8f10d8e29a0bd2d87144c39fb8a252809e35a16eb7a46d25c6d",
+      "block": 523460,
+      "gasUsed": "603607",
+      "address": "0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599"
+    },
+    {
+      "step": "profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0",
+      "txHash": "0xa368353557a8d532349f4c05362bbc2f6319b2475d4f2260bb0e0ccbbb627a77",
+      "block": 523461,
+      "gasUsed": "190047"
+    },
+    {
+      "step": "profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0",
+      "txHash": "0x129388ca775a04b9ef030b3a6452cdb94e76e0c20cfa6dbd7d32f1c2c3909145",
+      "block": 523462,
+      "gasUsed": "190083"
+    },
+    {
+      "step": "parameters from epoch 1: standard",
+      "txHash": "0xda6c6e60dbc26f8a998f10803b20b6ad2d7e7c314be9d2ae18f02b500f2d6d53",
+      "block": 523463,
+      "gasUsed": "86610"
+    },
+    {
+      "step": "admit 0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "txHash": "0x2661d90d64c04361ab220207625a18c1242bb019ab2e898df79b9872b3f15f84",
+      "block": 523464,
+      "gasUsed": "48688"
+    },
+    {
+      "step": "declare 0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810 under operator 1",
+      "txHash": "0x1431b2bc1bcd93454245d68ff3202253dbeabc8b44e2b5f3f5f130af9a6649b7",
+      "block": 523465,
+      "gasUsed": "31476"
+    },
+    {
+      "step": "admit 0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+      "txHash": "0x0f6a9803a426c3455ff1202672add9804b2739b069e9fcde4f153c93d9bc5752",
+      "block": 523466,
+      "gasUsed": "48688"
+    },
+    {
+      "step": "declare 0x50Bf871C120E19C129B439d7F3864d143699a1eA under operator 1",
+      "txHash": "0x2aad896ebef4b9904c49d796bab69eb28a8e069cad276ab1842f4453e547cf41",
+      "block": 523467,
+      "gasUsed": "31476"
+    },
+    {
+      "step": "fund 0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810 with 0.005",
+      "txHash": "0x04918a40701cef09ec06bc919d65cf9f33db7df6bdfa2ab17cf11fba9e8f80b4",
+      "block": 523468,
+      "gasUsed": "21000"
+    },
+    {
+      "step": "fund 0x50Bf871C120E19C129B439d7F3864d143699a1eA with 0.005",
+      "txHash": "0xb3eaa1fdfc9494f509c9fdcac3ddfc3d64395403f29bccef94c9a888f139e199",
+      "block": 523469,
+      "gasUsed": "21000"
+    }
+  ],
+  "gasUsed": "7190533",
+  "verification": {
+    "code": [
+      {
+        "what": "GenesisPolicy at 0xbbA769732086EC8A4b84C30d279B7F50d6945f7f: the code on chain is this repository's build of GenesisPolicy",
+        "ok": true
+      },
+      {
+        "what": "GenesisPolicy: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x76a7f03512194a78e284102a8cea56c2af430b3907793d7a85d06fcf1ba502ba"
+      },
+      {
+        "what": "SeedSource at 0x3965E6d2081EF6F4e7eEa0B5fAE834Eb8ddCAB92: the code on chain is this repository's build of L1BlockSeedSource",
+        "ok": true
+      },
+      {
+        "what": "SeedSource: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102"
+      },
+      {
+        "what": "GenesisLedger at 0xd2B9b935e7CaDefc2bDc4D13Af2356FF456Bffb9: the code on chain is this repository's build of GenesisLedger",
+        "ok": true
+      },
+      {
+        "what": "GenesisLedger: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x2bae5ec09d1fc90049488b748606f13b4b3d36784321d8d6f831741d9c77b57f"
+      },
+      {
+        "what": "AuditV1 at 0x3C41533A76Ac89c4e9CF2619bc269131107Ce876: the code on chain is this repository's build of AuditV1",
+        "ok": true
+      },
+      {
+        "what": "AuditV1: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0xfc7f05ddfbf5b79c58dfab21ca88d84c28c88b6b421d8ad6468c4632aed6e4bc"
+      },
+      {
+        "what": "TenderAdapter8414 at 0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599: the code on chain is this repository's build of TenderAdapter8414",
+        "ok": true
+      },
+      {
+        "what": "TenderAdapter8414: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x35a259e93bde49ecbd8b4329f2b46cb500f7cff8c41c0834dbb199f325806adf"
+      },
+      {
+        "what": "the manifest names every contract of the deployment and records its code",
+        "ok": true
+      },
+      {
+        "what": "the ledger's policy is the manifest's GenesisPolicy",
+        "ok": true,
+        "detail": "0xbbA769732086EC8A4b84C30d279B7F50d6945f7f"
+      },
+      {
+        "what": "the ledger's seed source is the manifest's SeedSource",
+        "ok": true,
+        "detail": "0x3965E6d2081EF6F4e7eEa0B5fAE834Eb8ddCAB92"
+      },
+      {
+        "what": "the policy's clock is the manifest's",
+        "ok": true,
+        "detail": "genesis 1795462480, epochs of 7200 s"
+      },
+      {
+        "what": "the audit function reads this ledger",
+        "ok": true
+      },
+      {
+        "what": "the audit function is audit-v1",
+        "ok": true
+      },
+      {
+        "what": "the adapter reports to this ledger",
+        "ok": true
+      },
+      {
+        "what": "the adapter reads the manifest's ERC-8414 contract",
+        "ok": true,
+        "detail": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908"
+      },
+      {
+        "what": "the adapter records under g1.tender",
+        "ok": true
+      },
+      {
+        "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+        "ok": true,
+        "detail": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+      },
+      {
+        "what": "epoch 0: the g0.ref profile's function is the manifest's AuditV1",
+        "ok": true,
+        "detail": "0x3C41533A76Ac89c4e9CF2619bc269131107Ce876"
+      },
+      {
+        "what": "epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414",
+        "ok": true,
+        "detail": "0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599"
+      }
+    ],
+    "policy": [
+      {
+        "what": "the parameters of epoch 0 are the configuration's (controlled-self-test)",
+        "ok": true
+      },
+      {
+        "what": "the parameters of epoch 1 are the configuration's (standard)",
+        "ok": true
+      },
+      {
+        "what": "the g0.ref profile of epoch 0 is the configuration's",
+        "ok": true
+      },
+      {
+        "what": "the g1.tender profile of epoch 0 is the configuration's",
+        "ok": true
+      },
+      {
+        "what": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810: admitted, operator 1, from epoch 0",
+        "ok": true
+      },
+      {
+        "what": "0x50Bf871C120E19C129B439d7F3864d143699a1eA: admitted, operator 1, from epoch 0",
+        "ok": true
+      }
+    ]
+  },
+  "manifest": {
+    "schema": "finchain-pouw.deployment/1",
+    "name": "finchain-sepolia-r2",
+    "environment": "public-testnet",
+    "labels": [
+      "controlled-self-test",
+      "operator-wallet-integration"
+    ],
+    "chainId": 85422,
+    "rpc": "https://rpc.finchain.one",
+    "logChunk": 50000,
+    "deployBlock": 523456,
+    "protocol": "0.1.3",
+    "contracts": {
+      "GenesisPolicy": "0xbbA769732086EC8A4b84C30d279B7F50d6945f7f",
+      "SeedSource": "0x3965E6d2081EF6F4e7eEa0B5fAE834Eb8ddCAB92",
+      "GenesisLedger": "0xd2B9b935e7CaDefc2bDc4D13Af2356FF456Bffb9",
+      "AuditV1": "0x3C41533A76Ac89c4e9CF2619bc269131107Ce876",
+      "TenderAdapter8414": "0x11fFA57B1b6aeE56D029D4f5A0280f28E5577599"
+    },
+    "code": {
+      "GenesisPolicy": {
+        "contract": "GenesisPolicy",
+        "codeHash": "0x76a7f03512194a78e284102a8cea56c2af430b3907793d7a85d06fcf1ba502ba",
+        "deployTx": "0x263cc823bca4a204ce21e44ddbd1c2d656199332d7208caf4e5ef830d8f123e2",
+        "block": 523456
+      },
+      "SeedSource": {
+        "contract": "L1BlockSeedSource",
+        "codeHash": "0x2f9e56af731b7a62efedc543ab0134331274e7473649ab24445075ada89a9102",
+        "deployTx": "0x9a572123a9340c04886f77e5118eb8de353c6597f8a976d6f3905ddb516d7e5d",
+        "block": 523457
+      },
+      "GenesisLedger": {
+        "contract": "GenesisLedger",
+        "codeHash": "0x2bae5ec09d1fc90049488b748606f13b4b3d36784321d8d6f831741d9c77b57f",
+        "deployTx": "0xbaf4b5379c50d9df309dd61c5a80aa36f4ff8e07fc376402b54b05337ae24c1b",
+        "block": 523458
+      },
+      "AuditV1": {
+        "contract": "AuditV1",
+        "codeHash": "0xfc7f05ddfbf5b79c58dfab21ca88d84c28c88b6b421d8ad6468c4632aed6e4bc",
+        "deployTx": "0x69cec96e888531cb649be4ed99148482deb0dd845accbc838f05fe4e58c39a46",
+        "block": 523459
+      },
+      "TenderAdapter8414": {
+        "contract": "TenderAdapter8414",
+        "codeHash": "0x35a259e93bde49ecbd8b4329f2b46cb500f7cff8c41c0834dbb199f325806adf",
+        "deployTx": "0xbd0b7309f26da8f10d8e29a0bd2d87144c39fb8a252809e35a16eb7a46d25c6d",
+        "block": 523460
+      }
+    },
+    "external": {
+      "taskToken8414": {
+        "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+        "deployBlock": 61392,
+        "codeHash": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+      }
+    },
+    "clock": {
+      "genesisTime": 1795462480,
+      "epochDuration": 7200
+    }
+  },
+  "notes": [
+    "Round R2a: the kernel of round R1 on Finchain Sepolia, worked by two wallets that one operator holds. Epoch 0 runs as a controlled self-test (declared-related parties are subsidized, under that label); from epoch 1 the parameters are the standard ones (declared-related parties are measured and not subsidized).",
+    "Both wallets are declared under one operator because one person holds them. The wallets are keys made for this round. No agent's contract account and no agent's own key takes part: this is an operator-wallet integration, and an agent mining as itself is a separate acceptance.",
+    "The tenders of the round are test tenders on the chain's ERC-8414 contract: they settle a fixed result and carry no task. The figures of this deployment are test points, the values of a view; nothing is issued, credited or claimable.",
+    "A deployment's genesis time and epoch length are fixed for its life: two-hour epochs are this test deployment's parameter and no statement about any later one."
+  ]
+}

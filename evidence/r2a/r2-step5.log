@@ -1,0 +1,33 @@
+nohup: ignoring input
+finchain-sepolia-r2 (public-testnet, controlled-self-test, operator-wallet-integration) on chain 85422, ledger 0x7180CdDA4aE494f551d196146E6fcCB717675F1a
+  epoch 0: close record written (tx 0xca1be2382ebb89ce403934d0945788937f6422224803698cc6fc0960357eec2f)
+epoch 1 (standard, parameters v2), ends 2026-11-24T06:59:08Z
+  tender wallet-a -> wallet-b: tender 8, submission 1; receipt 5 in epoch 1 (accepted, declared-related-not-subsidized, GMU 0/50, declared-related)
+  tender wallet-b -> wallet-a: tender 9, submission 1; receipt 6 in epoch 1 (accepted, declared-related-not-subsidized, GMU 0/50, declared-related)
+  waiting: the finalized block is 1436 s short of the end of epoch 0
+  waiting: the finalized block is 1436 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 1028 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 680 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  waiting: the finalized block is 308 s short of the end of epoch 0
+  audit job of wallet-a: audited epoch 0 (4 receipts); receipt 7 (accepted, eligible, GMU 10/10)
+  audit job of wallet-b: audited epoch 0 (4 receipts); receipt 8 (accepted, eligible, GMU 10/10)
+  wallet-a 0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810: provisional 25.0 test points
+  wallet-b 0x50Bf871C120E19C129B439d7F3864d143699a1eA: provisional 25.0 test points
+next: epoch 1 ends 2026-11-24T06:59:08Z: run this command once more after that, for its close record
+record /home/ec2-user/finchip/finch/finchain-pouw/out/finchain-sepolia-r2/round-20261124T052139Z.json

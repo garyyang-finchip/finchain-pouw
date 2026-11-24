@@ -1,0 +1,210 @@
+{
+  "schema": "finchain-pouw.audit/1",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "operator-wallet-integration"
+  ],
+  "deployment": "finchain-sepolia-r2",
+  "chainId": "85422",
+  "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+  "domain": "0x4d2c6f2e2180c1006af2331036d32374b9f80d69ef3d01d13b1322cb3a57319c",
+  "epoch": "1",
+  "epochStart": "1795496348",
+  "epochEnd": "1795503548",
+  "settledTag": "finalized",
+  "settledBlock": 545532,
+  "endpointHost": "rpc.finchain.one",
+  "recordedAt": "2026-11-24T07:56:37.564Z",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.3"
+  },
+  "ok": true,
+  "findings": [],
+  "mode": "standard",
+  "paramsVersion": 2,
+  "params": {
+    "activeFromEpoch": "1",
+    "budgetBase": "1000000000000000000000",
+    "halvingInterval": "8",
+    "splitG0Bps": "1000",
+    "workerCapBps": "2500",
+    "minBountyWei": "100000000000000",
+    "maxSubsidizedPerDemander": "3",
+    "maxSubsidizedPerPair": "1",
+    "subsidizeDeclaredRelated": false
+  },
+  "budget": "1000000000000000000000",
+  "pools": {
+    "g0": "100000000000000000000",
+    "g1": "900000000000000000000"
+  },
+  "seed": "0x68ebf182cf8c89423eeb01488556680211390bb725c16fe3217f301d87d11a15",
+  "digest": "0xc527c8111cc910ccbf87270bcb2e074935bf67f14bc87dc7fc7af6f458b0cc24",
+  "receiptCount": "4",
+  "measured": {
+    "g0": "20",
+    "g1": "100"
+  },
+  "subsidized": {
+    "g0": "20",
+    "g1": "0"
+  },
+  "subject": "0x983bed67764425ea289483e53f331b0796a55ec441ad55149d2e47bc6e956ffc",
+  "sealed": true,
+  "allocated": "50000000000000000000",
+  "unallocated": "950000000000000000000",
+  "tableHash": "0xc1a3ebed57aa9bf133d6f0850fdf7d97ea7aa46ecbcf77db9748d6fe37c2f88d",
+  "table": [
+    {
+      "worker": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+      "operator": 1,
+      "admitted": true,
+      "receipts": 2,
+      "measured": {
+        "g0": "10",
+        "g1": "50"
+      },
+      "subsidized": {
+        "g0": "10",
+        "g1": "0"
+      },
+      "allocation": "25000000000000000000",
+      "allocationG0": "25000000000000000000",
+      "allocationG1": "0"
+    },
+    {
+      "worker": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "operator": 1,
+      "admitted": true,
+      "receipts": 2,
+      "measured": {
+        "g0": "10",
+        "g1": "50"
+      },
+      "subsidized": {
+        "g0": "10",
+        "g1": "0"
+      },
+      "allocation": "25000000000000000000",
+      "allocationG0": "25000000000000000000",
+      "allocationG1": "0"
+    }
+  ],
+  "operators": [
+    {
+      "operator": 1,
+      "addresses": [
+        "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+        "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810"
+      ],
+      "allocation": "50000000000000000000"
+    }
+  ],
+  "undeclaredAddresses": 0,
+  "g1": {
+    "receipts": 2,
+    "subsidized": 0,
+    "byRelation": {
+      "declared-related": 2
+    },
+    "bySettlement": {
+      "judged": 2
+    },
+    "subsidizedByRelation": {},
+    "subsidizedBySettlement": {}
+  },
+  "observations": [],
+  "receipts": [
+    {
+      "id": "5",
+      "pool": "g1",
+      "worker": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+      "counterparty": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "contributionId": "0x9bca69dece27dd9697e6db6fddabf7b717028676794e1b6c8f9427a1033e4199",
+      "verdict": "accepted",
+      "eligibility": "declared-related-not-subsidized",
+      "relation": "declared-related",
+      "gmuMeasured": "50",
+      "gmuSubsidized": "0",
+      "blockNumber": 540875,
+      "txHash": "0xe6e50928df2ab5b4a0ef70af64b573b68786e550ce7ee67c8a787562f74dfcf2",
+      "tender": {
+        "source": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+        "tokenId": "8",
+        "submissionId": "1",
+        "demander": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+        "judge": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+        "asset": "0x0000000000000000000000000000000000000000",
+        "reward": "500000000000000",
+        "settlement": "judged",
+        "ownerAtSettlement": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+        "judgeAtSettlement": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810"
+      }
+    },
+    {
+      "id": "6",
+      "pool": "g1",
+      "worker": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "counterparty": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+      "contributionId": "0x45d53683277475b51010cbe31c63f26d38fea3b4b7727d4f751d102f847a716c",
+      "verdict": "accepted",
+      "eligibility": "declared-related-not-subsidized",
+      "relation": "declared-related",
+      "gmuMeasured": "50",
+      "gmuSubsidized": "0",
+      "blockNumber": 540880,
+      "txHash": "0x6923a1a163866ef721c081108e4f69454afb13106106f31c953486d093e96a73",
+      "tender": {
+        "source": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+        "tokenId": "9",
+        "submissionId": "1",
+        "demander": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+        "judge": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+        "asset": "0x0000000000000000000000000000000000000000",
+        "reward": "500000000000000",
+        "settlement": "judged",
+        "ownerAtSettlement": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+        "judgeAtSettlement": "0x50Bf871C120E19C129B439d7F3864d143699a1eA"
+      }
+    },
+    {
+      "id": "7",
+      "pool": "g0",
+      "worker": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "counterparty": "0x0000000000000000000000000000000000000000",
+      "contributionId": "0x9f2e89d7323791c5cc264c5fc4786a7e330372f199051fd07afb0db4b0517b43",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "relation": "none-found",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "blockNumber": 541512,
+      "txHash": "0x06a0aaec3ed1de39e709fe08cc0df94b08d65659e6106d616e387d8085466ba5"
+    },
+    {
+      "id": "8",
+      "pool": "g0",
+      "worker": "0x50Bf871C120E19C129B439d7F3864d143699a1eA",
+      "counterparty": "0x0000000000000000000000000000000000000000",
+      "contributionId": "0x01b56834df395e52a6eca24df67804b79a9338f13510d289a3768ae62f53c7ee",
+      "verdict": "accepted",
+      "eligibility": "eligible",
+      "relation": "none-found",
+      "gmuMeasured": "10",
+      "gmuSubsidized": "10",
+      "blockNumber": 541513,
+      "txHash": "0xb9eb8941a07fb49a5521b4fe1dde64c62cd7d8e3859210bfd19a172f8e92741f"
+    }
+  ],
+  "reading": [
+    "Test points are the value of a function of the ledger; nothing was issued, credited or made claimable.",
+    "An accepted g0.ref receipt shows a present address and a conforming submission, not an amount of computation.",
+    "relation none-found means no declared relation, not independence; the share cap binds an address, not a party.",
+    "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand.",
+    "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+    "Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch.",
+    "The parties are wallets held by an operator. No agent's contract account took part: this is not a record of an agent mining as itself."
+  ]
+}

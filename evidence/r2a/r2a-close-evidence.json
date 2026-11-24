@@ -1,0 +1,185 @@
+{
+  "schema": "finchain-pouw.close-evidence/1",
+  "madeBy": "a read-only one-off command on the host of the round, which reads the public endpoint and holds no key; it is not a command of release 0.1.3",
+  "recordedAt": "2026-11-24T09:03:21.162Z",
+  "deployment": "finchain-sepolia-r2",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "operator-wallet-integration"
+  ],
+  "chainId": 85422,
+  "endpointHost": "rpc.finchain.one",
+  "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+  "clock": {
+    "genesisTime": 1795489148,
+    "epochDuration": 7200
+  },
+  "finalized": {
+    "number": 547405,
+    "hash": "0xccd5c827a71d17bcc36bc7d7473b0f5fb5ccb0bd5471acdd09901dc128f5a706",
+    "timestamp": 1795509482,
+    "time": "2026-11-24T08:38:02.000Z"
+  },
+  "latest": {
+    "number": 548164,
+    "hash": "0x6e7fc19db04fe00383ebc68ddf19359dcc78548ca8898db0d3bbedc846958e16",
+    "timestamp": 1795511000,
+    "time": "2026-11-24T09:03:20.000Z"
+  },
+  "cutoffs": [
+    {
+      "number": 547050,
+      "hash": "0xd0e45c4915cbc9f6dc124ec022156bbe39d673f6a9b5a3d181e8764017c3320d",
+      "timestamp": 1795508772,
+      "time": "2026-11-24T08:26:12.000Z"
+    }
+  ],
+  "earlierCutoffs": [
+    {
+      "number": 545532,
+      "hash": "0xf928a24c9b46111428659858462cd1be8faf88c975d8a9b4f35c5075c8b9eee3",
+      "timestamp": 1795505736,
+      "time": "2026-11-24T07:35:36.000Z"
+    },
+    {
+      "number": 545910,
+      "hash": "0xcf7b3ec85b36d1c3215e9a999422203245bc5dd87b26618fd603a082d0039542",
+      "timestamp": 1795506492,
+      "time": "2026-11-24T07:48:12.000Z"
+    }
+  ],
+  "closes": [
+    {
+      "epoch": 0,
+      "txHash": "0xca1be2382ebb89ce403934d0945788937f6422224803698cc6fc0960357eec2f",
+      "roundRecord": "round-20261124T052139Z.json",
+      "status": 1,
+      "from": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "to": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+      "blockNumber": 540870,
+      "blockHash": "0x78054eab55ff69b53a05715417794ae885970797656032a373fffdce09d5606d",
+      "block": {
+        "number": 540870,
+        "hash": "0x78054eab55ff69b53a05715417794ae885970797656032a373fffdce09d5606d",
+        "timestamp": 1795496412,
+        "time": "2026-11-24T05:00:12.000Z"
+      },
+      "epochEnd": 1795496348,
+      "event": {
+        "emitter": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+        "name": "EpochSealed",
+        "epoch": "0",
+        "digest": "0x5fcfdadf878dc2ff1aef22250df7c6f5ed93d047be0c3f177d39e5618313f6b7",
+        "receiptCount": "4",
+        "paramsVersion": "1",
+        "budget": "1000000000000000000000",
+        "measuredG0": "20",
+        "measuredG1": "100",
+        "subsidizedG0": "20",
+        "subsidizedG1": "100"
+      }
+    },
+    {
+      "epoch": 1,
+      "txHash": "0x11f2a7e2afb6416d5fd9093153a46c5243c46a6a45be73f52d3993acc3712257",
+      "roundRecord": "round-20261124T075635Z.json",
+      "status": 1,
+      "from": "0x8808dA2Cea67590D89230E6A8Fd63f0d13fE7810",
+      "to": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+      "blockNumber": 546161,
+      "blockHash": "0x512f4c2ed2abf9aa682ccec9c9f9ebae95233f710dee7114a52ba60fad7b1fc8",
+      "block": {
+        "number": 546161,
+        "hash": "0x512f4c2ed2abf9aa682ccec9c9f9ebae95233f710dee7114a52ba60fad7b1fc8",
+        "timestamp": 1795506994,
+        "time": "2026-11-24T07:56:34.000Z"
+      },
+      "epochEnd": 1795503548,
+      "event": {
+        "emitter": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+        "name": "EpochSealed",
+        "epoch": "1",
+        "digest": "0xc527c8111cc910ccbf87270bcb2e074935bf67f14bc87dc7fc7af6f458b0cc24",
+        "receiptCount": "4",
+        "paramsVersion": "2",
+        "budget": "1000000000000000000000",
+        "measuredG0": "20",
+        "measuredG1": "100",
+        "subsidizedG0": "20",
+        "subsidizedG1": "0"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "what": "the endpoint is the chain of the manifest",
+      "ok": true
+    },
+    {
+      "what": "cutoff block 547050 is not after the finalized block 547405",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the close transaction succeeded",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: it was sent to the ledger of the manifest",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the ledger emitted EpochSealed for this epoch in it",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the block hash of the receipt is the hash of block 540870 on the chain",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the block is not before the end of the epoch",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the block is not after the finalized block 547405",
+      "ok": true
+    },
+    {
+      "what": "epoch 0: the block is not after cutoff block 547050",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the close transaction succeeded",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: it was sent to the ledger of the manifest",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the ledger emitted EpochSealed for this epoch in it",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the block hash of the receipt is the hash of block 546161 on the chain",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the block is not before the end of the epoch",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the block is not after the finalized block 547405",
+      "ok": true
+    },
+    {
+      "what": "epoch 1: the block is not after cutoff block 547050",
+      "ok": true
+    },
+    {
+      "what": "the round records hold one close record for epoch 0 and one for epoch 1",
+      "ok": true
+    }
+  ],
+  "ok": true
+}

@@ -6,22 +6,25 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.3 - round R1 reviewed and passed with conditions; round R2 prepared.** The Genesis
-Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by time, and an
-audit from the chain alone that agrees with the ledger on every figure. The kernel's contracts
-are those of v0.1.2. This version adds what a public deployment needs - committed builds, a
-deployment that records code hashes, a check of deployed code, an operator's round, the identity
-check - and rehearses round R2 with them. Round R2a is being run on Finchain Sepolia as design
-revision v0.1.8 is written; its manifest and its records enter this repository when the round is
-complete (`docs/roadmap.md`, `docs/r2-runbook.md`). The strategic baseline is FPM01 / FPM01-G
-v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what
-is approved, what this repository proposes, what is still open for the owner's ruling, and which
-figures are only illustrative.
+Status: **v0.1.3 - round R1 passed with conditions; round R2a run, its acceptance pending.** The
+Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
+time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
+contracts are those of v0.1.2. This version adds what a public deployment needs - committed
+builds, a deployment that records code hashes, a check of deployed code, an operator's round, the
+identity check - and rehearses round R2 with them. Round R2a, the operator-wallet integration,
+was run on Finchain Sepolia on 2026-11-24 from this release. Its manifest is
+`deployments/finchain-sepolia-r2.json` and its records are under `evidence/r2a/`, with an index
+that sets what was observed against what was expected. Whether the round is accepted is for its
+reviewers and the owner to say (`docs/acceptance-matrix.md` 9). The strategic baseline is FPM01 /
+FPM01-G v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md`
+lists what is approved, what this repository proposes, what is still open for the owner's ruling,
+and which figures are only illustrative.
 
-Design revisions v0.1.4 to v0.1.8 (all 2026-11-24) are revisions of the documents. The software
-is release 0.1.3, unchanged: no contract, interface, client, script, configuration or deployment
-changes with any of them. The runbook's normal-path command blocks stay unchanged; its
-fallback and evidence instructions are made explicit. Round R2 runs from software 0.1.3.
+Design revisions v0.1.4 to v0.1.9 (all 2026-11-24) are revisions of the documents; v0.1.9 also
+adds the records of round R2a. The software is release 0.1.3, unchanged: no contract, interface,
+client, script, configuration or deployment changes with any of them. The runbook's normal-path
+command blocks stay unchanged; its fallback and evidence instructions are made explicit. Round
+R2a ran from software 0.1.3.
 v0.1.4 records the alignment of the owner and the advisor on the production line - model-token
 generation as the first production commodity, the economic stages, the three operating
 dimensions, the complete AI Node, production roles, evidence, procurement and payment - and adds
@@ -44,6 +47,13 @@ This consolidated v0.1.8 also brings the remaining document clarifications toget
 for audits; and the distinction between adopted design, pending implementation choices and
 acceptance that has not run. Q16 is partly settled through Q26; the current R2a hosted audit
 continues under P38. No new ruling or software release is made by this consolidation.
+
+v0.1.9 records the run of round R2a and the review of that run (`docs/decisions.md` A72, 6.10):
+the records of the round and their index, the first runs of the tests and of the independent
+audit on a hosted runner, and the condition on the finality of the close records, which the
+runbook and the acceptance of round R2 now name. It also records the review of v0.1.7 and where
+the consolidated documents of v0.1.8 came from (A71, 6.9). It does not record an acceptance of
+the round.
 
 ## What this repository is for
 
@@ -79,8 +89,9 @@ scripts/               the tooling of a deployment and a round
   identity-check.js      who is who on a chain whose agents are contract accounts (read-only)
   local-run.js           the rehearsal of round R2 on a development network
   export-abi.js          client/abi and build/ from the compiler's output
-deployments/           the manifest format; the configuration of round R2a; no public manifest yet
-evidence/              records, as in finchain: local-run-<time>.json
+deployments/           the manifest format; the configuration and the manifest of round R2a
+evidence/              records, as in finchain: local-run-<time>.json, and r2a/, the records of
+                       round R2a on Finchain Sepolia
 docs/                  decisions, architecture, the MVP specification with the production extension
                        design, the plans of the first production service and of the supply and
                        payment interfaces, roadmap, acceptance matrix, the runbook of round R2a
@@ -112,9 +123,8 @@ checkout and deleted after it. It ends with `PASS` and the number of checks, and
 epochs' tables as an auditor sees them.
 
 The same tests and the same rehearsal can be run on a hosted runner from a clean checkout
-(`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow". The workflow is in place and its
-first hosted run is pending; the run's URL, its commit and its result are recorded in
-`docs/decisions.md`, section 3, when it has run.
+(`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow". It first ran there on 2026-11-24,
+with success; the run, its commit and its record are in `docs/decisions.md`, section 3.
 
 ## The reference client
 
@@ -146,9 +156,11 @@ sending from one key collide on nonces, and a key beside an agent is not the age
 
 Round R1 shows that the loop Work -> Verify -> GMU -> Epoch -> Test Reward runs end to end, that
 an epoch closes without anyone supplying a figure, and that a party with no role can recompute
-every receipt, total and allocation from the chain alone. Round R2a, once run, adds that what is
-deployed on a public chain is this repository's code and that a machine which is not the
-operator's recomputes every figure from the finalized chain.
+every receipt, total and allocation from the chain alone. Round R2a adds that what is deployed on
+a public chain is this repository's code, and that another environment - a hosted runner, with
+the same reference client and the same public endpoint - recomputes every figure from the
+finalized chain. That is another run, not another implementation and not another source of the
+chain's state. The round's records are under `evidence/r2a/`; its acceptance is pending.
 
 Neither shows computation (an accepted G0 receipt is evidence of presence and of a conforming
 submission), demand (a settled tender is evidence of a settlement confirmed by its owner; the
@@ -172,6 +184,8 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 | `docs/acceptance-matrix.md` | Every acceptance row with its state and its test; the rehearsal's checks; when round R2 is accepted; what the rounds prove and do not prove; the staged acceptance of the production extension, every row planned and not run |
 | `docs/r2-runbook.md` | Round R2a on Finchain Sepolia, one command at a time, with the clock and what to do when something goes wrong |
 | `deployments/README.md` | The deployment manifest, the configuration a deployment is made from, the files of this directory |
+| `evidence/README.md` | The records kept in this repository and what each is |
+| `evidence/r2a/README.md` | The records of round R2a on Finchain Sepolia, and their index: the two deployments, the round in order, the receipts, the figures expected and found, what each audit read and at which block, the hosted runs, the conditions of acceptance against their evidence, every file's checksum |
 
 ## Principles (from FPM01)
 
