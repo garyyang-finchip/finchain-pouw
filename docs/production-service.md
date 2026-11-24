@@ -20,6 +20,13 @@ that the recommendations name. What the plan adds in carrying them out is this r
 is reviewed with the implementation. Where this plan and `genesis-mining-mvp.md` 14 differ, that
 section governs. Where the text says "is", read "is to be".
 
+Adoption of this profile does not choose the contract-account route in Q13 or Q14. Its lawful
+confirmation and represented-demander requirements remain part of the design; the selected
+implementation must enforce them without treating a delegate as another demander. Work facts
+and contribution receipts are separated by the adopted P60 (Q26): that part is no longer an
+open choice. These distinctions do not change the first increment's scope or require a FOGA
+release. Acceptance rows are planned and not run until their own evidence is recorded.
+
 The milestone it is written for (A54): a buyer makes a real request for intelligence service; a
 supply node completes a standardized delivery; a FOGA cell uses or organizes the service; an
 independent verifier can re-check the volume of service and the acceptance; the payment completes

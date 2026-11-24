@@ -11,7 +11,9 @@ carrying it out. A55-A64 record the review of design revision v0.1.4 and A65-A67
 P54-P60 are the executor's proposals for carrying the two reviews out (design revisions v0.1.5
 and v0.1.6). In this document they change the pointers to the plans and nothing else. On the
 questions the plans raise (Q17 to Q29) the owner adopted the advisor's recommendations on
-2026-11-24 (A70); Q13 to Q16 are open. Sections labelled **future design** describe
+2026-11-24 (A70). Q13 and Q14 remain open; Q15 does not reopen R2a's in-force hosted-runner
+route (P38, implementing A39); Q16 is partly settled by the adoption of work facts apart from
+receipts (P60). Its remaining implementation and packaging choices are open. Sections labelled **future design** describe
 requirements for later work, not features available in R1. The three stages and five subdivisions
 below refine and replace A17's older economic-stage numbering. A17's approved compatibility with
 operator funding, agent procurement and self-operated hardware remains in force; those operating
@@ -213,8 +215,9 @@ and validation requirements differ from an on-chain recomputable reference outpu
 
 The executor's plans for the first of these responsibilities are `production-service.md` (service
 specification, usage and delivery evidence) and `supply-and-payment.md` (procurement, payment
-reconciliation and the operating report). They are proposals (`decisions.md` P42-P60), corrected
-by the reviews of design revisions v0.1.4 and v0.1.5 (A55-A67). Among them: the service
+reconciliation and the operating report). Their current design status is recorded in
+`decisions.md` P42-P60: the reviewed choices adopted through Q17-Q29 are design under A70,
+and the deferred extensions remain deferred. Among the adopted choices: the service
 specification and the usage records follow the record formats of ERC-8506, the owner's standard
 for inference supply, at a pinned revision of that specification. The first increment has no
 ERC-8506 contract and no runtime dependency on it, and the dependency on the specification is
@@ -512,9 +515,10 @@ continue separately.
 | Module or responsibility | Engineering position | Dependency or review |
 | --- | --- | --- |
 | `g0.ver`, `g0.cal`, verification evidence and calibration records | Deferred from R1 | The kept designs and their acceptance rules in `genesis-mining-mvp.md` 13 |
-| Declared-operator cap | Before round R3, in a new version of the ledger (A35) | A versioned implementation and a manifest that names the deployment it supersedes; existing ledgers remain immutable (P41, Q16) |
-| Receipts without the demander; a delegation signed by a contract account | With that version of the ledger, if ruled (A33, A37) | The rulings of Q13 and Q16. For the first, work facts apart from receipts are adopted (A64, A70) |
-| The authority as it was at settlement, deciding eligibility | Before any subsidy of value (A38) | The verification work |
+| Declared-operator cap | Required before round R3, in a new version of the ledger (A35) | The implementation and packaging remain to be ruled (P41, Q16); a versioned manifest names the deployment it supersedes, and existing ledgers remain immutable |
+| Work facts apart from receipts | Adopted for the next ledger version; not implemented (P60, A70) | Resolves Q16's work-without-confirmation item: a fact takes no contribution id, content key or cap and enters no epoch's GMU |
+| A delegation signed by a contract account | Proposed route for account participation; not implemented (P35) | Q13 and Q14 remain open; A70 does not select this route or the version on which R2b runs |
+| The authority as it was at settlement, deciding eligibility | Required before any subsidy of value (A38) | Mechanism and staging remain to be ruled (P36, Q16); this is not a completion gate for every test-point exercise |
 | Bridge freshness policy | Kept as a deferred option | A separate ruling if needed; no new R2 requirement |
 | Full FOGA adapter | FOGA's own review and release cycle | Account authority and the published protocol interfaces |
 | Inference service specification, usage and delivery evidence | A subsequent production milestone; no addition to the current R2 scope | A bounded service class, trustworthy metering, acceptance and source disclosure |
@@ -527,7 +531,7 @@ continue separately.
 P1-P4 and R0-R4 identify engineering deliverables. Stage 1 Startup/Development/Pre-expansion,
 Stage 2 Expansion and Stage 3 Maturity identify economic and supply evolution. Their progress is
 reported separately. A deployment can support several economic operating forms at once. The
-proposed order of the production work, as increments beside the rounds, is in `roadmap.md`,
+order of the production work adopted under A70, as increments beside the rounds, is in `roadmap.md`,
 sections 7 to 9.
 
 ## 10. Boundaries restated

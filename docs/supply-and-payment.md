@@ -22,10 +22,11 @@ after a crash every reservation that is not finished is taken up, whatever statu
 shows (sections 3, 4 and 4.3). They are applied here. On the questions this plan raises (Q24,
 Q28) the owner adopted the advisor's recommendations on 2026-11-24 (`decisions.md` A70, and
 12.2): the purchase record and the budget book (P56, P57) are approved as the design the second
-increment is built to, and its providers are chosen when it opens. One point is left to be
-settled when that increment is coded, as the review of v0.1.6 asked: the budget that fees belong
-to, for which rule 12 of section 4.3 is the proposal. What the plan adds in carrying the adopted
-choices out is this repository's, and is reviewed with the implementation. Where this plan and
+increment is built to, and its providers are chosen when it opens. The fee-budget rule in
+section 4.3(12) is part of the adopted design. The concrete budget assignments and limits are
+specified in the adapter and purchasing policy when the second increment is implemented.
+What the plan adds in carrying the adopted choices out is this repository's, and is reviewed
+with the implementation. Where this plan and
 `genesis-mining-mvp.md` 14 differ, that section governs. Where the text says "is", read "is to
 be".
 
@@ -236,7 +237,7 @@ available is not a delivery, and a top-up is never production (A40).
 
 For the agent routes, in the second increment. To check that a budget has room and then to buy is
 not enough: two requests can read the same room at the same moment and both spend it (A58).
-Adopted (P57; Q28, A70), rule 12 remaining a proposal until the increment is coded:
+Adopted (P57; Q28, A70):
 
 1. One book per boundary of a policy, asset or currency, and budget period. It holds the limit,
    what is held and what is consumed, each entry under its `purchaseId`.

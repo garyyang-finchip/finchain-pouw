@@ -6,8 +6,9 @@ Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - 
 added for the next version of the ledger (D18 to D21, A64). Sections 11 to 14 are deliverable D
 of the alignment of 2026-11-24 (A54): the staged acceptance of the production extension,
 corrected and extended as the two reviews asked (A56 to A60, A65). Every row of those four
-sections is proposed and not run: the adoption of 2026-11-24 approves the designs that the rows
-test (A70), and runs none of them.
+sections is planned and not run: A70 adopts the specified designs, not a test result.
+A planned acceptance row neither approves a still-open mechanism nor shows that an
+implementation exists; the decision state is recorded in `decisions.md`.
 
 Following the formal review (A28), a row is accepted in a round only if that round implements
 what it tests. Every row therefore carries a state:
@@ -19,9 +20,10 @@ what it tests. Every row therefore carries a state:
   R2b (agents as their contract accounts) or round R3 (a third party);
 - **deferred** - belongs to something not implemented (`decisions.md` A19, A23, A30), or to the
   next version of the ledger (A35, A64);
-- **proposed; not run** - belongs to the production extension (sections 11 to 13): designed, not
-  built, not run. Such a row says what a later increment has to show. It is no addition to the
-  tests of this repository or to the checks of its rehearsal.
+- **planned; not run** - belongs to the production extension (sections 11 to 14): the acceptance
+  is specified but has not run. The underlying design may be adopted or still depend on a
+  separately recorded ruling. Such a row says what a later increment has to show; it is not a
+  passing test of this repository or a completed check of its rehearsal.
 
 Row ids are stable across revisions: a row that was revised keeps its id, a row that no longer
 applies stays in the table with its state. The recovery rows are numbered R1 to R10; to keep them
@@ -191,14 +193,22 @@ Round R2a is accepted when:
    says (T7);
 2. the deployment record says `ok`, and `pouw verify`, run by the hosted runner, says the code at
    the manifest's addresses is this repository's (M1);
-3. epoch 0 and the standard epoch of the round hold its receipts (N1, N2, D9, D10), and both are
-   closed (N3). The standard epoch is epoch 1, or the later epoch in which the standard round was
-   in fact worked (`r2-runbook.md`, step 5);
-4. the hosted runner's audits of those two epochs, at finalized state, say `ok`, their figures
-   are the ones of `roadmap.md` 4, and the host's audits hold the same `tableHash` (N5, T5). The
-   host's audits, the input of the hosted job and the evidence name the same epochs (A69);
+3. epoch 0 and the standard epoch of the round hold the expected receipts (N1, N2, D9, D10),
+   and both are closed (N3). The standard epoch is epoch 1, or the later epoch in which the
+   standard round was in fact completed (`r2-runbook.md`, step 5). Any additional epoch holding
+   a receipt of the round is recorded and closed too. Combining receipts from partial epochs
+   does not satisfy the four-receipt expectation of a complete standard epoch;
+4. the hosted runner's audits, at finalized state, say `ok` for epoch 0, the actual standard
+   epoch and every additional receipt-bearing epoch. Expected figures follow `roadmap.md` 4
+   with the budget and receipts actually in force. For the same deployment and epoch, the
+   host's and runner's audits hold the same `tableHash` (N5, T5). The host's audits, the input
+   of the hosted job and the evidence name the same epochs (A69);
 5. every record is labelled `public-testnet`, `controlled-self-test` and
    `operator-wallet-integration` (M6).
+
+A process listing or a successful background-wrapper exit is not evidence that the round
+completed. Each audit identifies its ledger, chain and clock; records from an unused deployment
+stay with that deployment and cannot satisfy the replacement deployment's acceptance.
 
 Round R2b is not accepted by any of this. It is accepted when the Cell Accounts of the two cells
 are the admitted parties, the workers of record and the owners that confirm the cells' own
@@ -236,27 +246,27 @@ Neither proves, and neither claims:
 
 ## 11. Staged acceptance of the production extension
 
-The fourteen proposed checks of `genesis-mining-mvp.md` 15, with identifiers, the items of A54
-each belongs to (`decisions.md` 4.3) and the production increment proposed to run it
+The fourteen planned checks of `genesis-mining-mvp.md` 15, with identifiers, the items of A54
+each belongs to (`decisions.md` 4.3) and the production increment planned to run it
 (`roadmap.md` 8, 9). A later run reports its environment, versions, data source, parties, finance
 mode and evidence, and says which facts were simulated.
 
-| Id | Proposed check | Expected observation | Items | Increment | State |
+| Id | Planned check | Expected observation | Items | Increment | State |
 | --- | --- | --- | --- | --- | --- |
-| E1 | Manual startup funding and renewal | a Holder's manual fiat purchase or renewal makes service available; later usage and delivery are recorded separately from the top-up | 1, 6 | first | proposed; not run |
-| E2 | Authorized agent wallet procurement | an agent purchases and reconciles a supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | 2 | second | proposed; not run |
-| E3 | Authorized fiat-account procurement | an agent purchases or renews through a supported fiat-billed account within the Holder's authority; provider actions that are not supported are reported, not assumed | 2 | second | proposed; not run |
-| E4 | Manual and autonomous coexistence | both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | 3 | second | proposed; not run |
-| E5 | Qualified inference delivery | the chosen profile records model and tokenizer versions, usage categories, output, the evaluator's findings and the accepted service units | 1, 5 | first | proposed; not run |
-| E6 | Mixed-source service | external and operated suppliers are assessed against the same specification, with source control and evidence classes stated separately | 4 | third | proposed; not run |
-| E7 | Declared usage limitation | a worker's declaration and a provider's attested usage are not reported as a proof of inference or of GPU ownership | 5 | first | proposed; not run |
-| E8 | Customer cash receipt | acceptance, credit owed, withdrawal and actual receipt are reconciled; gross amounts, fees and refunds stay identifiable | 1, 6 | first | proposed; not run |
-| E9 | Cost and autonomy report | a period report separates payment autonomy, revenue coverage and supply control, with Holder funding, liabilities and operating costs | 6 | first; its payment and supply dimensions with the second and third | proposed; not run |
-| E10 | Multiple contribution roles | producer, fulfiller and verifier contributions link to their funding and work without a second subsidy for the same contribution | 7 | after the third, with the profiles of the other roles | proposed; not run |
-| E11 | Unknown payment result and restart | a crash or a timeout is reconciled without a second purchase or an invented success | 2, 7 | first for a restart of the worker; second for a payment | proposed; not run |
-| E12 | Repair, replication and authorization | recovery keeps obligations and evidence; a replica has its own identity and budget, repeats no past contribution and inherits no unrestricted authority | 7 | with a FOGA cell taking part, on FOGA's cycle | proposed; not run |
-| E13 | Missing evidence and source change | the report exposes evidence that is unavailable and assumptions about the model or the service that changed; qualification follows the profile's rule | 5 | first for missing evidence; third for a change of source | proposed; not run |
-| E14 | Related-party demand | controlled self-tests stay labelled; no set of addresses, signatures or transfers is presented as proof that all parties are independent | 1, 5 | first | proposed; not run |
+| E1 | Manual startup funding and renewal | a Holder's manual fiat purchase or renewal makes service available; later usage and delivery are recorded separately from the top-up | 1, 6 | first | planned; not run |
+| E2 | Authorized agent wallet procurement | an agent purchases and reconciles a supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | 2 | second | planned; not run |
+| E3 | Authorized fiat-account procurement | an agent purchases or renews through a supported fiat-billed account within the Holder's authority; provider actions that are not supported are reported, not assumed | 2 | second | planned; not run |
+| E4 | Manual and autonomous coexistence | both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | 3 | second | planned; not run |
+| E5 | Qualified inference delivery | the chosen profile records model and tokenizer versions, usage categories, output, the evaluator's findings and the accepted service units | 1, 5 | first | planned; not run |
+| E6 | Mixed-source service | external and operated suppliers are assessed against the same specification, with source control and evidence classes stated separately | 4 | third | planned; not run |
+| E7 | Declared usage limitation | a worker's declaration and a provider's attested usage are not reported as a proof of inference or of GPU ownership | 5 | first | planned; not run |
+| E8 | Customer cash receipt | acceptance, credit owed, withdrawal and actual receipt are reconciled; gross amounts, fees and refunds stay identifiable | 1, 6 | first | planned; not run |
+| E9 | Cost and autonomy report | a period report separates payment autonomy, revenue coverage and supply control, with Holder funding, liabilities and operating costs | 6 | first; its payment and supply dimensions with the second and third | planned; not run |
+| E10 | Multiple contribution roles | producer, fulfiller and verifier contributions link to their funding and work without a second subsidy for the same contribution | 7 | after the third, with the profiles of the other roles | planned; not run |
+| E11 | Unknown payment result and restart | a crash or a timeout is reconciled without a second purchase or an invented success | 2, 7 | first for a restart of the worker; second for a payment | planned; not run |
+| E12 | Repair, replication and authorization | recovery keeps obligations and evidence; a replica has its own identity and budget, repeats no past contribution and inherits no unrestricted authority | 7 | with a FOGA cell taking part, on FOGA's cycle | planned; not run |
+| E13 | Missing evidence and source change | the report exposes evidence that is unavailable and assumptions about the model or the service that changed; qualification follows the profile's rule | 5 | first for missing evidence; third for a change of source | planned; not run |
+| E14 | Related-party demand | controlled self-tests stay labelled; no set of addresses, signatures or transfers is presented as proof that all parties are independent | 1, 5 | first | planned; not run |
 
 The seven items of A54, and where each is first accepted:
 
@@ -285,11 +295,11 @@ each been evidenced, and when one chain of evidence joins them:
 
 | Id | Closing A54 | Expected observation | State |
 | --- | --- | --- | --- |
-| L1 | One complete chain of business evidence, its links joined by request and work ids or by parent and child | an external customer's request; a cell that used or organized the service for it; the standardized delivery; its independent re-check; the state of its payment; its GMU record; its actual cost - each link naming the one before it. Acceptances that were shown apart and cannot be joined in this way do not close A54. Nothing more is asked of the first increment by it | proposed; not run |
+| L1 | One complete chain of business evidence, its links joined by request and work ids or by parent and child | an external customer's request; a cell that used or organized the service for it; the standardized delivery; its independent re-check; the state of its payment; its GMU record; its actual cost - each link naming the one before it. Acceptances that were shown apart and cannot be joined in this way do not close A54. Nothing more is asked of the first increment by it | planned; not run |
 
 ## 12. The first production profile
 
-Rows for `production-service.md`. All are proposed and not run; the increment is the first unless
+Rows for `production-service.md`. All are planned and not run; the increment is the first unless
 a row says otherwise.
 
 | Id | Scenario | Expected outcome |
@@ -323,7 +333,7 @@ a row says otherwise.
 
 ## 13. Supply, funds and payment
 
-Rows for `supply-and-payment.md`. All are proposed and not run.
+Rows for `supply-and-payment.md`. All are planned and not run.
 
 | Id | Scenario | Expected outcome | Increment |
 | --- | --- | --- | --- |

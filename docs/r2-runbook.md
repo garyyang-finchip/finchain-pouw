@@ -22,6 +22,11 @@ Every record it produces says so in its labels.
 - Keys stay in their directory, outside the repository's checkout, on the host that made them.
   No key is typed on a command line, copied to another machine, or pasted anywhere.
 - Records are copied off the host as text. `out/` holds no key.
+- Run only one round process with a given set of wallets at a time. If a background wrapper is
+  used, confirm that it has exited before starting a manual round. A `flock` wrapper excludes
+  only other processes using the same lock; it does not lock a direct invocation of `round.js`.
+  A process listing shows a process, not that the round completed: use the round's records and
+  audits to establish its result.
 
 ## What is needed
 
@@ -111,11 +116,14 @@ receipts `accepted`, GMU 10/10; each wallet at 250 provisional test points. Run 
 finds all four receipts and sends nothing.
 
 Epoch 0 is the only epoch with the controlled self-test parameters. If it is missed, this
-deployment cannot show that mode: move `out/finchain-sepolia-r2` aside and deploy again.
+deployment cannot show that mode: move `out/finchain-sepolia-r2` aside and deploy again. Keep the
+unused deployment's manifest and records under its own ledger address and genesis time, with
+the reason it was not used for this round. Do not combine its receipts or audits with those of
+the replacement deployment merely because the epoch numbers match.
 
 ## Step 5. Epoch 1: the standard epoch
 
-At any time in epoch 1:
+Start well before the end of epoch 1:
 
 ```
 node scripts/round.js --config $C --keys $K --wait
@@ -128,24 +136,33 @@ waits it prints how far the finalized block still has to go. Then both wallets a
 full and submit. Expected: two receipts `declared-related-not-subsidized`, GMU 0/50; two audit
 jobs that "audited epoch 0 (4 receipts)", GMU 10/10; each wallet at 25 provisional test points.
 
-If the terminal session ends while it waits, run the command again: what is done is found on
-chain. Without `--wait` the command stops with exit status 3 instead of waiting, and is run again
-later.
+If the terminal session ends while it waits, first confirm that the previous round process is
+no longer running, then run the command again: what is done is found on chain. Without `--wait`
+the command stops with exit status 3 instead of waiting, and is run again later.
 
 If epoch 1 is missed altogether, every later epoch is standard too, and the standard round is
 worked in the epoch that is then current, epoch k:
 
 - `--epochs n` is an upper bound: the round works in epochs 0 to n - 1, and the default is 2. In
   epoch k the command is run with `--epochs k+1`, for example `--epochs 4` in epoch 3. Without it
-  the command only writes close records and reports the round as over;
-- the audit job of epoch k recomputes epoch k - 1, which is then an empty epoch. The record says
-  that an empty epoch was recomputed. That is not a recomputation of epoch 0's four receipts,
-  which the audits of step 6 and step 7 make;
+  the command only writes close records and reports the round as over. Substitute the calculated
+  integer for `k+1`; it is notation, not a literal argument;
+- the audit job of epoch k recomputes epoch k - 1. If all intervening epochs were skipped, that
+  epoch is empty; the record states its actual receipt count. This is not a recomputation of
+  epoch 0's four receipts, which the audits of steps 6 and 7 make;
 - the budget of an epoch is counted from the first epoch of its parameter version. In this
   configuration the standard version begins in epoch 1 and halves every 8 epochs: epochs 1 to 8
-  have 1000 test points, and epoch 9 is the first with 500. A later epoch changes the expected
-  figures and nothing else; it is no reason to deploy again;
+  have 1000 test points, epochs 9 to 16 have 500, epochs 17 to 24 have 250, and the same schedule
+  continues. Use the budget actually in force to calculate the expected figures; reaching a
+  halving is no reason to deploy again;
 - steps 6 and 7 then speak of epoch k wherever they say epoch 1.
+
+If a confirmation lands in another epoch, keep the receipt under the epoch the ledger records.
+The host's audits, the hosted audit and the evidence must include every epoch containing a
+receipt of this round, as well as epoch 0. Do not apply the four-receipt expectation to an epoch
+that received only part of the round; report the actual distribution. A split or partial round
+is not a passing complete standard epoch: do not combine counts across epochs to claim that
+the four-receipt acceptance was met.
 
 ## Step 6. After epoch 1: the close record and the host's own audit
 
@@ -157,16 +174,26 @@ node scripts/round.js --config $C --keys $K
 
 It writes the close record of epoch 1 and reports that the round's epochs are closed. A close
 record is a transaction: this command is not read-only. Where the standard round was worked in
-epoch k, it takes the same `--epochs k+1`, and the audits below are of epochs 0 and k. Once the
-finalized block has passed the end of epoch 1 - again some twenty minutes later:
+epoch k, use the same calculated `--epochs k+1` and audit epochs 0 and k.
+
+If a round receipt landed in a later epoch, the closing upper bound must include that epoch too.
+Run the closing command only after the last epoch to be covered has ended: `--epochs` is not a
+close-only option, and an invocation while the current epoch is inside that bound can start work.
+
+The commands below are the unchanged normal path for epochs 0 and 1. In a fallback, replace epoch
+1 and its output filename with the actual standard epoch and include any additional epoch
+containing a receipt of the round. Run each audit once the finalized block has reached that
+epoch's end; an elapsed-time estimate is not the finality condition. The audit command does not
+wait automatically: if run too early, it exits with status 3 and must be run again later.
 
 ```
 node client/pouw.js audit 0 --manifest out/finchain-sepolia-r2/manifest.json --out out/finchain-sepolia-r2/audit-epoch-0.json
 node client/pouw.js audit 1 --manifest out/finchain-sepolia-r2/manifest.json --out out/finchain-sepolia-r2/audit-epoch-1.json
 ```
 
-Both must say `MATCH`. The figures to expect are the table in `roadmap.md`, section 4. An audit
-run too early stops with "not settled yet" and exit status 3.
+Every audit must say `MATCH`. For a complete round the figures to expect are the table in
+`roadmap.md`, section 4, adjusted for the budget in force. A partial epoch can also audit as
+`MATCH`: that verifies its actual records, not that the complete-round acceptance was met.
 
 ## Step 7. The independent audit
 
@@ -175,26 +202,31 @@ is not the operator's (A39, step 4):
 
 1. the manifest goes into the repository as `deployments/finchain-sepolia-r2.json`;
 2. on GitHub: Actions, the `ci` workflow, "Run workflow", with the manifest
-   `deployments/finchain-sepolia-r2.json` and the epochs of the round: `0 1`, or `0 k` where the
-   standard round was worked in epoch k. The host's audits, this input and the evidence name the
-   same epochs: an audit of epoch 0 and of an empty epoch 1 would say `MATCH` twice and leave
-   the standard round unexamined;
-3. the job installs the client only, runs `pouw verify` and `pouw audit` for both epochs against
-   the manifest's public endpoint, and keeps four files as the artifact `audit`: `run.json` (the
-   commit and the run), `verify.json`, `audit-epoch-0.json`, `audit-epoch-1.json`.
+   `deployments/finchain-sepolia-r2.json` and the actual epochs to audit: normally `0 1`, or
+   `0 k` for a later standard round, with any further receipt-bearing epoch included. Substitute
+   the actual epoch numbers for these placeholders. The host's audits, this input and the
+   evidence name the same epochs. Auditing epoch 0 and an empty epoch 1 can produce two `MATCH`
+   results while leaving the actual standard round unexamined;
+3. the job installs the client only, runs `pouw verify` and `pouw audit` for the selected epochs
+   against the manifest's public endpoint, and keeps `run.json` (the commit and the run),
+   `verify.json` and one `audit-epoch-<number>.json` per selected epoch as the artifact `audit`.
 
-The two audits of an epoch - the host's and the runner's - agree when they hold the same
-`tableHash`. Anyone can repeat the job from a fork of the repository.
+For the same deployment and epoch, the host's and the runner's audits agree when they hold the
+same `tableHash`. Anyone can repeat the job from a fork of the repository.
 
 ## Step 8. The records
 
 Everything the host produced is in `out/finchain-sepolia-r2/`: the identity check, the manifest,
-the deployment record, one record per run of the round, the two audits. To copy them off the host
-as one piece of text:
+the deployment record, one record per run of the round, the audits of the actual epochs. To
+copy them off the host as one piece of text:
 
 ```
 tar -C out -czf - finchain-sepolia-r2 | base64 -w 76
 ```
+
+This archive covers the active deployment only. Keep any earlier deployment's moved-aside
+directory separately, with its manifest, records and disposition; identify each deployment by
+chain id, ledger address and genesis time in the evidence index.
 
 What is submitted as the evidence of round R2a, each record labelled `public-testnet`,
 `controlled-self-test` and `operator-wallet-integration`:
@@ -203,8 +235,8 @@ What is submitted as the evidence of round R2a, each record labelled `public-tes
 | --- | --- | --- |
 | identity check | step 1 | the accounts and keys of the two cells, and whose tender 5 is |
 | deployment record, manifest | step 3 | what was deployed, from which builds, with which code hashes, in which transactions; the read-back |
-| round records | steps 4 to 6 | every transaction of the two epochs |
-| audits of epochs 0 and 1, and the deployment check, from the hosted runner | step 7 | that a machine with no key and no node, from the finalized chain, finds the deployed code to be this repository's and every receipt, total and allocation to be as the ledger says |
+| round records | steps 4 to 6 | every transaction of the round, with its actual epoch |
+| audits of the actual epochs, and the deployment check, from the hosted runner | step 7 | that a machine with no key and no node, from the finalized chain, finds the deployed code to be this repository's and every receipt, total and allocation to be as the ledger says |
 
 It claims neither computation nor independent demand, and no agent took part in it.
 
@@ -216,7 +248,7 @@ For a genesis time G:
 | --- | --- |
 | before G - 10 min | steps 1 to 3; the deployment refuses a genesis less than ten minutes ahead |
 | G to G + 2 h | step 4, once |
-| G + 2 h to G + 4 h | step 5, once; with `--wait` it can be started at any time in the epoch and needs until about G + 2 h 25 min at the earliest |
+| G + 2 h to G + 4 h | step 5, once; start well before the epoch ends. `--wait` waits for epoch 0 to be finalized; about G + 2 h 25 min is an estimate, not a guarantee |
 | after G + 4 h | step 6, the close record |
 | after about G + 4 h 25 min | step 6, the audits; step 7 |
 
@@ -230,8 +262,8 @@ For a genesis time G:
 | the round ends with exit status 3 | something waits for the finalized block | run it again later, or with `--wait` |
 | an endpoint error, a timeout, a dropped connection | the command stopped part of the way | run it again: every step looks at the chain first and nothing is done twice (rows R1, R3) |
 | a delivery is refused with `completions exhausted` | somebody else delivered to the test tender first and holds its one place; the round never accepts a delivery that is not its own worker's | delete `out/finchain-sepolia-r2/round-state.json` and run the round again: it stages a new tender |
-| `only N s of the epoch are left: no new work is started in it` | too close to the epoch's end for a tender to be staged and confirmed in it. The five minutes are the threshold below which nothing is started, not an assurance that work started later than that completes: closing earlier epochs, the transactions of two tenders and the wait for the finalized block all take time | wait for the next epoch; start an epoch's work well before its end |
-| the confirmation of a tender "landed in epoch N + 1" | the epoch turned between the settlement and the confirmation | nothing to repair: the receipt counts in the epoch it was recorded in (row R9) |
+| `only N s of the epoch are left: no new work is started in it` | less than five minutes remain, so no new work starts. Five minutes is a start threshold, not a guarantee of completion; closing earlier epochs, tender transactions and finality waits take time | wait for the next epoch; start an epoch's work well before its end |
+| the confirmation of a tender "landed in epoch N + 1" | the epoch turned between the settlement and the confirmation; the receipt counts in the epoch it was recorded in (row R9) | keep the actual epoch in the record; include it in the host's and hosted audits and report the actual receipt distribution (steps 6 and 7) |
 | a log query is refused for the size of its range | the endpoint serves fewer blocks per query than the manifest's `logChunk` says | set `POUW_LOG_CHUNK` to a smaller number, for example `POUW_LOG_CHUNK=10000`, and run the command again |
 | `... can be read by others` | a key file's mode is not 600 | `chmod 600` the file |
 | an audit prints `DIFFERS` | the recomputation and the ledger disagree | a finding: keep the record, run nothing on top of it |

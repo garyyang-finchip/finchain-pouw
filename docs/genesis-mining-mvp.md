@@ -28,7 +28,8 @@ Sections 1-12 describe the existing contracts under `contracts/`, reference clie
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
 The existing data structures, functions, receipt rules and allocation formulas remain unchanged.
 Where the as-built description and the code differ, the code and its tests govern. Section 13
-retains deferred proposals. Sections 14-15 describe production extensions and proposed acceptance
+retains future designs, including the adopted work-fact design and proposals still awaiting a
+ruling. Sections 14-15 describe production extensions and planned acceptance
 work; none of their new fields, payment adapters, verification classes or services is implemented
 or validated by R1. Figures marked *illustrative* remain examples (`decisions.md`, last section).
 
@@ -51,8 +52,10 @@ the ledger; the reference client with a worker's job and an independent audit.
 
 Deferred, with the designs kept (section 13): `g0.cal` and calibration records, `g0.ver` and its
 commit-reveal, challenge windows and overturns, any tier or quality factor, paging, a cap per
-operator, receipts without the demander, the binding of the authority at settlement, a delegation
-signed by an account, node attestations, the FOGA adapter.
+operator, the binding of the authority at settlement, a delegation signed by an account, node
+attestations, the FOGA adapter. Work facts apart from receipts are adopted as design for the next
+ledger version (P60, A70), in place of the earlier receipts-without-the-demander proposal; they
+are not implemented in R1 either.
 
 Outside implemented R1 (later milestones, A9): SIG, IPC, production routing, FCT, any balance,
 claim or token, autonomous provider payments, stablecoin payment adapters, and production
@@ -569,11 +572,12 @@ from the block the tender was minted in, which it finds from the newest range ba
 Two auditors who agree hold the same `tableHash`. The audit is a check: the ledger's view is the
 source, and an audit that differs is a finding about the ledger or about the auditor's endpoint.
 
-## 13. Deferred, with the designs kept for later rulings
+## 13. Future designs: adopted and awaiting rulings, not implemented
 
-The retained proposals in this section are not implemented or tested in R1. Sections 14-15 add
-the production direction and its proposed acceptance work. They do not turn these proposals into
-implemented functionality or alter the as-built rules above.
+The retained designs in this section are not implemented or tested in R1. Section 13.7 is
+adopted through P60 and A70; the other deferred choices retain their stated decision status.
+Sections 14-15 add the production direction and its planned acceptance work. Neither a design
+adoption nor its planned checks implement functionality or alter the as-built rules above.
 
 ### 13.1 `g0.ver`: verification work
 
@@ -711,10 +715,11 @@ any agent that builds it.
 ## 14. Production extension design (not implemented)
 
 This section aligns the production direction agreed on 2026-11-24. The maturity descriptions are
-the owner's strategic direction. The concrete profile shape, field names, adapters and acceptance
-cases below are proposed engineering designs, not existing functions or an additional approved
-release. Nothing here changes `GenesisTypes.sol`, the R1 GMU formula, the native-asset subsidy
-rule, the epoch calculation, or the deployed ERC-8414 contracts.
+the owner's strategic direction, and the choices adopted through Q17-Q29 are design under A70.
+Exact interfaces and the details left to implementation remain reviewable design work. No field,
+adapter or acceptance case below is an existing function or an additional software release.
+Nothing here changes `GenesisTypes.sol`, the R1 GMU formula, the native-asset subsidy rule, the
+epoch calculation, or the deployed ERC-8414 contracts.
 
 The executor's plans for carrying this section out are `production-service.md` (14.2 to 14.5) and
 `supply-and-payment.md` (14.6 to 14.8). They add concrete choices, each put up for a ruling
@@ -991,30 +996,31 @@ The proposed production implementation must recover the work and financial state
 No current `pouw` command is claimed to implement these production behaviors. Existing R1
 recovery and finality rules remain those of sections 9-12.
 
-## 15. Proposed production acceptance and execution sequencing
+## 15. Planned production acceptance and execution sequencing
 
-Every row below is proposed and not run as part of R1 or this documentation alignment. These rows
-are not additions to the 69 tests and 16 local-run checks reported for round R1, nor to the tests
+Every row below is planned and not run as part of R1 or this documentation alignment. Adoption
+of the design under A70 is not evidence that a row has run. These rows are not additions to the
+69 tests and 16 local-run checks reported for round R1, nor to the tests
 and the 37 rehearsal checks added for round R2 in v0.1.3. A later implementation
 must report the actual environment, versions, data source, parties, finance mode and evidence
 for each completed row.
 
-| Proposed check | Expected observation | Status |
+| Planned check | Expected observation | Status |
 | --- | --- | --- |
-| Manual startup funding and renewal | A holder's manual fiat purchase/renewal makes service available; later usage and delivery are recorded separately from the top-up | Proposed; not run |
-| Authorized agent wallet procurement | An agent purchases and reconciles supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | Proposed; not run |
-| Authorized fiat-account procurement | An agent purchases or renews through a supported fiat-billed API/account within the holder's authority; unsupported provider actions are reported rather than assumed | Proposed; not run |
-| Manual and autonomous coexistence | Both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | Proposed; not run |
-| Qualified inference delivery | The chosen service profile records model/tokenizer versions, usage categories, output, evaluator findings and accepted service units | Proposed; not run |
-| Mixed-source service | External and operated GPU/model suppliers are assessed against the same selected service specification, with source control and evidence classes stated separately | Proposed; not run |
-| Declared usage limitation | A worker's declaration and provider-attested usage are not misreported as a proof of inference or GPU ownership | Proposed; not run |
-| Customer cash receipt | Acceptance, credit owed, withdrawal and actual receipt are reconciled; gross service amounts, fees and refunds remain identifiable | Proposed; not run |
-| Cost and autonomy report | The cell produces a period report that separates payment autonomy, revenue coverage and supply control, including holder funding, liabilities and operating costs | Proposed; not run |
-| Multiple contribution roles | Producer, fulfiller and verifier contributions link to their funding and work without duplicate subsidy for the same contribution | Proposed; not run |
-| Unknown payment result and restart | A crash or timeout is reconciled without duplicate purchase or an invented success state | Proposed; not run |
-| Repair, replication and authorization | Recovery preserves obligations and evidence; a replica has its own identity and budget and does not duplicate past contributions or inherit unrestricted authority | Proposed; not run |
-| Missing evidence and source change | The report exposes unavailable evidence and changed model/service assumptions; qualification follows the declared profile rule | Proposed; not run |
-| Related-party demand | Controlled self-tests remain labelled; no collection of addresses, signatures or transfers is presented as proof of all-party independence | Proposed; not run |
+| Manual startup funding and renewal | A holder's manual fiat purchase/renewal makes service available; later usage and delivery are recorded separately from the top-up | Planned; not run |
+| Authorized agent wallet procurement | An agent purchases and reconciles supported digital-asset service within its scope and budget; pending and failed payments remain distinguishable | Planned; not run |
+| Authorized fiat-account procurement | An agent purchases or renews through a supported fiat-billed API/account within the holder's authority; unsupported provider actions are reported rather than assumed | Planned; not run |
+| Manual and autonomous coexistence | Both routes operate with attribution and reconciliation; a manual top-up is not reclassified as autonomous income | Planned; not run |
+| Qualified inference delivery | The chosen service profile records model/tokenizer versions, usage categories, output, evaluator findings and accepted service units | Planned; not run |
+| Mixed-source service | External and operated GPU/model suppliers are assessed against the same selected service specification, with source control and evidence classes stated separately | Planned; not run |
+| Declared usage limitation | A worker's declaration and provider-attested usage are not misreported as a proof of inference or GPU ownership | Planned; not run |
+| Customer cash receipt | Acceptance, credit owed, withdrawal and actual receipt are reconciled; gross service amounts, fees and refunds remain identifiable | Planned; not run |
+| Cost and autonomy report | The cell produces a period report that separates payment autonomy, revenue coverage and supply control, including holder funding, liabilities and operating costs | Planned; not run |
+| Multiple contribution roles | Producer, fulfiller and verifier contributions link to their funding and work without duplicate subsidy for the same contribution | Planned; not run |
+| Unknown payment result and restart | A crash or timeout is reconciled without duplicate purchase or an invented success state | Planned; not run |
+| Repair, replication and authorization | Recovery preserves obligations and evidence; a replica has its own identity and budget and does not duplicate past contributions or inherit unrestricted authority | Planned; not run |
+| Missing evidence and source change | The report exposes unavailable evidence and changed model/service assumptions; qualification follows the declared profile rule | Planned; not run |
+| Related-party demand | Controlled self-tests remain labelled; no collection of addresses, signatures or transfers is presented as proof of all-party independence | Planned; not run |
 
 Payment simulation, sandbox billing, testnet assets and mocked providers may establish specific
 technical behaviors. Every such run must say which facts were simulated. They do not establish
@@ -1023,10 +1029,10 @@ production-model performance. A real provider charge likewise does not prove ind
 customer demand or a profitable service.
 
 The same rows, with identifiers, the items of `decisions.md` A54 they belong to and the production
-increment proposed to run each, are in `acceptance-matrix.md`, section 11.
+increment planned to run each, are in `acceptance-matrix.md`, section 11.
 
 R2 continues first as the already-approved Finchain Sepolia ledger and audit round. Its public
-evidence is scoped to the functions it actually exercises. The proposed production extension is
+evidence is scoped to the functions it actually exercises. The production extension adopted as design is
 then specified and implemented as a separately reviewable increment, starting with one bounded
 inference profile, a supported procurement route, its evidence envelope and an operating report.
 Additional providers, stablecoin settlement, richer verification, SIG calibration and platform
