@@ -1,8 +1,9 @@
 # Evidence
 
-Records, as in `finchain`: each is a JSON file with `schema`, `environment` and `recordedAt`, and
-says of itself whether it passed (`ok`). A record is tied to a state of this repository by the
-hashes of the files it exercised (`sources`).
+Deployment-result records follow the `finchain` convention: JSON with `schema`, `environment`
+and `recordedAt`, and an explicit result where applicable. Local rehearsals identify the source
+files they exercised through `sources`. Identity checks and workflow metadata keep their own
+schemas; the index explains their provenance without adding fields to the originals.
 
 | Record | Schema | Version | What it is |
 | --- | --- | --- | --- |
@@ -12,11 +13,13 @@ hashes of the files it exercised (`sources`).
 | `r2a/` | several; `r2a/README.md` is the index | 0.1.3 | Round R2a on Finchain Sepolia (`docs/r2-runbook.md`): the identity check, the deployment record and manifest, the round records, the host's audits, the deployment checks and audits of two hosted runs, the evidence that the close records are in the finalized chain, and the records of an earlier deployment that was left unused |
 
 `environment` is `local-devnet` for the three `local-run` records: none of them is evidence of
-anything on a public chain. The records under `r2a/` are those of a public test network,
-labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration`. They are
-tied to this repository by the client's version, by the manifest's code hashes and the builds
+anything on a public chain. The deployment-result records under `r2a/` are those of a public test
+network, labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration`. They
+are tied to this repository by the client's version, by the manifest's code hashes and the builds
 the deployment record names, and by the commit in each hosted run's `run.json`. Their index says
-what was observed, and leaves the acceptance of the round to its reviewers and the owner.
+what was observed and records the advisor's technical acceptance on 2026-11-24 after evidence commit
+`b53e52f` (`docs/decisions.md` 6.11). This status update preserves all raw records and checksums and
+does not widen the round's scope.
 
 What no record here claims: an amount of computation, independent demand, or the participation of
 anyone but the operator who ran it.

@@ -152,7 +152,7 @@ late acceptance (R9), the multi-wallet split with its bypass (D6), cross-version
 | M3 | A plan that cannot run as written: the wrong chain, a genesis too close, a missing or unknown profile, parameter versions out of order, an unknown seed source, an OP Stack seed source on a chain without the predeploy, no contract at the ERC-8414 address, a party listed twice, a steward that cannot pay | refused before anything is sent; without `--yes` nothing is ever sent | passes: `deploy`; rehearsal |
 | M4 | Keys: asked for inside the repository's checkout; a key file others can read; the key script run a second time | refused; refused before anything is sent; every key kept as it is | passes: `deploy`; rehearsal |
 | M5 | A second deployment over an existing manifest; a deployment that stops part of the way | refused; the transactions already sent are listed and nothing depends on them | passes: rehearsal (the first). Sepolia, round R2a, if it happens |
-| M6 | Labels | every record made from a deployment carries its environment and its labels; an epoch's mode is a separate field, and a standard epoch of a controlled self-test is still labelled as part of one | passes: `deploy`; rehearsal |
+| M6 | Labels | every deployment-result record carries its environment and its labels; an epoch's mode is a separate field, and a standard epoch of a controlled self-test is still labelled as part of one | passes: `deploy`; rehearsal |
 
 ## 8. The rehearsal
 
@@ -178,7 +178,7 @@ checks, all of which must hold for the record to say `ok`:
 | after the last epoch the round writes its close record and starts no new work | N3 |
 | per epoch: the audit, as a separate process with the manifest and the endpoint only, agrees with the ledger on every figure, and every row of its table equals the ledger's view | N3, N4, N5, T5 |
 | the audit adds the table up per declared operator: one operator, two addresses, twice the share an address can have | D6 |
-| every record carries the deployment's labels; no contract of the kernel holds funds | M6, X11 |
+| every deployment-result record carries the deployment's labels; no contract of the kernel holds funds | M6, X11 |
 | the identity check reads that the agents are contract accounts, that the tender is the account's and that a key alone would not be accepted | T7 |
 | through `--account` the worker of record is the account; the same key by itself is another worker, measured and not subsidized; a key the account does not obey is refused | T6, T3 |
 | a tender owned by an account is not confirmed by the account's key; through the account it is; a tender older than the deployment is measured and earns nothing | T6, D11, D15 |
@@ -209,8 +209,10 @@ Round R2a is accepted when:
    with the budget and receipts actually in force. For the same deployment and epoch, the
    host's and runner's audits hold the same `tableHash` (N5, T5). The host's audits, the input
    of the hosted job and the evidence name the same epochs (A69);
-5. every record is labelled `public-testnet`, `controlled-self-test` and
-   `operator-wallet-integration` (M6).
+5. deployment-result records carry `public-testnet`, `controlled-self-test` and
+   `operator-wallet-integration` (M6). The pre-deployment identity check, workflow metadata
+   (`run.json`) and working notes retain their original schemas; their provenance is described
+   in `evidence/r2a/README.md` 8 rather than retroactively adding deployment labels.
 
 A process listing or a successful background-wrapper exit is not evidence that the round
 completed. Each audit identifies its ledger, chain and clock; records from an unused deployment
@@ -221,8 +223,12 @@ that failed - and its records say `ok`. A `tableHash` covers the workers' addres
 allocations and nothing else, so the host's and the runner's reports are compared in full (A72).
 
 Round R2a was run on 2026-11-24. `evidence/r2a/README.md` 8 sets each of the five conditions
-against its evidence. The acceptance itself is for the reviewers and the owner to give, and this
-matrix does not record it before it is given.
+against its evidence. The advisor subsequently accepted its technical scope after reviewing
+evidence commit `b53e52f` (`decisions.md` 6.11). This closes R2a for the active deployment and
+epochs 0 and 1: public-testnet, controlled-self-test and operator-wallet-integration. CI #3
+(`45359832829`) and `evidence/r2a/r2a-close-evidence.json` establish the required seal finality:
+`540870 < 546161 <= 547050 <= 547405`. No new run or redeployment is required for this status
+update. This outcome neither adopts Q13/Q14/the remaining Q16 choices nor accepts R2b or R3.
 
 Round R2b is not accepted by any of this. It is accepted when the Cell Accounts of the two cells
 are the admitted parties, the workers of record and the owners that confirm the cells' own

@@ -18,6 +18,8 @@ documents of v0.1.8 came from (A71). The software is release 0.1.3, unchanged - 
 interface, client, script, configuration or deployment changes with it. The runbook's command
 blocks are unchanged: v0.1.8 as consolidated made its fallback and evidence instructions
 explicit, and this revision adds the condition on the finality of the close records.
+The dated close-status addendum in section 6.11 records the subsequent R2a advisor technical
+acceptance without a software release or a new owner ruling; A71/A72 are classified in 1.1.
 Sections 2 and 3 record the two reviews of the kernel - of v0.1.1, and of v0.1.2 with round R1 -
 and how each ruling was applied; section 4 records the alignment of 2026-11-24 on the production
 line; sections 5 and 6 record the reviews of v0.1.4 to v0.1.7, how each is applied, the adoption
@@ -27,7 +29,10 @@ section 11 what v0.1.5 proposed, each as it stands after the reviews and the ado
 holds the questions put to the owner - those still open, and those adopted, each with the
 advisor's recommendation as it was adopted; section 13 the illustrative figures.
 
-## 1. Approved
+## 1. Approved rulings and review records
+
+The first table records approved rulings. Section 1.1 separately classifies the advisor reviews
+and authorized follow-up that keep their existing A71/A72 identifiers.
 
 | Id | Ruling | Source |
 | --- | --- | --- |
@@ -101,6 +106,16 @@ advisor's recommendation as it was adopted; section 13 the illustrative figures.
 | A68 | The review of design revision v0.1.6, and the owner's instruction on it. The owner relayed the review and asked for the update at once. The revision of the documents in v0.1.6 is accepted, and the main findings of the round before it are closed: the record of recommendations apart from approvals; who takes the one counting; what a content key is made of; work facts apart from receipts; attempts and the recovery of a crash; the linked chain that closes A54; the light dependency on ERC-8506 and the validation of its records at the build. The demander that a profile version names is reasonable in its scope - it binds the first controlled fixture profile and is no admission rule of the network - and stays a proposal under Q25. FOGA's independence is intact: no change or release of FOGA and no ERC-8506 contract became a condition of round R2a. Round R2a continues. After it, the next review in depth is of the implementation of the new ledger and of the first production increment. The instruction covers design revision v0.1.7. It adopts none of the recommendations on Q17-Q29. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A69 | The running of round R2a, corrected and made exact. (a) The budget of an epoch is counted from the first epoch of its parameter version. With the configuration of round R2a the standard version begins in epoch 1 with a halving interval of 8: epochs 1 to 8 have 1,000 test points, and epoch 9 is the first with 500. The executor's operating instruction that the first halving was epoch 8 was wrong by one epoch. The contract is right and is not changed to fit an instruction; a standard round worked from epoch 9 on changes the expected figures, and neither invalidates the round nor asks for a new deployment. (b) `--epochs n` is an upper bound - the round works in epochs 0 to n - 1, by default 2 - so a standard round in epoch k is run, and closed, with `--epochs k+1`. (c) Closing an epoch sends a transaction and is not called read-only. (d) The five minutes an epoch must still have are the threshold below which nothing is started, not an assurance that what is started completes. (e) The audit job of epoch k recomputes epoch k - 1. Where that epoch is empty, the record says that an empty epoch was recomputed: that shows the procedure and is no recomputation of epoch 0's receipts. (f) The independent audit covers epoch 0 and the epoch in which the standard round was in fact worked. The host's audits, the input of the hosted job and the evidence name the same epochs, and receipts recorded across an epoch boundary are covered where they were recorded. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A70 | The owner adopts the advisor's recommendations on Q17 to Q29, each as it is recorded with its question (12.2), its conditions included. He first asked the executor whether it had an evident objection to any of them; it had none, and it named what the adoption carries with it (6.7). The choices these questions put up - P42 to P45, P47, P48, P50, P51 and P54 to P60, as they stand after the reviews - are approved as design: the plans that carry them out are what the next version of the ledger and the production increments are built against and reviewed with. With Q26 the choice that A64 left is made: the facts of a piece of work are kept apart from the confirmation that leads to the subsidy (P60, in the place of P40). The second item of Q16 is settled by that, and work whose demander does not confirm is in no epoch's GMU, measured or subsidized. Nothing is built, deployed or spent by the adoption. Each implementation still goes design, ruling, code; the limits of A53 stand; Q13 to Q15 and the rest of Q16 are not ruled by it. | owner, 2026-11-24: his own statement to the executor, made after the executor answered that it had no evident objection |
+
+### 1.1 Review and authorized follow-up records
+
+A71 and A72 retain their identifiers for existing references. They classify advisor reviews
+and owner-authorized document/evidence follow-up; they are not additional owner rulings on
+open design choices. Their former placement in the Approved table did not adopt those choices.
+The subsequent R2a technical acceptance is recorded separately in section 6.11.
+
+| Id | Review and follow-up record | Source |
+| --- | --- | --- |
 | A71 | The review of design revision v0.1.7, and the consolidated documents of v0.1.8. The review accepts v0.1.7 and closes three matters of the round before: the fallback of the runbook of round R2a, as it is written; the rightful delegate of a named demander, in the plan and in row S25; the budget that fees belong to, as rule 12 of `supply-and-payment.md` 4.3 with row F26. It finds that the record kept the review's acceptance apart from the owner's adoption. Its principle for what follows: a matter that is still open holds up the work that depends on it and no other - Q13 to Q29 are not one gate for all later work, a necessary upgrade of the ledger does not wait for every production field, and the providers of the second increment are chosen when it opens. At the owner's request the advisor then wrote the consolidated documents of v0.1.8: the nine documents, with the executor's v0.1.8 and the remaining clarifications, as one set. The owner relayed them with the instruction to walk through, take in and update; the executor checked the nine files against the advisor's checksums and took them as the repository's documents (6.9). | review of design revision v0.1.7 and the advisor's consolidated documents, relayed by the owner with the instruction to walk through, take in and update, 2026-11-24 |
 | A72 | The review of the run of round R2a, and what closes the round. The review rebuilt the host's two record archives from the text they were sent as and found their hashes and the manifest's as stated; found the five builds of the deployment record to be the committed ones; and recomputed both epochs' totals, caps and allocations from the receipts: they are as reported. It supports the manifest as the input of the hosted audit and finds nothing in the kernel that has to be done again. One matter is to be closed with evidence. An audit of release 0.1.3 reads the receipts up to the finalized block and the `sealed` flag at the latest block, so that a report whose finalized block is before a close record does not show that the close record is final. The figures are not in question: an epoch that has ended cannot change, and a close record changes no figure. The round is closed on conditions read from the chain and not on an estimate of time: (1) the finalized block the hosted audit reads up to is not before the close record's block; (2) that block's number, hash and time are on record; (3) so are the receipt of the close transaction and the `EpochSealed` event of the right ledger, with the receipt's block hash equal to the chain's and its block within the finalized block read; (4) the same for epoch 0. An earlier report stays as it was made, with the mixed reading said. The hosted run passes when both of its jobs succeeded - an artifact is also uploaded by a job that failed - its `run.json` names the repository, the commit, the manifest and the epochs, its deployment check and both audits say `ok` for the right chain and ledger, the reports agree with the host's in full, and the table hashes are equal; a table hash covers the workers' addresses and their allocations and nothing else. What the round then establishes, and no more: the kernel ran both parameter modes on Finchain Sepolia as a controlled self-test of one operator's wallets, and another environment, with the same reference client and the same public endpoint, checked the deployed code and wiring and recomputed the finalized history. The deployment check reads at the latest block and is described so. Recording the block and the source of each read is for the next version of the client. What the review names as next, once the round is closed: to converge Q13, Q14 and the rest of Q16, the parts of the first production increment that need no new ledger going on beside that. That is an order of work it recommends, and it rules on none of those questions. | review of the run of round R2a, relayed by the owner for the executor to go through, 2026-11-24 |
 
@@ -115,7 +130,8 @@ statement, and the recommendations it adopts stay worded with their questions (1
 condenses the review of v0.1.7 and says where the consolidated documents of v0.1.8 came from;
 A72 condenses the review of the run of round R2a. The owner relayed that review for the executor
 to go through, and himself made the second hosted run and the close evidence that it asks for.
-Neither entry says that the round is accepted.
+Neither entry records the later R2a acceptance; that outcome is in section 6.11. Their
+classification does not change A70 or reopen the production choices it adopted.
 
 ## 2. The formal review of v0.1.1 and how it was applied
 
@@ -554,6 +570,8 @@ points, which this revision corrects where it changes the document concerned:
 
 ### 6.10 The review of the run of round R2a, and how it is applied
 
+Historical state at evidence commit `b53e52f`; the subsequent technical acceptance is in 6.11.
+
 The run is recorded under `evidence/r2a/`, whose index sets what was observed against what was
 expected. The review (A72) had the host's records, the manifest package and this repository at
 commit 9e40033, and no hosted run; what it checked is in A72. Run ci #2 had been made when the
@@ -580,6 +598,40 @@ still has to be shown by itself, as the review requires, and the second run was 
 
 The state of round R2a after this revision: run, with its records in the repository. Its
 acceptance is for the reviewers and the owner to give, and is not recorded here.
+
+### 6.11 R2a advisor technical acceptance: 2026-11-24
+
+After reviewing evidence commit `b53e52f22f73d4a011846e8db7a3398d56c4c828`, the advisor accepted
+R2a technically. This dated addendum records that subsequent review outcome; it does not claim
+that acceptance had already been recorded in the pinned commit or that another chain run was
+performed for this documentation update.
+
+| Item | Accepted scope or supporting evidence |
+| --- | --- |
+| Software and environment | Software 0.1.3; Finchain Sepolia, chain ID 85422; public-testnet, controlled-self-test and operator-wallet-integration |
+| Deployment | Ledger `0x7180CdDA4aE494f551d196146E6fcCB717675F1a`, policy `0x6681DC69737C434b774A89Bdcb6d5C0a6C900825`; `deployments/finchain-sepolia-r2.json` |
+| Epochs | 0 and 1, with the full reports agreeing except `recordedAt` and `settledBlock` |
+| Hosted CI | Run [45359832829](https://github.com/garyyang-finchip/finchain-pouw/actions/runs/45359832829), source commit `fa765af13f16f2f2b024a2576f665c9b8785ba7e`; the advisor checked successful `test` and `audit` jobs |
+| Seal evidence | `evidence/r2a/r2a-close-evidence.json`, SHA-256 `a3747af2880d75c23811ecd353ec7fe56463d41a8911e0b4e0337eae486f4331`; seventeen predicates checked and the nine event fields of each seal agreeing with the audit |
+| Finality relation | Seal blocks 540870 and 546161, CI #3 cutoff 547050, witness finalized head 547405: `540870 < 546161 <= 547050 <= 547405` |
+
+Source of the acceptance outcome: the advisor's review on 2026-11-24 after `b53e52f`, preserved
+in the owner-supplied `Finchain_PoUW_Progress_2026-11-24.md`, section 7.1 (SHA-256
+`a2dd7a548dfa184b3ad89ee5f073c74e0e510242fa7eff830179d8a914384f8f`). The review outcome is
+separate from the evidence index's descriptions of what its raw records establish.
+
+The accepted record closes the earlier seal/finality evidence gap. It requires no additional
+seal, rerun or redeployment for this status update. CI #2, the unused deployment, the host's
+original reports, all original metadata and the mixed-read explanation are preserved. Software
+0.1.3 still has the documented mixed-block read limitation; a consistently pinned audit remains
+next-version work.
+
+This acceptance covers neither R2b nor R3, autonomous Cell Account participation, inference
+production, independent demand, valuable rewards nor a sustainable economy. Q17-Q29 remain
+adopted as design under A70. Q13, Q14, Q15's broader arrangement and Q16's remaining mechanisms
+and packaging retain their existing open status; Q15 does not reopen the completed R2a audit.
+The next work is the concrete Q13/Q14/Q16 memo and independent first-production components,
+with Finchain, FOGA and this repository remaining separate.
 
 ## 7. The proposals of v0.1.0 and v0.1.1, and their state
 

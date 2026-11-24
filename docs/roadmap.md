@@ -24,8 +24,9 @@ manifest is `deployments/finchain-sepolia-r2.json`, and the records - those of t
 deployment among them, kept apart - are under `evidence/r2a/`, with an index that sets what was
 observed against the figures of section 4. The review of the run asked that the finality of the
 close records be shown from the chain; a second hosted run and a record of the close
-transactions were made for that (A72). The round's acceptance is for its reviewers and the owner
-to give, and is pending.
+transactions were made for that (A72). The advisor accepted R2a technically on 2026-11-24 after
+reviewing evidence commit `b53e52f` (`decisions.md` 6.11). Its accepted scope is public-testnet,
+controlled-self-test and operator-wallet-integration; the earlier records remain unchanged.
 R2b waits for a ruling on how a contract account takes part (Q13). Neither the alignment of
 2026-11-24 nor the reviews since changed anything in this: the software is release 0.1.3,
 and round R2a ran from it as it was prepared (A53, A55, A65, A68). What they add is design - the
@@ -67,7 +68,7 @@ its remaining implementation and packaging choices are set out in section 5.
 | The rehearsal of round R2 and its evidence record | R2 | built; `npm run local-run` |
 | The R2a configuration and runbook | R2a | built; `deployments/finchain-sepolia-r2.config.json`, `docs/r2-runbook.md` |
 | The independent audit job | R2 | built; `.github/workflows/ci.yml` |
-| The Finchain Sepolia manifest; evidence records of the deployment, the rounds and the audits | R2a | in the repository: `deployments/finchain-sepolia-r2.json`, and `evidence/r2a/` with its index. The round's acceptance is pending |
+| The Finchain Sepolia manifest; evidence records of the deployment, the rounds and the audits | R2a | in the repository: `deployments/finchain-sepolia-r2.json`, and `evidence/r2a/` with its index. Advisor technical acceptance passed on 2026-11-24 (`decisions.md` 6.11) |
 | The next version of the ledger: a cap per declared operator, work facts apart from receipts, a delegation signed by an account, the production fields of a receipt | before R3 | designs kept (`genesis-mining-mvp.md` 13.4, 13.7, 13.9). One design, with work facts apart from receipts and the production fields, is adopted (Q22, Q25, Q26; A70). A35 already requires the operator cap before R3; its implementation and packaging, and the contract-account route, remain to be decided (Q13, Q16) |
 | `g0.ver`, `g0.cal`, the authority at settlement, a freshness window | after rulings | designs kept (`genesis-mining-mvp.md` 13) |
 | The production line: the first specification with its evaluator, counter, canonicalization rule and committed fixture set; the `g1.inference` profile and its adapter; the reference worker, demander and recount; the operating report; the rehearsal of the increment | the first production increment | designed, not built (`production-service.md`, `supply-and-payment.md`). The design is adopted (`decisions.md` A70, 12.2) |
@@ -83,7 +84,7 @@ challenges, paging, SIG, IPC, FCT, node attestations, the full FOGA adapter.
 | --- | --- | --- |
 | R0 | the four design documents; the reviews of v0.1.0 and v0.1.1 | closed: the scope was ruled on (A30) |
 | R1 | the kernel, its tests, the reference client; a local run of two workers through G0 and G1 work, GMU, two epochs closed by time, and an audit by a separate process from the chain alone | passed, with conditions (A31): the account identities (A37) and the boundary of the self-dealing rule (A38), both taken up in v0.1.3 |
-| R2a | Operator-wallet integration. The kernel of R1 deployed on Finchain Sepolia from the committed builds, with a manifest of addresses, code hashes and blocks; two wallets the operator holds, admitted and declared under one operator; epochs of two hours, pools 10 / 90; epoch 0 as a controlled self-test, epoch 1 standard; in each, both wallets do the `g0.ref` job and a test tender goes each way on the World's ERC-8414 contract; the epochs close; a hosted runner that holds no key verifies the deployment and recomputes both epochs at finalized state | the matrix rows marked "Sepolia, round R2a", and the audit's figures equal to the expected ones (section 4). What it shows: the kernel on a public chain, its code checked, its epochs recomputed by a machine that is not the operator's. What it does not show: demand, computation, or an agent. Both wallets are one party and no cell takes part; every record is labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration` (A39). Run on 2026-11-24: the records and what was observed are in `evidence/r2a/README.md`; the acceptance is pending |
+| R2a | Operator-wallet integration. The kernel of R1 deployed on Finchain Sepolia from the committed builds, with a manifest of addresses, code hashes and blocks; two wallets the operator holds, admitted and declared under one operator; epochs of two hours, pools 10 / 90; epoch 0 as a controlled self-test, epoch 1 standard; in each, both wallets do the `g0.ref` job and a test tender goes each way on the World's ERC-8414 contract; the epochs close; a hosted runner that holds no key verifies the deployment and recomputes both epochs at finalized state | the matrix rows marked "Sepolia, round R2a", and the audit's figures equal to the expected ones (section 4). What it shows: the kernel on a public chain, its code checked, its epochs recomputed by a machine that is not the operator's. What it does not show: demand, computation, or an agent. Both wallets are one party and no cell takes part; deployment-result records are labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration` (A39). Run on 2026-11-24: the records and what was observed are in `evidence/r2a/README.md`; advisor technical acceptance passed after evidence commit `b53e52f` (`decisions.md` 6.11) |
 | R2b | Contract-account integration. The OG and cell-b take part as their Cell Accounts: the accounts are the admitted parties, the workers of record and the owners that confirm the tenders the cells themselves made | the matrix rows marked "Sepolia, round R2b". Needs the rulings of Q13 and Q14; by the proposed route (P35) it runs on the next version of the ledger. Until then the rehearsal shows the mechanics with test accounts, and that is all it is |
 | R3 | one independent party, running no Finchain node, admitted as a worker on the next version of the ledger (A35): it does the G0 job and delivers a tender; a second auditor recomputes the epoch; the failure drills of the matrix on Sepolia | the entry into P2 Genesis Network. The first G1 receipt between parties with different declared operators - which is `none-found`, not a finding of independence |
 | R4 | the design round for SIG and IPC, documents first; a Tokenomics ruling requested from the owner; a mainnet deployment of the kernel only after the owner's separate decision | - |
@@ -215,7 +216,7 @@ deployment can support several operating forms at once (A41).
 
 | Capability | First needed in | Engineering deliverable | Milestone, round or increment | State |
 | --- | --- | --- | --- | --- |
-| Contribution records and an allocation that anyone can recompute | every stage | the kernel | P1: rounds R1, R2a | built; R2a run, its records in the repository, its acceptance pending |
+| Contribution records and an allocation that anyone can recompute | every stage | the kernel | P1: rounds R1, R2a | built; R2a advisor technical acceptance passed, with raw evidence preserved (`decisions.md` 6.11) |
 | An agent that takes part as its own account | every stage | the route for a contract account | P1: round R2b; the current proposal uses the next ledger version | route to be ruled (Q13, Q14) |
 | Parties that are not the operator's; a cap per declared operator | every stage | the next ledger version; round R3 | P2 | after R2 (A35, A39) |
 | A published service specification; usage recorded by category; a delivery qualified by published checks; a contribution linked to its evidence and counted once per task unit | Stage 1, Startup | the first specification, the `g1.inference` profile, the evidence envelope, the recount | first production increment | designed |
@@ -291,7 +292,8 @@ integration, demand or self-sufficiency (A54).
 
 The order (Q23; adopted, A70):
 
-1. Round R2a, now, on the software as released. Nothing below is a condition of it.
+1. Round R2a is technically accepted on software 0.1.3 (`decisions.md` 6.11). Preserve its
+   deployment and evidence; later work below does not reopen it.
 2. The owner's rulings. The recommendations on Q17 to Q29 are adopted (A70). Still to be ruled,
    for the next version of the ledger: Q13 and the rest of Q16.
 3. The next version of the ledger, with its remaining choices resolved before implementation.

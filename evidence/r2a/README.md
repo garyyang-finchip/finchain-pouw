@@ -3,12 +3,15 @@
 The records of round R2a (`docs/roadmap.md` 3 and 4; `docs/r2-runbook.md`): the kernel of release
 0.1.3 deployed on Finchain Sepolia and worked for two epochs by two wallets that one operator
 holds; the host's own audits; the audits of a hosted runner; and the evidence that the two close
-records are in the finalized chain. Records made from the deployment are labelled
+records are in the finalized chain. Deployment-result records are labelled
 `public-testnet`, `controlled-self-test` and `operator-wallet-integration`.
 
 This file is the index. It identifies the deployments, says what each record is and where it came
-from, gives every file's SHA-256 and states what was observed. It does not say that round R2a is
-accepted: that is for the reviewers and the owner to say (`docs/acceptance-matrix.md` 9).
+from, gives every file's SHA-256 and states what was observed. **R2a passed advisor technical
+acceptance on 2026-11-24**, following review of evidence commit `b53e52f`. The accepted scope is
+the active deployment, epochs 0 and 1, under public-testnet, controlled-self-test and
+operator-wallet-integration. The later review outcome and its provenance are recorded in
+`docs/decisions.md` 6.11; the raw records and their checksums remain unchanged.
 
 ## 1. What the round is, and what it is not
 
@@ -85,7 +88,7 @@ Times are UTC, on 2026-11-24. Epoch 0 ran from 02:59:08 to 04:59:08 and epoch 1 
 | 07:56:32 to 07:56:35 | After epoch 1: its close record is written (block 546161) | `finchain-sepolia-r2/round-20261124T075635Z.json` |
 | 07:56:36, 07:56:37 | The host's audits of epochs 0 and 1 | `finchain-sepolia-r2/audit-epoch-0.json`, `audit-epoch-1.json` |
 | 08:09:34 to 08:10:42 | Hosted run ci #2: the deployment check, the audits of epochs 0 and 1, the tests and the rehearsal | `hosted-ci-2/`; `../local-run-20261124T081042Z.json` |
-| 08:52:00 to 08:52:05 | Hosted run ci #3: the same two jobs again. Its deployment check and its audits of epochs 0 and 1 were made after the close record of epoch 1 had entered the finalized chain | `hosted-ci-3/` |
+| 08:52:00 to 08:52:05 | The ci #3 audit-record interval, not the full workflow duration: its deployment check and its audits of epochs 0 and 1 were made after the close record of epoch 1 had entered the finalized chain. The workflow succeeded in 1m 16s | `hosted-ci-3/` |
 | 09:03:21 | The close records read from the chain and set against the finalized block | `r2a-close-evidence.json` |
 
 The whole standard round is in epoch 1. No confirmation crossed an epoch boundary: the round's
@@ -231,8 +234,8 @@ run.
 | 1. The identity check has been made and recorded, and the deployment is labelled as it says (T7) | `finchain-sepolia-r2/identity-check.json`; the labels of the manifest | the cells are contract accounts and a key alone is not the agent; the deployment is labelled `operator-wallet-integration` |
 | 2. The deployment record says `ok`, and `pouw verify` run by the hosted runner finds the code at the manifest's addresses to be this repository's (M1) | `finchain-sepolia-r2/deployment-20261124T024437Z.json`; `hosted-ci-2/verify.json`, `hosted-ci-3/verify.json` | `ok`; 22 checks `ok` in each run. The five builds the deployment record names have the hashes of the builds committed under `build/` |
 | 3. Epoch 0 and the standard epoch hold the expected receipts and both are closed; any further epoch holding a receipt of the round is recorded and closed too; each close record is shown to be in the finalized chain (N1, N2, D9, D10, N3; A72) | the three round records; the audits; `r2a-close-evidence.json` | receipts 1 to 4 in epoch 0 and 5 to 8 in epoch 1, none elsewhere; close records in blocks 540870 and 546161, both within the finalized chain (section 6) |
-| 4. The hosted runner's audits at finalized state say `ok` for epoch 0 and the standard epoch; the figures are the expected ones; the host's and the runner's audits of the same deployment and epoch hold the same `tableHash`; the host's audits, the input of the hosted job and the evidence name the same epochs (N5, T5, A69) | `hosted-ci-3/`, `hosted-ci-2/`; `finchain-sepolia-r2/audit-epoch-0.json`, `audit-epoch-1.json` | `ok`; the figures of section 5; equal `tableHash`, and equal reports field by field; epochs 0 and 1 throughout |
-| 5. Every record is labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration` (M6) | the records | the manifest, the deployment record, the round records, the audits, the deployment checks and the close evidence carry the environment and both labels. Two kinds of record carry none, by what they are: the identity check, which is made before any deployment and names the chain only, and `run.json`, which describes a run of the workflow. `round-state.json`, the round command's working note, is no record and carries none either |
+| 4. The hosted runner's audits at finalized state say `ok` for epoch 0 and the standard epoch; the figures are the expected ones; the host's and the runner's audits of the same deployment and epoch hold the same `tableHash`; the host's audits, the input of the hosted job and the evidence name the same epochs (N5, T5, A69) | `hosted-ci-3/`, `hosted-ci-2/`; `finchain-sepolia-r2/audit-epoch-0.json`, `audit-epoch-1.json` | `ok`; the figures of section 5; equal `tableHash`, and equal reports field by field except `recordedAt` and `settledBlock`; epochs 0 and 1 throughout |
+| 5. Deployment-result records are labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration` (M6) | the records | the manifest, the deployment record, the round records, the audits, the deployment checks and the close evidence carry the environment and both labels. Two kinds of record carry none, by what they are: the identity check, which is made before any deployment and names the chain only, and `run.json`, which describes a run of the workflow. `round-state.json`, the round command's working note, is no record and carries none either |
 
 A listing of processes, the exit status of the background wrapper and a `MATCH` over an empty
 epoch are not among the evidence: none of them shows that a round was completed.
@@ -287,7 +290,8 @@ epoch are not among the evidence: none of them shows that a round was completed.
 
 An amount of computation; demand from anyone but the operator; the participation of an agent or
 of a FOGA cell; any value, issue or claim behind a test point; an independent implementation of
-the audit; or the acceptance of the round.
+the audit; R2b or R3 completion; or approval of the next-ledger choices. The advisor's scoped R2a
+technical acceptance is recorded separately from what each raw record establishes.
 
 ## 11. What the round showed about the client, for its next version
 

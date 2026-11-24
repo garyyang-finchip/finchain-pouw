@@ -6,16 +6,17 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.3 - round R1 passed with conditions; round R2a run, its acceptance pending.** The
-Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
+Status: **v0.1.3 - round R1 passed with conditions; round R2a passed advisor technical acceptance.**
+The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. This version adds what a public deployment needs - committed
 builds, a deployment that records code hashes, a check of deployed code, an operator's round, the
 identity check - and rehearses round R2 with them. Round R2a, the operator-wallet integration,
 was run on Finchain Sepolia on 2026-11-24 from this release. Its manifest is
 `deployments/finchain-sepolia-r2.json` and its records are under `evidence/r2a/`, with an index
-that sets what was observed against what was expected. Whether the round is accepted is for its
-reviewers and the owner to say (`docs/acceptance-matrix.md` 9). The strategic baseline is FPM01 /
+that sets what was observed against what was expected. The advisor accepted R2a on 2026-11-24
+after reviewing evidence commit `b53e52f`; the scoped outcome and its provenance are recorded in
+`docs/decisions.md` 6.11 and `docs/acceptance-matrix.md` 9. The strategic baseline is FPM01 /
 FPM01-G v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md`
 lists what is approved, what this repository proposes, what is still open for the owner's ruling,
 and which figures are only illustrative.
@@ -52,8 +53,10 @@ v0.1.9 records the run of round R2a and the review of that run (`docs/decisions.
 the records of the round and their index, the first runs of the tests and of the independent
 audit on a hosted runner, and the condition on the finality of the close records, which the
 runbook and the acceptance of round R2 now name. It also records the review of v0.1.7 and where
-the consolidated documents of v0.1.8 came from (A71, 6.9). It does not record an acceptance of
-the round.
+the consolidated documents of v0.1.8 came from (A71, 6.9). At evidence commit `b53e52f`, acceptance
+was still pending. The dated close-status addendum records the advisor's subsequent technical
+acceptance (`docs/decisions.md` 6.11). This documentation update changes no software, deployment,
+raw evidence or open owner decision.
 
 ## What this repository is for
 
@@ -160,7 +163,8 @@ every receipt, total and allocation from the chain alone. Round R2a adds that wh
 a public chain is this repository's code, and that another environment - a hosted runner, with
 the same reference client and the same public endpoint - recomputes every figure from the
 finalized chain. That is another run, not another implementation and not another source of the
-chain's state. The round's records are under `evidence/r2a/`; its acceptance is pending.
+chain's state. The round's records are under `evidence/r2a/`; the advisor's technical acceptance
+is recorded in `docs/decisions.md` 6.11. R2b and production retain their own acceptance scopes.
 
 Neither shows computation (an accepted G0 receipt is evidence of presence and of a conforming
 submission), demand (a settled tender is evidence of a settlement confirmed by its owner; the
