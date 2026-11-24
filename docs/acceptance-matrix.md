@@ -1,6 +1,6 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67).
+Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
 Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
 added for the next version of the ledger (D18 to D21, A64). Sections 11 to 14 are deliverable D
 of the alignment of 2026-11-24 (A54): the staged acceptance of the production extension,
@@ -189,9 +189,12 @@ Round R2a is accepted when:
    says (T7);
 2. the deployment record says `ok`, and `pouw verify`, run by the hosted runner, says the code at
    the manifest's addresses is this repository's (M1);
-3. epoch 0 and epoch 1 hold the receipts of the round (N1, N2, D9, D10), and both are closed (N3);
-4. the hosted runner's audits of both epochs, at finalized state, say `ok`, their figures are the
-   ones of `roadmap.md` 4, and the host's audits hold the same `tableHash` (N5, T5);
+3. epoch 0 and the standard epoch of the round hold its receipts (N1, N2, D9, D10), and both are
+   closed (N3). The standard epoch is epoch 1, or the later epoch in which the standard round was
+   in fact worked (`r2-runbook.md`, step 5);
+4. the hosted runner's audits of those two epochs, at finalized state, say `ok`, their figures
+   are the ones of `roadmap.md` 4, and the host's audits hold the same `tableHash` (N5, T5). The
+   host's audits, the input of the hosted job and the evidence name the same epochs (A69);
 5. every record is labelled `public-testnet`, `controlled-self-test` and
    `operator-wallet-integration` (M6).
 
@@ -258,7 +261,7 @@ The seven items of A54, and where each is first accepted:
 | Item | Checks | First accepted in |
 | --- | --- | --- |
 | 1. A model service bought by a person; the agent produces, the delivery is accepted, the contribution is recorded | E1, E5, E8, E14 | the first increment |
-| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11; rows F5 to F8, F18 to F21, F23 to F25 | the second increment |
+| 2. The Holder funds or authorizes; the agent buys and renews within a budget | E2, E3, E11; rows F5 to F8, F18 to F21, F23 to F26 | the second increment |
 | 3. Both kinds of participant under one work protocol | E4 | the second increment |
 | 4. An external model service and a self-operated model under one specification | E6 | the third increment |
 | 5. A third party re-checks usage, delivery, billing and contribution | E5, E7, E13, E14; rows S7, S9, S13 | the first increment, by a machine that is not the operator's; by a party that is not the operator's when one takes part (acceptances 3 and 4, below) |
@@ -313,7 +316,7 @@ a row says otherwise.
 | S22 | Two deliveries of one fixture: the one accepted first on its tender is confirmed second, the one accepted second is confirmed first | the one confirmed first takes the counting, in the transaction that records its receipt; the other is `duplicate-contribution` and names it. What decides is the order of confirmation on the ledger, and no report presents it as a reward for finishing first |
 | S23 | Two confirmations for one content key reach the ledger at the same moment | one takes the counting and the other is a duplicate, whichever order the block gives them: testing that the key is free and marking it are one step |
 | S24 | The same document under another instruction or another schema; the same task with another model, template or tokenizer | another task description and another key, which is a task unit only if the committed set holds it; the same key |
-| S25 | A confirmation for a fixture by a party that is not a demander the profile version names, or for a tender that no such demander issued | not a task of the profile: `not-a-task-unit`. It does not take the counting of the content key |
+| S25 | A confirmation for a fixture on behalf of a party that is not a demander the profile version names, or for a tender that no such demander issued; and a confirmation by a named demander beside one by its rightful delegate (revised: the check is of the demander that is represented, not of whoever sends the transaction) | the first two are not tasks of the profile: `not-a-task-unit`, and they do not take the counting of the content key. The last two have the same outcome: a delegate is not another demander |
 | S26 | A Unit or a Grade record of the profile is written, at the build | it is validated against the pinned schema, and the tool and the result are on record; before that no record is called valid. No build, test or run fetches the standard, and nothing waits for its status (A67) |
 
 ## 13. Supply, funds and payment
@@ -347,6 +350,7 @@ Rows for `supply-and-payment.md`. All are proposed and not run.
 | F23 | A transaction sent again at the same nonce with a higher fee | one attempt with several transaction hashes, of which at most one is included; one purchase and one payment | second |
 | F24 | A new attempt for a purchase | opened only after the attempt before it failed definitely, with the budget tested again. An attempt whose result is unknown is reconciled, or sent again as itself; no second attempt is opened beside it | second |
 | F25 | A purchase that took several attempts | at most one payment that settled. What the failed attempts cost is on record as a cost of that purchase, and the report shows no second purchase | second |
+| F26 | The fees of a purchase: a transaction sent again at a higher fee; a new attempt after a failed one | principal and fees are shown apart, each against the budget the policy charges it to. The reservation for fees is raised before the resending or the new attempt; a fee that was paid and cannot be recovered is consumption of its budget | second |
 
 ## 14. What the production increments are to show, and what they will not
 

@@ -12,15 +12,16 @@ audit from the chain alone that agrees with the ledger on every figure. The kern
 are those of v0.1.2. This version adds what a public deployment needs - committed builds, a
 deployment that records code hashes, a check of deployed code, an operator's round, the identity
 check - and rehearses round R2 with them. Round R2a is being run on Finchain Sepolia as design
-revision v0.1.6 is written; its manifest and its records enter this repository when the round is
+revision v0.1.7 is written; its manifest and its records enter this repository when the round is
 complete (`docs/roadmap.md`, `docs/r2-runbook.md`). The strategic baseline is FPM01 / FPM01-G
 v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs/decisions.md` lists what
 is approved, what this repository proposes, what the advisor recommends and the owner has not yet
 adopted, and which figures are only illustrative.
 
-Design revisions v0.1.4, v0.1.5 and v0.1.6 (all 2026-11-24) are revisions of the documents. The
-software is release 0.1.3, unchanged: no contract, interface, client, script, configuration,
-runbook or deployment changes with any of them, and round R2 runs from it as it was prepared.
+Design revisions v0.1.4 to v0.1.7 (all 2026-11-24) are revisions of the documents. The software
+is release 0.1.3, unchanged: no contract, interface, client, script, configuration or deployment
+changes with any of them, nor any command of the runbook, and round R2 runs from it as it was
+prepared.
 v0.1.4 records the alignment of the owner and the advisor on the production line - model-token
 generation as the first production commodity, the economic stages, the three operating
 dimensions, the complete AI Node, production roles, evidence, procurement and payment - and adds
@@ -31,7 +32,10 @@ v0.1.5: the advisor's recommendations are recorded as recommendations until the 
 them, and four conventions are written exactly - what a content key is made of and which
 confirmation takes the one counting of a task unit, the attempts inside a purchase, work facts
 beside receipts, and the one linked chain of evidence that closes the first production milestone.
-Nothing of the production line is built.
+v0.1.7 applies the review of v0.1.6: the fallback of the runbook of round R2a is worded exactly -
+which epochs the round works in, which epochs are audited, when the budget first halves - and two
+points are written into the plans for the next implementation. Nothing of the production line is
+built.
 
 ## What this repository is for
 

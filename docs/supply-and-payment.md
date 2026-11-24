@@ -1,7 +1,7 @@
 # Supply and Payment Interfaces: Plan
 
-Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67). This
-is the executor's plan for the supply and payment interfaces: deliverable C of the alignment of
+Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
+This is the executor's plan for the supply and payment interfaces: deliverable C of the alignment of
 2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.6 to 14.8 and `architecture.md` 5.3. It
 covers the source of supply, the execution of payment, the source of funds and the scope of
 permission, in one form shared by manual and autonomous operation; and what happens when quota
@@ -76,7 +76,7 @@ which an agent's purchases need (4.3).
 | `spender` | who may spend: `operator` or `agent` |
 | `providers`, `specifications` | what may be bought, and from whom |
 | `boundary` | the account or the wallet the policy is limited to |
-| `perRequest`, `perPeriod` | the budgets, per asset or currency; the period by its start and its length |
+| `perRequest`, `perPeriod` | the budgets, per asset or currency; the period by its start and its length; and the budget that fees are charged to |
 | `renewal` | the conditions under which a renewal may be made |
 | `escalation` | what happens at the limit: `decline`, or `ask-holder` |
 | `validUntil`, `grantedBy` | the policy's term, and the Holder that granted it |
@@ -271,6 +271,10 @@ Proposed (P57):
 11. Where a channel accepts no identifier for an attempt, the adapter says so. A purchase on that
     channel has one attempt, and a lost answer is resolved by reading the account and never by
     sending again.
+12. Principal and fees each have a stated budget: the policy says which budget a fee is charged
+    to. A fee that was incurred and cannot be recovered is consumption of that budget. Before a
+    new attempt is opened, and before a transaction is sent again at a higher fee, the
+    reservation for fees is raised to cover what the fee can now reach.
 
 The manual route has no book: a person decides each purchase, and what is recorded is who
 decided. The protocol's records state the policy, the reservations and the purchases; enforcing

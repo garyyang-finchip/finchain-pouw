@@ -130,8 +130,22 @@ jobs that "audited epoch 0 (4 receipts)", GMU 10/10; each wallet at 25 provision
 
 If the terminal session ends while it waits, run the command again: what is done is found on
 chain. Without `--wait` the command stops with exit status 3 instead of waiting, and is run again
-later. If epoch 1 is missed altogether, every later epoch is standard too: run the command in
-epoch 2 with `--epochs 3`.
+later.
+
+If epoch 1 is missed altogether, every later epoch is standard too, and the standard round is
+worked in the epoch that is then current, epoch k:
+
+- `--epochs n` is an upper bound: the round works in epochs 0 to n - 1, and the default is 2. In
+  epoch k the command is run with `--epochs k+1`, for example `--epochs 4` in epoch 3. Without it
+  the command only writes close records and reports the round as over;
+- the audit job of epoch k recomputes epoch k - 1, which is then an empty epoch. The record says
+  that an empty epoch was recomputed. That is not a recomputation of epoch 0's four receipts,
+  which the audits of step 6 and step 7 make;
+- the budget of an epoch is counted from the first epoch of its parameter version. In this
+  configuration the standard version begins in epoch 1 and halves every 8 epochs: epochs 1 to 8
+  have 1000 test points, and epoch 9 is the first with 500. A later epoch changes the expected
+  figures and nothing else; it is no reason to deploy again;
+- steps 6 and 7 then speak of epoch k wherever they say epoch 1.
 
 ## Step 6. After epoch 1: the close record and the host's own audit
 
@@ -141,7 +155,9 @@ After epoch 1 has ended:
 node scripts/round.js --config $C --keys $K
 ```
 
-It writes the close record of epoch 1 and reports that the round's epochs are closed. Once the
+It writes the close record of epoch 1 and reports that the round's epochs are closed. A close
+record is a transaction: this command is not read-only. Where the standard round was worked in
+epoch k, it takes the same `--epochs k+1`, and the audits below are of epochs 0 and k. Once the
 finalized block has passed the end of epoch 1 - again some twenty minutes later:
 
 ```
@@ -159,7 +175,10 @@ is not the operator's (A39, step 4):
 
 1. the manifest goes into the repository as `deployments/finchain-sepolia-r2.json`;
 2. on GitHub: Actions, the `ci` workflow, "Run workflow", with the manifest
-   `deployments/finchain-sepolia-r2.json` and the epochs `0 1`;
+   `deployments/finchain-sepolia-r2.json` and the epochs of the round: `0 1`, or `0 k` where the
+   standard round was worked in epoch k. The host's audits, this input and the evidence name the
+   same epochs: an audit of epoch 0 and of an empty epoch 1 would say `MATCH` twice and leave
+   the standard round unexamined;
 3. the job installs the client only, runs `pouw verify` and `pouw audit` for both epochs against
    the manifest's public endpoint, and keeps four files as the artifact `audit`: `run.json` (the
    commit and the run), `verify.json`, `audit-epoch-0.json`, `audit-epoch-1.json`.
@@ -211,7 +230,7 @@ For a genesis time G:
 | the round ends with exit status 3 | something waits for the finalized block | run it again later, or with `--wait` |
 | an endpoint error, a timeout, a dropped connection | the command stopped part of the way | run it again: every step looks at the chain first and nothing is done twice (rows R1, R3) |
 | a delivery is refused with `completions exhausted` | somebody else delivered to the test tender first and holds its one place; the round never accepts a delivery that is not its own worker's | delete `out/finchain-sepolia-r2/round-state.json` and run the round again: it stages a new tender |
-| `only N s of the epoch are left: no new work is started in it` | too close to the epoch's end for a tender to be staged and confirmed in it | wait for the next epoch |
+| `only N s of the epoch are left: no new work is started in it` | too close to the epoch's end for a tender to be staged and confirmed in it. The five minutes are the threshold below which nothing is started, not an assurance that work started later than that completes: closing earlier epochs, the transactions of two tenders and the wait for the finalized block all take time | wait for the next epoch; start an epoch's work well before its end |
 | the confirmation of a tender "landed in epoch N + 1" | the epoch turned between the settlement and the confirmation | nothing to repair: the receipt counts in the epoch it was recorded in (row R9) |
 | a log query is refused for the size of its range | the endpoint serves fewer blocks per query than the manifest's `logChunk` says | set `POUW_LOG_CHUNK` to a smaller number, for example `POUW_LOG_CHUNK=10000`, and run the command again |
 | `... can be read by others` | a key file's mode is not 600 | `chmod 600` the file |

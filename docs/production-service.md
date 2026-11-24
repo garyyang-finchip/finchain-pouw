@@ -1,7 +1,7 @@
 # The First Production Service: Plan
 
-Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67). This
-is the executor's plan for the first production profile: deliverable B of the alignment of
+Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
+This is the executor's plan for the first production profile: deliverable B of the alignment of
 2026-11-24 (A54), carrying out `genesis-mining-mvp.md` 14.2 to 14.5 and `architecture.md` 5.3, 6.2
 and 6.3. Those sections state what a production profile has to decide; this document proposes the
 decisions for the first one.
@@ -402,6 +402,11 @@ contract can carry it out with certainty in one transaction. It is not a ranking
 time of completion, and it does not protect whoever settled first; if that is ever to be
 protected, it is another rule, to be designed and ruled. It is also a different matter from
 binding an answer to its worker before the answer is public (section 3): both have to be built.
+
+The demander that rule 1 asks for is the demander that is represented. A confirmation made by a
+named demander and one made for it by its rightful delegate have the same outcome: a delegate is
+not another demander, and an agent whose account confirms through a delegate is not refused for
+that. The implementation is tested both ways.
 
 Taking the counting is measurement. Whether the receipt is subsidized as well is decided by the
 kernel's rules, as for any receipt (`genesis-mining-mvp.md` 7.5), and a counting that was taken

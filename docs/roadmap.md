@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-Design revision v0.1.6, after the reviews of v0.1.4 and of v0.1.5 (`decisions.md` A55-A67).
+Design revision v0.1.7, after the reviews of v0.1.4, v0.1.5 and v0.1.6 (`decisions.md` A55-A69).
 Engineering milestones are the owner's four: P1 PoUW Kernel, P2 Genesis Network, P3 SIG + IPC, P4
 FCT Economy. This document details P1 and the entry into P2. Rounds are the steps inside P1: R0
 design, R1 the kernel on a local network, R2 Finchain Sepolia, R3 a third party. Round R2 is two
@@ -17,14 +17,18 @@ Where things stand: R0 is closed by the formal review (A19-A30). R1 has passed i
 conditions (A31): the kernel, its tests and the reference client. For R2a everything is built and
 rehearsed on a development network with the commands and the configuration of the public
 deployment (`npm run local-run`). The round itself is being run on Finchain Sepolia as this
-revision is written; its manifest and its records enter the repository when it is complete, and
-nothing in this revision is evidence of it. R2b waits for a ruling on how a contract account
-takes part (Q13). Neither the alignment of 2026-11-24 nor the two reviews since changed anything
-in this: the software is release 0.1.3, and round R2a runs from it as it was prepared (A53, A55,
-A65). What they add is design - the production line, in documents. The review of v0.1.4 required
-corrections, applied in v0.1.5; the review of v0.1.5 asked for three conventions to be written
-exactly, applied in this revision. On Q17 to Q29 the advisor's recommendations are recorded and
-the owner's adoption of them is pending (A66); Q13 to Q16 are open as they were.
+revision is written. A first deployment, made on 2026-11-23 (UTC), was left unused because
+nothing was recorded in its epoch 0, the only epoch of the controlled self-test; the round runs
+on a second deployment. The manifest and the records, those of the unused deployment among them,
+enter the repository when the round is complete, and nothing in this revision is evidence of it.
+R2b waits for a ruling on how a contract account takes part (Q13). Neither the alignment of
+2026-11-24 nor the three reviews since changed anything in this: the software is release 0.1.3,
+and round R2a runs from it as it was prepared (A53, A55, A65, A68). What they add is design - the
+production line, in documents. The review of v0.1.4 required corrections, applied in v0.1.5; the
+review of v0.1.5 asked for conventions to be written exactly, applied in v0.1.6; the review of
+v0.1.6 accepted that revision and made the running of round R2a exact (A69). On Q17 to Q29 the
+advisor's recommendations are recorded and the owner's adoption of them is pending (A66); Q13 to
+Q16 are open as they were.
 
 ## 1. Reused as they are (A6)
 
@@ -112,6 +116,12 @@ What the audits must show, from the configuration (`deployments/finchain-sepolia
 | Each wallet's test points | 250 = 25 + 225, the capped quarter of either pool | 25 |
 | Unallocated | 500 | 950 |
 | Per declared operator | one operator, two addresses, 500: twice what the cap allows an address | one operator, 50 |
+
+Where the standard round is worked in a later epoch k (`r2-runbook.md`, step 5), the second
+column holds for epoch k: the budget is counted from the first epoch of the standard version,
+which is epoch 1, so that epochs 1 to 8 have 1000 test points. From epoch 9 the budget of this
+configuration is 500: the pools, each wallet's test points, the unallocated part and the
+operator's total halve with it, and the receipts and the GMU are as in the column (A69).
 
 The last row is the reason for A35: the cap binds an address, and one party with two declared
 addresses holds two caps. R2a shows it in public figures; the cap per declared operator comes
