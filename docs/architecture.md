@@ -11,9 +11,11 @@ carrying it out. A55-A64 record the review of design revision v0.1.4 and A65-A67
 P54-P60 are the executor's proposals for carrying the two reviews out (design revisions v0.1.5
 and v0.1.6). In this document they change the pointers to the plans and nothing else. On the
 questions the plans raise (Q17 to Q29) the owner adopted the advisor's recommendations on
-2026-11-24 (A70). Q13 and Q14 remain open; Q15 does not reopen R2a's in-force hosted-runner
-route (P38, implementing A39); Q16 is partly settled by the adoption of work facts apart from
-receipts (P60). Its remaining implementation and packaging choices are open. Sections labelled **future design** describe
+2026-11-24 (A70). On 2026-11-25 the owner ruled on Q13 to Q16 (A73 to A79): the next version
+of the ledger is built on those rulings as a second set of contracts beside the kernel
+(`contracts/v2/`; `ledger-v2.md`), on a local network and not deployed, and from release 0.1.4
+the reference client reads one block for an audit. Section 3.1 lists both; nothing else of
+this document changes with them. Sections labelled **future design** describe
 requirements for later work, not features available in R1. The three stages and five subdivisions
 below refine and replace A17's older economic-stage numbering. A17's approved compatibility with
 operator funding, agent procurement and self-operated hardware remains in force; those operating
@@ -184,6 +186,9 @@ integration.
 | `TenderAdapter8414` | Reads one ERC-8414 contract and reports an accepted submission; only the tender owner can call it | ERC-8414 adapter |
 | `client/pouw.js`, `client/lib/` | `status`, `work`, `bridge`, `seal`, `audit` and, since v0.1.3, `verify`; as a key or through a contract account; through JSON-RPC | Reference client and audit |
 | `build/`, `scripts/` | Since v0.1.3: the builds a deployment is made from; the deployment from a configuration file; keys; an operator's round; the identity check; the rehearsal. Tooling of round R2, none of it part of the protocol | - |
+| `client/lib/canonical.js`, `scripts/report-hash.py` | Since release 0.1.4: the one byte form of a record and its two hashes; an audit and a check of a deployment read one block (`genesis-mining-mvp.md` 12) | Reference client and audit |
+| `contracts/v2/`: `GenesisPolicyV2`, `GenesisLedgerV2`, `TenderAdapter8414V2`, `IParticipantGuard`, and the optional `guards/FogaCellGuard` | Ledger v2, beside the kernel and not a change of it: a bounded delegation checked at each use, with a guard on the consumer's side; the cap on a declared operator's aggregate; work facts apart from receipts; the receipt fields of the production line. Built and tested on a local network; not deployed, no committed build, interfaces not frozen (`ledger-v2.md`) | the next version of the ledger (A35, A74, A75) |
+| `scripts/sign-permit.js`, `client/lib/permit.js`, `client/lib/ledger2.js` | The three signed statements of ledger v2, signed off line from a key file, and the encodings and the allocation of ledger v2 off chain. No client for a v2 deployment yet | - |
 
 Receipts and allocations share a contract because recording writes the totals that allocation
 reads. The policy is separate because it is the only place the steward acts (P28). These contracts
@@ -515,10 +520,10 @@ continue separately.
 | Module or responsibility | Engineering position | Dependency or review |
 | --- | --- | --- |
 | `g0.ver`, `g0.cal`, verification evidence and calibration records | Deferred from R1 | The kept designs and their acceptance rules in `genesis-mining-mvp.md` 13 |
-| Declared-operator cap | Required before round R3, in a new version of the ledger (A35) | The implementation and packaging remain to be ruled (P41, Q16); a versioned manifest names the deployment it supersedes, and existing ledgers remain immutable |
-| Work facts apart from receipts | Adopted for the next ledger version; not implemented (P60, A70) | Resolves Q16's work-without-confirmation item: a fact takes no contribution id, content key or cap and enters no epoch's GMU |
-| A delegation signed by a contract account | Proposed route for account participation; not implemented (P35) | Q13 and Q14 remain open; A70 does not select this route or the version on which R2b runs |
-| The authority as it was at settlement, deciding eligibility | Required before any subsidy of value (A38) | Mechanism and staging remain to be ruled (P36, Q16); this is not a completion gate for every test-point exercise |
+| Declared-operator cap | Required before round R3, in a new version of the ledger (A35) | Ruled (A75) and built in ledger v2, on a local network and not deployed (`ledger-v2.md` 8); a versioned manifest names the deployment it supersedes, and existing ledgers remain immutable |
+| Work facts apart from receipts | Adopted for the next ledger version (P60, A70); built in ledger v2, on a local network and not deployed (`ledger-v2.md` 9) | Resolves Q16's work-without-confirmation item: a fact takes no contribution id, content key or cap and enters no epoch's GMU |
+| A delegation signed by a contract account | The ruled route for account participation, with the account's own `execute` kept as an entry (A74); built in ledger v2 as a bounded permit checked at each use, on a local network and not deployed (`ledger-v2.md` 2 to 6) | Round R2b runs on the next version of the ledger (A75). A live key signs only under a reviewed operation package; the consumer asks a guard, which for FOGA cells is an optional module outside the kernel |
+| The authority as it was at settlement, deciding eligibility | Required before any subsidy of value (A38) | Not bound by ledger v2: rounds R2b and R3 run within the disclosed limit (A75); the audit reports what a tender's log shows and where that evidence is insufficient (`ledger-v2.md` 10). The mechanism before a subsidy of value remains to be designed; this is not a completion gate for every test-point exercise |
 | Bridge freshness policy | Kept as a deferred option | A separate ruling if needed; no new R2 requirement |
 | Full FOGA adapter | FOGA's own review and release cycle | Account authority and the published protocol interfaces |
 | Inference service specification, usage and delivery evidence | A subsequent production milestone; no addition to the current R2 scope | A bounded service class, trustworthy metering, acceptance and source disclosure |

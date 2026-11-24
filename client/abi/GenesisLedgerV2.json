@@ -1,0 +1,2312 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IGenesisPolicyV2",
+        "name": "policy_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ISeedSource",
+        "name": "seedSource_",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "name": "AlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BadExtra",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "BadSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "EpochNotEnded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "bound",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "boundVersion",
+        "type": "uint64"
+      }
+    ],
+    "name": "GuardMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "guard",
+        "type": "address"
+      }
+    ],
+    "name": "GuardRefused",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobIndexOutOfRange",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "NoGuardBound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "nonce",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "minimum",
+        "type": "uint64"
+      }
+    ],
+    "name": "NonceBelowMinimum",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "delegate",
+        "type": "address"
+      }
+    ],
+    "name": "NotDelegate",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotModule",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "scope",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operation",
+        "type": "uint32"
+      }
+    ],
+    "name": "OutOfScope",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Paused",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "current",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "notAfterEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "PermitExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "current",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "notBeforeEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "PermitNotYetValid",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      }
+    ],
+    "name": "PermitRevoked",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "factId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "UnknownFact",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "operation",
+        "type": "uint32"
+      }
+    ],
+    "name": "UnknownOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "UnknownReceipt",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "scope",
+        "type": "uint32"
+      }
+    ],
+    "name": "UnknownScope",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "current",
+        "type": "uint64"
+      }
+    ],
+    "name": "WrongEpoch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WrongPool",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "contentKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ContentKeyTaken",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "seed",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "seedMaterial",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "paramsVersion",
+        "type": "uint32"
+      }
+    ],
+    "name": "EpochOpened",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "receiptCount",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "paramsVersion",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "budget",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "measuredG0",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "measuredG1",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "subsidizedG0",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "subsidizedG1",
+        "type": "uint128"
+      }
+    ],
+    "name": "EpochSealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "factId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "source",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "source",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "submissionId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "fulfiller",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "judge",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "taskHash",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "resultHash",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "reward",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint64",
+                "name": "deliveredAt",
+                "type": "uint64"
+              },
+              {
+                "internalType": "address",
+                "name": "recorder",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct FactData",
+            "name": "data",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "profileId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "recordedAt",
+            "type": "uint64"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Fact",
+        "name": "fact",
+        "type": "tuple"
+      }
+    ],
+    "name": "FactRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "minNonce",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "path",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "by",
+        "type": "address"
+      }
+    ],
+    "name": "MinNonceRaised",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "path",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "by",
+        "type": "address"
+      }
+    ],
+    "name": "PermitEnded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "worker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "origin",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "epoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "profileId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "worker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "counterparty",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "authorization",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "role",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "unit",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "workId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "parent",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "envelopeHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "contentKey",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "inputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "outputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "contributionId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "recordedAt",
+            "type": "uint64"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Receipt",
+        "name": "receipt",
+        "type": "tuple"
+      }
+    ],
+    "name": "ReceiptRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "verdict",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "ineligible",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "relation",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "gmuMeasured",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "gmuSubsidized",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "verifier",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "duplicateOf",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Status",
+        "name": "status",
+        "type": "tuple"
+      }
+    ],
+    "name": "ReceiptStatus",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "EIP712_DOMAIN_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GUARD_GAS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PERMIT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RAISE_NONCE_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REVOKE_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SIGNATURE_GAS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "address",
+        "name": "worker",
+        "type": "address"
+      }
+    ],
+    "name": "allocation",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "auditSubject",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegate",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "scope",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notBeforeEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notAfterEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "guard",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "guardBindingVersion",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Permit",
+        "name": "p",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operation",
+        "type": "uint32"
+      }
+    ],
+    "name": "checkPermit",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "configHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "contentKeyOwner",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "domain",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "domainSeparator",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochSummary",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "epoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "opened",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "ended",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isSealed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "seed",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "digest",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "receiptCount",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "paramsVersion",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budget",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetG0",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "budgetG1",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "measuredG0",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "measuredG1",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "subsidizedG0",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "subsidizedG1",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct EpochSummary",
+        "name": "out",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factDomain",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "source",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "factId",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "factId_",
+        "type": "bytes32"
+      }
+    ],
+    "name": "factOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "source",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "submissionId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "fulfiller",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "judge",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "taskHash",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "resultHash",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "reward",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint64",
+                "name": "deliveredAt",
+                "type": "uint64"
+              },
+              {
+                "internalType": "address",
+                "name": "recorder",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct FactData",
+            "name": "data",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "profileId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "recordedAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Fact",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "factId_",
+        "type": "bytes32"
+      }
+    ],
+    "name": "factRecorded",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isRevoked",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "worker",
+        "type": "address"
+      }
+    ],
+    "name": "measuredOf",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "minNonce",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "openEpoch",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "operatorAt",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "recorded",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      }
+    ],
+    "name": "operatorShare",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegate",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "scope",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notBeforeEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notAfterEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "guard",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "guardBindingVersion",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Permit",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "permitDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "policy",
+    "outputs": [
+      {
+        "internalType": "contract IGenesisPolicyV2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "address",
+        "name": "worker",
+        "type": "address"
+      }
+    ],
+    "name": "provisionalAllocation",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "minNonce_",
+        "type": "uint64"
+      }
+    ],
+    "name": "raiseMinNonce",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "minNonce_",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "raiseMinNonceBySig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "minNonce_",
+        "type": "uint64"
+      }
+    ],
+    "name": "raiseNonceDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "receipt",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "epoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pool",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "profileId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "worker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "counterparty",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "authorization",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "role",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "unit",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "workId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "parent",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "envelopeHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "contentKey",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "inputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "outputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "contributionId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "recordedAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Receipt",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "receiptCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "receiptOfContribution",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "profileKey",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "source",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "fulfiller",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "judge",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "taskHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "resultHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "asset",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "reward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "deliveredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "recorder",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct FactData",
+        "name": "data",
+        "type": "tuple"
+      }
+    ],
+    "name": "recordFact",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "profileKey",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "source",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "submissionId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "worker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "demander",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "judge",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "inputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "outputHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "asset",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "reward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "deliveredAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct G1Facts",
+        "name": "f",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "parent",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "envelopeHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "contentKey",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "unit",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct G1Extra",
+        "name": "x",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "authorization",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct Entry",
+        "name": "e",
+        "type": "tuple"
+      }
+    ],
+    "name": "recordG1",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "ineligible",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegate",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "scope",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notBeforeEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notAfterEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "guard",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "guardBindingVersion",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Permit",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "renounce",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "permitDigest_",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokeDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokePermit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "digest",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "revokePermitBySig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "seal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "seedOf",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "seedSource",
+    "outputs": [
+      {
+        "internalType": "contract ISeedSource",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "status",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "verdict",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "ineligible",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "relation",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "gmuMeasured",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "gmuSubsidized",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "verifier",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "duplicateOf",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Status",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "profileKey",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "jobIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "outputHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "submitG0",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegate",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "scope",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notBeforeEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notAfterEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "guard",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "guardBindingVersion",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Permit",
+        "name": "p",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "profileKey",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "jobIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "outputHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "submitG0For",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "worker",
+        "type": "address"
+      }
+    ],
+    "name": "subsidizedOf",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint32",
+        "name": "operator",
+        "type": "uint32"
+      }
+    ],
+    "name": "subsidizedOfOperator",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

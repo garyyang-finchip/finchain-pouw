@@ -12,12 +12,22 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.9: a revision of the documents that records the run of round R2a on
+Design revision v0.1.10, with software release 0.1.4. It records the owner's rulings of
+2026-11-25 on Q13 to Q16 and on the content of the next version of the ledger (A73 to A79;
+section 14), and what was built on them. The software changes for the first time since release
+0.1.3. The reference client reads one block for an audit and for a check of a deployment,
+writes records with a canonical form and two hashes, reports the authority at a settlement as
+far as a tender's log settles it, and does not send again what is recorded. The contracts of
+ledger v2 are added in `contracts/v2/`, with their tests. The contracts of the kernel and their
+committed builds are unchanged, byte for byte: the deployment of round R2a is checked against
+the same builds as before. Nothing of v2 is deployed, no build of it is committed, and its
+interfaces are not frozen (`ledger-v2.md`).
+
+Design revision v0.1.9 was a revision of the documents that recorded the run of round R2a on
 Finchain Sepolia, its evidence and the review of that run (A72), and where the consolidated
-documents of v0.1.8 came from (A71). The software is release 0.1.3, unchanged - no contract,
-interface, client, script, configuration or deployment changes with it. The runbook's command
-blocks are unchanged: v0.1.8 as consolidated made its fallback and evidence instructions
-explicit, and this revision adds the condition on the finality of the close records.
+documents of v0.1.8 came from (A71); the software was release 0.1.3, unchanged. The runbook's
+command blocks were unchanged: v0.1.8 as consolidated made its fallback and evidence
+instructions explicit, and v0.1.9 added the condition on the finality of the close records.
 The dated close-status addendum in section 6.11 records the subsequent R2a advisor technical
 acceptance without a software release or a new owner ruling; A71/A72 are classified in 1.1.
 Sections 2 and 3 record the two reviews of the kernel - of v0.1.1, and of v0.1.2 with round R1 -
@@ -26,8 +36,11 @@ line; sections 5 and 6 record the reviews of v0.1.4 to v0.1.7, how each is appli
 that followed, and the review of the run of round R2a; sections 7 and 8 give the state of the
 earlier proposals; section 9 lists what v0.1.3 proposed, section 10 what v0.1.4 proposed and
 section 11 what v0.1.5 proposed, each as it stands after the reviews and the adoption; section 12
-holds the questions put to the owner - those still open, and those adopted, each with the
-advisor's recommendation as it was adopted; section 13 the illustrative figures.
+holds the questions put to the owner - those still open, those adopted, each with the
+advisor's recommendation as it was adopted, and those ruled on 2026-11-25; section 13 the
+illustrative figures; section 14 the rulings of 2026-11-25 on the next version of the ledger,
+who wrote and who adopted each, how each is applied, what was built and verified, and the
+proposals this repository made with the implementation.
 
 ## 1. Approved rulings and review records
 
@@ -106,6 +119,13 @@ and authorized follow-up that keep their existing A71/A72 identifiers.
 | A68 | The review of design revision v0.1.6, and the owner's instruction on it. The owner relayed the review and asked for the update at once. The revision of the documents in v0.1.6 is accepted, and the main findings of the round before it are closed: the record of recommendations apart from approvals; who takes the one counting; what a content key is made of; work facts apart from receipts; attempts and the recovery of a crash; the linked chain that closes A54; the light dependency on ERC-8506 and the validation of its records at the build. The demander that a profile version names is reasonable in its scope - it binds the first controlled fixture profile and is no admission rule of the network - and stays a proposal under Q25. FOGA's independence is intact: no change or release of FOGA and no ERC-8506 contract became a condition of round R2a. Round R2a continues. After it, the next review in depth is of the implementation of the new ledger and of the first production increment. The instruction covers design revision v0.1.7. It adopts none of the recommendations on Q17-Q29. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A69 | The running of round R2a, corrected and made exact. (a) The budget of an epoch is counted from the first epoch of its parameter version. With the configuration of round R2a the standard version begins in epoch 1 with a halving interval of 8: epochs 1 to 8 have 1,000 test points, and epoch 9 is the first with 500. The executor's operating instruction that the first halving was epoch 8 was wrong by one epoch. The contract is right and is not changed to fit an instruction; a standard round worked from epoch 9 on changes the expected figures, and neither invalidates the round nor asks for a new deployment. (b) `--epochs n` is an upper bound - the round works in epochs 0 to n - 1, by default 2 - so a standard round in epoch k is run, and closed, with `--epochs k+1`. (c) Closing an epoch sends a transaction and is not called read-only. (d) The five minutes an epoch must still have are the threshold below which nothing is started, not an assurance that what is started completes. (e) The audit job of epoch k recomputes epoch k - 1. Where that epoch is empty, the record says that an empty epoch was recomputed: that shows the procedure and is no recomputation of epoch 0's receipts. (f) The independent audit covers epoch 0 and the epoch in which the standard round was in fact worked. The host's audits, the input of the hosted job and the evidence name the same epochs, and receipts recorded across an epoch boundary are covered where they were recorded. | review of design revision v0.1.6, relayed by the owner with the instruction to issue the update, 2026-11-24 |
 | A70 | The owner adopts the advisor's recommendations on Q17 to Q29, each as it is recorded with its question (12.2), its conditions included. He first asked the executor whether it had an evident objection to any of them; it had none, and it named what the adoption carries with it (6.7). The choices these questions put up - P42 to P45, P47, P48, P50, P51 and P54 to P60, as they stand after the reviews - are approved as design: the plans that carry them out are what the next version of the ledger and the production increments are built against and reviewed with. With Q26 the choice that A64 left is made: the facts of a piece of work are kept apart from the confirmation that leads to the subsidy (P60, in the place of P40). The second item of Q16 is settled by that, and work whose demander does not confirm is in no epoch's GMU, measured or subsidized. Nothing is built, deployed or spent by the adoption. Each implementation still goes design, ruling, code; the limits of A53 stand; Q13 to Q15 and the rest of Q16 are not ruled by it. | owner, 2026-11-24: his own statement to the executor, made after the executor answered that it had no evident objection |
+| A73 | The owner's execution instruction of 2026-11-25, as a whole. It gives the scope and the direction of the work. The seven items of the executor's memo on Q13, Q14 and Q16 are mapped onto it one by one and are not one gate for all later work: an open matter holds up the work that depends on it and no other. Round R2a is recorded as accepted technically by the advisor on 2026-11-24, within its stated scope, with the source, the date, the evidence commit and the scope kept; the pending state at `b53e52f` stays as history, and no separate statement of a technical acceptance by the owner himself is needed to close the documents (6.11). A71 and A72 keep their ids and are classed as review records and authorized follow-up, not as a blanket approval of other open design (1.1). The correspondence of the deployed Cell Accounts' code with the published bundle is cited with its boundary - it was not recompiled independently - and is no longer listed as without evidence. The scripts, the pinned versions and the result records of the tests and of the account checks are kept, and not only the counts. Deployment, signing with a live key and operations with funds are handled by concrete operation packages within existing authority. The mainnet's work stays separate: its readiness is read first, and a planned time is not written as a condition met. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A74 | Q13: a bounded signed delegation, with the direct entry kept. The next version of the ledger gets a bounded delegation signed by the account (route A), designed and implemented locally. The account's own `execute` stays a legitimate, compatible entry and is not described as infeasible at the level of the contracts. Generating a limited authorization on the host where the original key is, with a reviewed one-time script at a pinned version, is accepted in principle; it is not an export of a cell's key to a second worker. The script, the format of the authorization, the local tests and the operating notes are done now. A live key is used only when the new ledger's identity, the readable typed data, the digest and the exact authority are fixed and have been reviewed as a concrete operation package; no broad permit is signed for a ledger that is not known. Seven conditions: (1) a permit binds the chain, the ledger, the account, the delegate, the operations, the validity and an authorization version or nonce; G0 submission and tender confirmation are named separately; it gives no arbitrary execution, no transfer or approval of assets and no further delegation. (2) The original key enters no command line, log, archive, copy or worker configuration; the signing process sends no transaction and takes over no nonce of a running service; everyday operation uses the separate delegate key only. (3) A single permit can be revoked or an authorization version invalidated, and a revoked permit cannot be restored by registering it again. (4) The effect of a change of owner or operator is stated and verified: a signature that was checked once at registration cannot be said to follow the account's ownership. (5) A delegation does not, by default, go around the cell's safety suspension and its AID rules for the operation: a successful ERC-1271 check of the owner is not those checks, the consumer has an explicit guard, and the paths that revoke and invalidate stay usable. (6) What is specific to FOGA sits in a separate, optional policy or adapter; the kernel names no address of FOGA or of Finchain. (7) Participant, sender and gas payer are recorded apart, with the run that initiated the work; an owner's authorization of a delegate does not show that the agent's runtime initiated the work, or who ran a model. The local tests cover a wrong domain, an excess of authority, replay, expiry, revocation, a rotation of the owner, a safety suspension, a repeated submission, an unknown answer of the endpoint and recovery after a restart. Replacing the operator slot is not the default shortcut; if it is ever chosen, its effect on the running service, on authority and on recovery is stated separately. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A75 | Q14 and Q16: one minimal, complete new version of the ledger, on which round R2b runs. The deployment of round R2a and all of its evidence are kept, and a versioned manifest links the two. (a) The operator cap: per epoch and pool, the operator's aggregate share is computed and capped first and then divided among its addresses in proportion to their eligible GMU, the address cap being kept where it is needed; integers round down, and what rounding and the caps leave is not allocated again. The attribution of an address to an operator is fixed, for its epoch, when the contribution is accrued: a later reorganization changes no past allocation, and an old epoch is never read with the present declaration. The early subsidy of the new version requires a declared operator; an undeclared participant keeps measured GMU where the confirmation is rightful and the other conditions of measurement hold, and has no subsidy-eligible GMU. That is a condition of the early subsidy and no rule of admission to the network. It is said that the cap on the aggregate does not remove every gain from several addresses; operator-level GMU caps, or counters per demander and per pair at the level of the operator, are a separate enhancement and no part of the meaning of A35. The percentages, the budget and the epoch parameters of a test are configuration, and the example values of round R2a do not become permanent. (b) Work facts and receipts, as adopted with P60 and Q26: a fact takes no contribution id, content key, cap or GMU; a confirmation needs no fact and is not hindered by one that a third party recorded first; a confirmation does the checks of rightfulness, the test and the taking of the content key, the recording of the receipt and the accrual in one transaction; the same source again is idempotent, and another source with the same controlled task is not measured twice. The adopted fields - role, work id, parent, envelope commitment, content key - are kept, with their encoding and version stated. A frozen epoch is not rewritten. (c) The authority at settlement: rounds R2b and R3 stay within test points that cannot be redeemed and keep, disclosed, the limit of A38. Before any PoUW subsidy of value a complete mechanism for the history of authority and its evidence is required; the direction to study first is that the evidence is verified before a formal receipt exists, and recording contributions first and deciding rewards later needs a reward settlement layer designed on its own. A deduction in the next epoch after a later verification is not put into a receipt that cannot change or into an epoch that is frozen. A customer's bounty and a PoUW subsidy stay apart, and neither is made a precondition of the other. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A76 | Q15, and the client's audit. Round R2b keeps the independent recomputation on a hosted runner that holds no participant key. A second endpoint and a second implementation are enhancements, each named with its own value and scope; they do not reopen round R2a. The client's logs and all of its reads of state are fixed to one finalized block; that block's number, hash and timestamp are recorded; the close record and the events are verified within that cutoff; the block's time and the time of the actual observation are recorded apart. This work proceeds now, and the part that depends on the new interfaces is connected when they are fixed. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A77 | The six choices on the open points of the design of ledger v2, and the six corrections of its first revision (14.2). O1: for both delegated operations the guard for FOGA cells requires a satisfied safety verdict and, where an AID registry exists, an ACTIVE anchor, together with the completeness of the presented bindings or an equivalent proof for a fixed registry. O2: the steward binds a guard and the permit confirms it as well, with a binding version that only rises, so that a rebinding from A to B and back to A does not restore an old permit. O3: a new condition of the early G1 subsidy - worker and demander both have a declared operator; work that does not meet it keeps its rightful measured record and has no subsidized GMU; the condition is not widened into a rule of admission or a proof of independence, and no condition on the judge is added with it. O4: the origin may be recorded in an event, as the top-level sender of the transaction only; nobody is thereby held to have borne the fee. O5: the audit at one pinned finalized block is built at once, as already required, without a silent fallback to the latest block. O6: the names stand in principle; the interfaces and the typed statements are fixed with the revised fields and meanings. The corrections, to be completed before the interfaces are frozen: (1) no general promise that a rotation of the owner ends an old permit at once - a check at each use shows only that the account accepts the signature now - with a test of the counter-example in which the former owner stays a signing operator, and the procedure of revocation, minimum nonce and rotation stated; (2) revocation in the namespace of an account, the typed `Revoke` and `RaiseNonce` statements written out with their domain, and a test of revocation under suspension that names the path it uses: that the ledger asks no guard is not that FOGA's `execute` can be called; (3) the G1 adapter verifies the delegate against its own real caller and the permit's account against the tender's owner; no caller states a sender, and the origin takes no part in authorization; (4) the `duplicateOf` field and the zero pointer of `not-a-task-unit`; one occupancy of a controlled content key per ledger, across profiles, specifications and epochs, taken by the first rightful measured receipt even when it draws no subsidy, and never by an invalid fixture, a wrong demander, a fragment of a task or a public fact; (5) a narrower statement of what the audit of a past authority shows - the registered authority that the events make visible apart from the actual executor of a verification - with `unknown` or `evidence-insufficient` recorded where it cannot be determined, the complete proof of history before any subsidy of value staying in its stage; (6) the zero denominators, the relation of the cap parameters, the meaning of a zero in the query of the operator history, the precedence of the reasons, the key of a G0 instance and the encoding of the report hash. | owner, 2026-11-25: the choices and corrections, drafted by the advisor in its walk-through of revision 1 and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A78 | The five closing corrections, and the baseline of the implementation. Revision 2 of the design is the baseline of the local implementation. The main directions are not opened again; code and tests proceed; the complete interfaces are fixed when the closing items are done, and no round of text alone comes first. (1) Ending an old permit is told from taking away an old key's signing authority. A former owner that is still a signing operator can sign a new permit that meets a raised minimum nonce. Where the aim is that the old key leaves PoUW authorization, its signing right is first taken away with the account's own management functions; then the old permits are dealt with, and it is verified that the old key cannot sign a usable new permit. Both cases are in the tests: raising the nonce alone still allows a new permit, and after the signing right is taken away a new permit is refused. (2) The wording on `execute` under a suspension is narrowed: FOGA has a de-risk path that passes when its conditions hold, and the local check showed a refusal for one test configuration and one target call, not for every target. The signed revocation, the signed raising of the nonce and the delegate's renouncing stay as designed, with the note that a signed path depends on the account accepting the signature at that time. A local reproduction of the on-chain configuration is not recorded as a transfer of ownership of a deployed cell. (3) Before the interfaces are frozen: `FactData`, `G1Extra`, `Receipt`, `Status` and `Profile` in full, the necessary events and errors, the guard's binding in force and pending, the exact encoding of the ledger's and the facts' domains; the complete typed statements `Permit`, `Revoke` and `RaiseNonce`, the compiled interfaces, and fixed test vectors on which the contract and the off-line signing agree. A binding version is not reused when a binding is changed again for the same epoch that has not begun. (4) The complete canonical encoding of a report is fixed, RFC 8785 being advised, with large integers kept exact from the read on, by schema. Row L35 compares one report body recomputed by two implementations; two runs with different times of observation have different hashes of the whole report, and that is as it should be. (5) The audit of a past authority judges a change by the same source, the same token and the acceptance's transaction; it keeps the registered address that the events show apart from the state of the evidence for the actual verifier, and records `evidence-insufficient` where that cannot be shown. The next delivery, on the base of commit `16d8bb6`: the local implementation, the complete interfaces with their encodings, the actual results of the 35 rows of the test matrix, the client's audit at one pinned block and a reviewable difference; the account check and the ledger's tests, which have not run, are recorded apart and neither stands in for the other. How an adoption is recorded: on the owner's explicit statement, with its actual source, the date of sending and the scope of the adoption; never on the ground that the owner did not object. | owner, explicit statement of 2026-11-25 (14.1); the five corrections drafted by the advisor in its review of revision 2 |
+| A79 | Work that proceeds in parallel and is no precondition of the ledger. (a) The independent components of the first production increment start without a further confirmation, Q17 to Q29 being adopted: the structured-extraction specification, its instruction, output schema, canonicalization rule and fixture set; the format, grounding and reference checks, reported apart; the metering interface, the evidence envelope and the off-line recount; local copies of the schemas of the pinned ERC-8506 revision, with the validation of concrete records; the operating report and the reconciliation of prepaid service credit. The model, the tokenizer, the template and the serving configuration are pinned when they are actually chosen; what is not pinned yet is an interface and a statement of candidates, and no count or execution evidence is invented. Fixed GMU, qualified service units, model usage, the customer's payment and the actual cost stay apart. (b) Two discussion drafts are started: a plan for the replication of nodes and for the first operators, and a framework for platform Tokenomics with its points for ruling. Both are design and simulation; the ruling on token parameters, the implementation, the deployment and any issuance stay steps of their own. The figures of their scenarios remain assumptions and are no approved places, prices, configurations or rights; historical test points stay unredeemable, and no promise of a later exchange is added. Replication creates new identities and copies neither a chain-administration or sequencer right nor an existing cell's key. Neither draft is a precondition of the ledger's implementation. (c) Finchain, FOGA and this repository stay separate; the three repositories stay public; credentials, personal configuration and customers' private data stay apart. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
 
 ### 1.1 Review and authorized follow-up records
 
@@ -125,7 +145,9 @@ for A40-A54 the two aligned documents do: `architecture.md`, and `genesis-mining
 15. A55-A62 and A64 condense what the review of design revision v0.1.4 required, A65-A67 the
 review of v0.1.5 and A68-A69 the review of v0.1.6, each with the owner's instruction on it. What
 a review recommends on an open question is not in this table: it is with its question in section
-12 until the owner adopts it (A66). A70 is such an adoption. It rests on the owner's own
+12 until the owner adopts it (A66). A70 is such an adoption, and so are A73 to A79, of
+2026-11-25: who drafted and who sent each of them, and the statement of the owner on which they
+rest, are in 14.1. It rests on the owner's own
 statement, and the recommendations it adopts stay worded with their questions (12.2). A71
 condenses the review of v0.1.7 and says where the consolidated documents of v0.1.8 came from;
 A72 condenses the review of the run of round R2a. The owner relayed that review for the executor
@@ -674,7 +696,7 @@ upstream commit and the hashes of the files.
 | P24 | Only the tender's owner can bridge a settled submission | A tender and its judgment can be pushed onto any address; without this an admitted worker could manufacture demand "from" an admitted demander | `genesis-mining-mvp.md` 5.4 |
 | P25 | The contribution id leaves the profile out; a G0 instance takes one attempt and a submission names its epoch; a wrong output is recorded as rejected | A27: no double recording across versions, no lost attempt at an epoch boundary, no guessing | `genesis-mining-mvp.md` 9 |
 | P26 | A G0 function has a seed-independent cost, a 32-byte digest output and a stated use. The first is the audit of the previous epoch, which the reference client carries out in full before it submits | A19, A22: no function whose answer is worth precomputing, and a job whose result the protocol uses | `genesis-mining-mvp.md` 5.2, 5.3 |
-| P27 | The client reads logs up to the settled block and only frozen state at the latest block; it never asks for an old state | An audit must run against an ordinary full node and a public endpoint | `genesis-mining-mvp.md` 12 |
+| P27 | The client reads logs up to the settled block and only frozen state at the latest block; it never asks for an old state. Replaced from release 0.1.4 by A76: an audit and a check of a deployment read one finalized block, logs and state alike, and an endpoint must be able to serve the state of that block (`ledger-v2.md` 13; the third finding of section 14.4 below) | An audit must run against an ordinary full node and a public endpoint | `genesis-mining-mvp.md` 12 |
 | P28 | Two contracts of substance: `GenesisPolicy` (profiles, parameters, parties, the clock) and `GenesisLedger` (receipts, GMU, the allocation). Work Receipts and Epoch Rewards of A30 are one contract | They share every figure; two contracts would add a trust boundary and no separation of duty | `architecture.md` 3 |
 | P29 | GMU does not scale with the bounty | Money moved between two addresses of one party must not buy GMU | `genesis-mining-mvp.md` 6 |
 | P30 | Tests and build use Hardhat with the solc-js compiler pinned in `package.json`; tests are JavaScript | The Foundry binaries could not be installed in the build environment. Nothing is downloaded at test time | `README.md` |
@@ -777,23 +799,20 @@ not require the rule to be adopted again.
 
 ## 12. The questions put to the owner: open, and adopted
 
-Q13 and Q14 remain open. Q15 remains open for the wider R2 audit arrangement and does not
-reopen the in-force R2a hosted-runner route (P38, implementing A39). Q16 is partly settled:
-work facts apart from receipts are adopted through Q26 (P60, A70); the remaining implementation
-and packaging choices are still open (12.1). On Q17 to Q29 the advisor gave recommendations, in
-the reviews of v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor
+Q13 to Q16 were ruled by the owner on 2026-11-25 (A74 to A77) and are listed in 12.3, each with
+the ruling on it and with where it is applied. On Q17 to Q29 the advisor gave recommendations,
+in the reviews of v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor
 recommendation recorded; owner adoption pending - and none was an approval (A66). The owner
 adopted all thirteen on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as
-adopted. What is adopted is design, and nothing of it is built.
+adopted. What is adopted there is design, and nothing of the production line is built. Open now
+are the two questions of 12.1, which the implementation of ledger v2 raises.
 
 ### 12.1 Open for the owner's ruling
 
 | Id | Question | This repository's suggestion | Recorded advice and current status |
 | --- | --- | --- | --- |
-| Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA | None recorded. The review of v0.1.4 asks that this converge before the next ledger version is designed (Q22) |
-| Q14 | Whether round R2b is run on the present kernel. That is possible only by driving a cell's `execute` with the cell's own key from the reference client, with the cell's node stopped for the duration | No. R2a now, on the present kernel; R2b on the next ledger version | None recorded |
-| Q15 | The independent machine of R2: a hosted CI runner (P38) | Keep the in-force R2a route. Decide its application to R2b and any additional audit arrangement in that round's scope | No separate ruling on the wider R2 audit arrangement is recorded. R2a's hosted-runner route is already implemented and in force under P38 to satisfy A39; this open question neither suspends that run nor requires it to be repeated. It does not assert that a hosted run has passed; the hosted runs of round R2a are in `evidence/r2a/README.md` 7 |
-| Q16 | The content of the next ledger version, before R3: the declared-operator cap (A35, P41), work facts apart from receipts (P60, adopted), the delegation (P35), and settlement-time authority (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value. The remaining choices are still put up for a ruling | Partly settled. Q26 adopts work facts apart from receipts (P60, A70). A35 already requires the declared-operator cap before R3, and A38 requires settlement-time authority to be bound before any subsidy of value. Still open are the cap's implementation and packaging (P41), the contract-account route (Q13, P35), and the mechanism and staging for settlement-time authority (P36); A70 does not adopt them |
+| Q30 | Whether the interfaces of ledger v2 are frozen as `ledger-v2.md` 11 has them, with this repository's choices P61 to P65 (14.5) | Freeze them after the review of the implementation. The committed builds, the deployment tooling and the client for a v2 deployment follow the freeze | None recorded |
+| Q31 | The build of the v2 ledger (P66): through the compiler's IR pipeline, at 21,674 bytes, or a smaller ledger under the kernel's settings, which leave it 34 bytes under a chain's limit | The IR pipeline, with a test that holds the code 1,024 bytes under the limit. A smaller ledger would, for one, store a commitment to a fact in place of its content | None recorded |
 
 ### 12.2 Adopted by the owner on 2026-11-24 (A70)
 
@@ -817,6 +836,17 @@ suggested before the recommendation was given.
 | Q28 | The purchase record in three parts and the budget book (P56, P57), as the specification the second increment is built to | Confirm the records now. The providers are chosen when the second increment is opened (Q24) | Holds in the main. Before the second increment is coded: the purchase is kept apart from its attempts and from each attempt's record on its channel; an unknown result is reconciled or sent again as the same attempt; a new attempt only after a definite failure; at most one payment that succeeds, the fees of failed attempts being cost; a start takes up every reservation that is not finished, `authorized` included (review of v0.1.5). Written into P56 and P57. The review of v0.1.6 finds the main gaps closed; to be settled when it is coded: the budget that fees belong to, and the raising of the fee reservation before a resending at a higher fee. Both were then written as rule 12 of `supply-and-payment.md` 4.3 (v0.1.7), and the review of v0.1.7 closes the matter: the rule is adopted design, and the concrete budgets and limits are configuration (A71; section 11) |
 | Q29 | The pin and the mapping of ERC-8506 (P59): two records conformant, two used for a vocabulary and two members | Confirm. If the standard has moved when the increment is built, the owner chooses whether the pin moves with it, in a new version of the specification | Support for the pin and for the limited reuse; the review fetched the pinned files and found the five hashes. The instances are validated against the schemas when the model is chosen and they are written; until then the source is verified and the mapping can hold, and no more is said (review of v0.1.5). Maintained by the review of v0.1.6 |
 
+### 12.3 Ruled by the owner on 2026-11-25 (A74 to A77)
+
+The third column is kept for the record: it is what this repository had suggested.
+
+| Id | Question | This repository's suggestion | The ruling | Applied in |
+| --- | --- | --- | --- | --- |
+| Q13 | How a Cell Account mines as itself (A37): the delegation signed by the account, in the next ledger version (P35), or another route | P35. FOGA stays as it is and the cell's key stays inside FOGA | A74: the bounded signed delegation, on seven conditions; the account's own `execute` stays a legitimate entry; the operator slot is not replaced by default. A77 (O1, O2): the guard and its binding | `ledger-v2.md` 2 to 6, 12; `contracts/v2/`; `scripts/sign-permit.js`. Built and tested locally; nothing is signed |
+| Q14 | Whether round R2b is run on the present kernel | No. R2a on the present kernel; R2b on the next ledger version | A75: round R2b uses the next version of the ledger; the deployment of round R2a and its evidence are kept and linked by a versioned manifest | `ledger-v2.md` 1; `roadmap.md` 5. The v2 deployment, its manifest and the round's package are not built |
+| Q15 | The independent machine of R2: a hosted CI runner (P38) | Keep the in-force R2a route; decide its application to R2b in that round's scope | A76: round R2b keeps the hosted runner without a participant key; further endpoints or implementations are separate enhancements; the client reads one finalized block. A77 (O5): at once, without a fallback | `ledger-v2.md` 13; the client of release 0.1.4. The audit of a v2 deployment follows the freeze of the interfaces |
+| Q16 | The content of the next ledger version, before R3: the declared-operator cap (A35, P41), work facts apart from receipts (P60, adopted), the delegation (P35), and settlement-time authority (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value | A75: one minimal, complete version with the operator cap, the attribution fixed at accrual, the declared-operator condition of the early subsidy, facts apart from receipts with an atomic confirmation, and the adopted fields; the authority at settlement stays within the disclosed limit of A38 for rounds R2b and R3 and is completed before any subsidy of value. A77 (O3, O4, and the corrections) | `ledger-v2.md` 7 to 10; `contracts/v2/`. Built and tested locally |
+
 ## 13. Illustrative (figures used to explain, not parameters)
 
 The parameters of the R2 deployment are ruled (A34) and are that test deployment's own: epochs of
@@ -833,3 +863,152 @@ configuration are the examples below.
 | G1 rules: a minimum bounty of 0.001 ETH in the tests and 0.0001 ETH in the R2 configuration, whose test tenders pay 0.0005 ETH; 3 subsidized receipts per demander and 1 per pair, per epoch | tests, the R2 configuration | examples; carried by the parameter version |
 | Measurement weights of 250,000 for input and 1,000,000 for the canonical result over a scale of 1,000,000 - a quarter and one; limits of 8,000 input tokens and 1,000 tokens of canonical result; a fixture of 6,000 input tokens, 1,150 generated tokens and a canonical result of 310; a `baseGmu` of 50 for `g1.inference` | `production-service.md` 5 | examples of a measurement version and of a profile; nothing of it is registered |
 | A period of 12 deliveries, 21,700 qualified service units and 0.006 of the native asset received; 5.00 of a fiat currency paid by the Holder to a provider, 0.48 of it consumed and 4.52 left as prepaid credit | `supply-and-payment.md` 8 | an example of the report's shape; no figure of it was observed |
+
+## 14. The rulings of 2026-11-25 on the next version of the ledger, and how they are applied
+
+### 14.1 Who wrote what, and on what the record rests
+
+The times are those of Singapore (UTC+8), where the owner wrote; all are of 2026-11-25. The
+owner writes in Chinese: what is given here of his words is a translation.
+
+| When | What | Drafted by | Sent by | Standing in this record |
+| --- | --- | --- | --- | --- |
+| 00:43 | The execution instruction: the closing of round R2a's documents, the directions on Q13, on Q14 and Q16, on Q15 and the client's audit, the work that runs in parallel, and the next delivery | the advisor, in the owner's voice | the owner | the owner's ruling: A73 to A76 and A79, by his statements of 01:52 and 02:33 |
+| 01:52 | The advisor's walk-through of the executor's first delivery: six corrections of revision 1 of the design and six choices, O1 to O6, under the words "I confirm: the execution instruction I forwarded is my ruling" | the advisor | the owner, who added a line saying that the text was the advisor's reply | A77. The added line left open whether the text was adopted or relayed |
+| 02:33 | "I confirm that the execution instruction I forwarded, the mapping of the seven items and the choices O1 to O6 are my ruling, and I adopt the following corrections of this round. Record it by its actual source, date of sending and scope of adoption, on the ground of this explicit statement" - with five corrections, the baseline of the implementation and the next delivery | the advisor, as a text for the owner to adopt | the owner, as his own message | the owner's explicit adoption: the ground on which A73 to A79 are rulings, and the content of A78 |
+| 02:33 | The advisor's review of the executor's discussion draft on platform Tokenomics: recommendations on its twelve points for ruling and seven revisions asked for | the advisor | the owner, as an attachment that his statement does not name | advisor recommendation recorded; owner adoption pending. The draft and its revisions are kept outside this repository; nothing of them is a parameter or a rule here |
+
+Three things are kept apart in what follows, as the owner asked: what the advisor advised, what
+the owner adopted, and what the executor built and verified (14.4). The first two are the
+sources of the rulings; the third is evidence of the implementation and rules on nothing.
+
+After the message of 01:52 the executor asked whether the text had been adopted or relayed, and
+proposed to record an adoption if no answer came. That proposal was contrary to A66 - nobody
+objecting is not an adoption - and is withdrawn; the advisor pointed it out. The record rests on
+the owner's statement of 02:33 and on nothing else.
+
+The mapping of the seven items is a table the executor delivered to the owner on 2026-11-25: the
+seven items of its memo of 2026-11-24 on Q13, Q14 and Q16, each set against the instruction and
+against the walk-through. It is written in Chinese and is kept outside this repository; what it
+holds is in A74 to A77, in 12.3 and in 14.2.
+
+### 14.2 From revision 1 to revision 2 of the design
+
+Revision 1 was the executor's draft of 2026-11-25 for the instruction. The advisor's
+walk-through found the following; the owner adopted the corrections and made the six choices
+(A77). Revision 2 applied them. Neither revision entered this repository: `ledger-v2.md` enters
+it as revision 3, with the implementation.
+
+| Point | Revision 1 | Revision 2 |
+| --- | --- | --- |
+| Owner rotation | "a permit signed by the former owner stops verifying" | no such promise: the account's signature rule decides; the counter-example and a rotation procedure are stated |
+| Revocation | one global mark per digest | per account; `Revoke` and `RaiseNonce` are typed statements of their own |
+| Sender of a G1 confirmation | not said | the adapter reads its own caller and checks the permit's account against the tender's owner |
+| Suspended accounts | "revoke, renounce and raise the nonce all succeed" | the signed paths and the renouncing do; a direct call through a gated account is not assumed to |
+| Duplicates | named in prose only | `duplicateOf` in the status; reasons 14 and 15 defined apart; one occupancy per ledger; what can and cannot take a key |
+| Authority at settlement | the audit "reports every receipt" that differs | the last registered authority that is visible, and `evidence-insufficient` where the log cannot settle it |
+| Guard binding (O2) | the address in the permit | the address and a version that only rises |
+| Guard for FOGA cells (O1) | verdict and anchor | also the completeness of the presented bindings; a failing registry call refuses |
+| G1 demander (O3) | open | needs a declared operator for the early subsidy; no condition on the judge |
+| Origin (O4) | "paid its fee" | the top-level sender; a record only |
+| The audit's block (O5) | planned | built at once, without a fallback to the latest block |
+| Names (O6) | proposed | stand in principle; fixed with the interfaces |
+| Allocation | the formula | the zero cases, the range of the caps and their relation |
+| Operator history | stored at subsidized accrual | stored for every receipt, with a flag |
+| G0 instance | "one instance per participant per epoch" | the dimensions of 0.1.3, with the participant for the sender |
+| Reasons | listed | one fixed order for chain and audit |
+| Report hash | "a hash over the whole report" | a fixed serialization; the field leaves itself out |
+
+Two of the walk-through's findings were checked by the executor before revision 2 was written.
+The counter-example on rotation was reproduced with the released bytecode of the FOGA account
+on a local network. The boundary of the authority audit was read off the vendored source of the
+ERC-8414 reference contract: it calls a verifier before it emits the acceptance, by a call that
+can change state, and the right to judge can be handed on without a reentrancy guard.
+
+### 14.3 The five closing corrections, and where each is applied
+
+Adopted by the owner on 2026-11-25 (A78), from the advisor's review of revision 2. The ids L1
+to L35, here and in A78, are the rows of the test matrix in `ledger-v2.md` 14; they are not row
+L1 of `acceptance-matrix.md`.
+
+| # | Correction | Applied in | Tests |
+| --- | --- | --- | --- |
+| 1 | Ending an old permit is not taking away an old key's signing authority | `ledger-v2.md` 6: the two purposes, "raising the nonce does not retire a key", and a rotation that takes the signing right away first | L10: with the signing right left in place, the old key signs a new permit at the raised minimum and it is accepted; with it taken away, that permit and every later one are refused |
+| 2 | The wording on `execute` under a suspension is narrowed | `ledger-v2.md` 5: a direct call is the account's own gate's matter, in both directions; a signed path depends on the account accepting the signature in that state | L15: the direct revocation is refused, and passes once the account's owner has allowed that call under a suspension; an operator's statement is refused while suspended |
+| 3 | The interfaces are completed before they are frozen | `ledger-v2.md` 11: every struct, function, event and error; domains and ids as encodings; the three statements; the binding in force and pending. `client/abi/`; `test/vectors/permit-v2.json` | the vectors, computed three ways and signed by the script; L14 for a binding changed again before its epoch |
+| 4 | The canonical encoding of a report is fixed | `client/lib/canonical.js`: RFC 8785 with the integer restriction; `ledger-v2.md` 13 | L35: one record, hashed twice, by a second implementation and by a second program; two runs at one block have one result hash and two report hashes |
+| 5 | The audit of a past authority: by source, token and acceptance transaction; the registered address apart from the state of the evidence | `client/lib/genesis.js` (`authorityAtSettlement`); `ledger-v2.md` 10 | L32 |
+
+On the second correction the executor's own earlier wording is corrected with it: revision 2
+said that a suspended cell "cannot send a direct call through `execute` at all", and a note of
+the account check said "to any target". The check showed a refusal for one configuration and
+one target. The published account has a path that lets marked calls through under a suspension.
+
+### 14.4 What was built, and what the executor verified
+
+Everything here is evidence of an implementation on a local network. None of it is on a public
+chain, none of it is an acceptance, and no key of a participant was used.
+
+| What | Result |
+| --- | --- |
+| The tests | 131 pass, none fails (Node 22.23.5, Hardhat 2.29.2, solc 0.8.24): the 83 of the kernel of 0.1.3 and 48 new ones |
+| The test matrix of `ledger-v2.md` 14 | 35 rows, each with at least one test that carries its id and passed; the limits of what a pass covers are stated there |
+| The kernel's contracts and builds | unchanged: the six files under `build/` are byte for byte those of release 0.1.3 |
+| The rehearsal (`npm run local-run`) | 41 checks, all passed, of which 4 are new - an audit names the one block it read, with the close record within it, and a second run at that block has the same result hash - and one is changed: a second `pouw work` finds its receipt and sends nothing |
+| The tests against changes that should break them | 29 changes, each breaking one rule of the contracts or of the client; every one made at least one test fail. The first run found one test that did not notice a rule being broken - the bound on the gas given to a signature check - and the test was strengthened |
+| The FOGA account's own behaviour | checked apart with its released bytecode, on a local network; review records kept outside this repository, and not part of these tests |
+
+Three tests of the kernel were adapted, because the client's behaviour changed and the
+contracts' did not: two expected a second `pouw work` to be refused by the ledger, where the
+client now finds the receipt and sends nothing - the ledger's own refusal is still tested, by a
+call that is sent all the same; and one read the judge at settlement from a field that is now
+the authority record of `ledger-v2.md` 10.
+
+Three findings came out of the work:
+
+1. **The compiler override of release 0.1.3 was not in effect.** `hardhat.config.js` named the
+   settings of the ERC-8414 reference contract as an override beside a single compiler version.
+   Hardhat reads overrides only beside a list of compilers and otherwise drops them without a
+   word, so the reference contract was compiled for the tests with the kernel's settings and
+   not "the way its own repository compiles it", as the comment said. Nothing deployed was
+   affected: nothing under `contracts/vendor` is ever deployed from here, the tender contract
+   of round R2a is the one already on the chain, and the kernel's builds are unchanged. The
+   configuration now has the form in which overrides apply.
+2. **The v2 ledger is close to the size a chain allows.** With the kernel's settings it comes
+   to 24,542 bytes, 34 under the limit. It is compiled through the compiler's IR pipeline, at
+   21,674 bytes, and a test holds it 1,024 bytes under the limit (P66; Q31).
+3. **An endpoint has to keep the state of the block it calls finalized.** The audit of 0.1.3
+   read state at the latest block so that any full node would do (P27). Reading one finalized
+   block, as A76 rules, gives that up: an endpoint that keeps recent state only, and whose
+   finalized block lies further back, cannot serve the audit, and the client then fails with
+   that reason. Reads at the finalized block were served by the endpoint of round R2a when the
+   Cell Accounts were read on 2026-11-24 and 2026-11-25; the audit itself has not been run
+   there with release 0.1.4.
+
+### 14.5 This repository's proposals made with the implementation
+
+On this repository's own judgment, where the rulings left a choice to the implementation. Each
+is in force only after a ruling (Q30, Q31).
+
+| Id | Choice | Why | Where |
+| --- | --- | --- | --- |
+| P61 | A profile version says that it counts task units with `countsUnits` and two commitments, to its task units and to the demanders it names; the profile's module shows membership and states the result; the receipt records it as `unit` | A78 asks how the task-unit rule is represented. The kernel stays without knowledge of any set of tasks, and an audit can read from a receipt why it was no task unit | `ledger-v2.md` 7 |
+| P62 | The account's signature check is given 200,000 gas and the guard 500,000; one word of either answer is read; an ECDSA signature has one accepted form; an address with code at the time of use is a contract account, an externally owned account with a code delegation included | A check that fails, or never returns, must not take the call with it, and a refusal must cost a bounded amount | `ledger-v2.md` 4, 5 |
+| P63 | A `Revoke` or `RaiseNonce` statement has no expiry and no nonce of its own; doing any ending of a permit again changes nothing and does not fail; the zero address unbinds a guard and takes a version number like any binding | They only take authority away, and a relayer must be able to send one twice without harm | `ledger-v2.md` 3, 6, 11.6 |
+| P64 | A record has two hashes: `resultHash` over what was found, and `reportHash` over the whole record. Records carry schema 2; the client's exit status 4 is "no state at the block"; `--require-sealed` makes a missing close record a difference | A78 says that two runs rightly differ in the hash of the whole report; the result hash is the one value by which two runs at one block are compared | `ledger-v2.md` 13 |
+| P65 | `pouw work` and `pouw bridge` look for the receipt by its contribution id before they send; for a confirmation, only when the caller is the tender's owner | The recovery that row L33 asks for, without hiding the adapter's refusal from anybody else | `ledger-v2.md` 13 |
+| P66 | The v2 ledger is compiled through the compiler's IR pipeline, with the kernel's optimizer runs | Its size (14.4, finding 2). The alternative is a smaller ledger under the kernel's settings | `ledger-v2.md` 1 |
+
+### 14.6 What is not built, and what comes next
+
+`ledger-v2.md` 16 lists what is not built and is needed before round R2b: the builds of the v2
+contracts and the deployment from them, the client for a v2 deployment with its audit, the run
+record, the module of the first production profile, the configuration and the runbook of the
+round with the operation package of the one signature, and a measurement against the deployed
+cells. None of it is started by this revision, and nothing is deployed or signed by it.
+
+A first use of the client of 0.1.4 on a public endpoint needs no key and changes nothing: the
+hosted workflow, started by hand with the manifest of round R2a, checks that deployment and
+audits its two epochs at one finalized block. It would show whether the endpoint serves that
+block, and that the new client agrees with the ledger there as the old one did. It is proposed
+and has not been run; it reopens nothing of round R2a, whose records stay as made.

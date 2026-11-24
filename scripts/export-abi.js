@@ -16,6 +16,13 @@ const sources = {
   AuditV1: "contracts/functions/AuditV1.sol/AuditV1.json",
   TenderAdapter8414: "contracts/TenderAdapter8414.sol/TenderAdapter8414.json",
   ITaskTender8414: "contracts/interfaces/ITaskTender8414.sol/ITaskTender8414.json",
+  // ledger v2 (docs/ledger-v2.md): the interfaces, as they compile. Its builds are added to
+  // `deployable` below together with the deployment tooling, when the interfaces are frozen.
+  GenesisPolicyV2: "contracts/v2/GenesisPolicyV2.sol/GenesisPolicyV2.json",
+  GenesisLedgerV2: "contracts/v2/GenesisLedgerV2.sol/GenesisLedgerV2.json",
+  TenderAdapter8414V2: "contracts/v2/TenderAdapter8414V2.sol/TenderAdapter8414V2.json",
+  IParticipantGuard: "contracts/v2/interfaces/IParticipantGuard.sol/IParticipantGuard.json",
+  FogaCellGuard: "contracts/v2/guards/FogaCellGuard.sol/FogaCellGuard.json",
 };
 // the contracts of a deployment; nothing under contracts/testing or contracts/vendor is ever one
 const deployable = {

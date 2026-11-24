@@ -62,10 +62,13 @@ describe("Contract accounts: the account is the identity, not the key that drive
     try { await g.workAudit(d.ctx, keyY, { account: keyX.address }); } catch (e) { error = e; }
     expect(String(error?.message)).to.contain("not a contract account");
 
-    // a second job through the account is refused by the ledger, and the client names the cause
-    // although the account wrapped it
+    // a second job through the account: the client finds the account's receipt and sends nothing
+    const again = await g.workAudit(d.ctx, keyX, { account: x.address });
+    expect([again.alreadyRecorded, again.receiptId, again.worker]).to.deep.equal([true, done.receiptId, x.address]);
+    // sent all the same, it is refused by the ledger, and the client names the cause although the
+    // account wrapped it
     error = null;
-    try { await g.workAudit(d.ctx, keyX, { account: x.address }); } catch (e) { error = e; }
+    try { await x.act(d.ledger, d.ledger.interface.encodeFunctionData("submitG0", [g.profileKey(g.PROFILE_G0_REF), 0, 0, done.output])); } catch (e) { error = e; }
     expect(g.refusal(error)?.name).to.equal("AlreadySubmitted");
     expect(await d.ledger.subsidizedOf(0, g.POOL_G0, x.address)).to.equal(10n);
   });

@@ -7,7 +7,10 @@ This is the executor's plan for the first production profile: deliverable B of t
 and 6.3. Those sections state what a production profile has to decide; this document sets out the
 decisions for the first one, as the owner adopted them on the advisor's recommendations (A70).
 
-Nothing here is built, and nothing here changes round R2. The review of v0.1.4 required
+Nothing of the production profile is built, and nothing here changes round R2. What section 7
+asks of the ledger - the fields of a receipt, the two reasons and the one counting of a content
+key - is built in ledger v2, on a local network and not deployed (`ledger-v2.md`); the profile
+itself, its module, its specification and its fixtures are not. The review of v0.1.4 required
 corrections before this plan can serve as an implementation specification: to the measurement
 (section 5), to deduplication (section 7), to the scope of the first increment (sections 10 and
 11), to what is said of an agent that buys (section 8), and to the way ERC-8506 is cited (section
@@ -20,9 +23,10 @@ that the recommendations name. What the plan adds in carrying them out is this r
 is reviewed with the implementation. Where this plan and `genesis-mining-mvp.md` 14 differ, that
 section governs. Where the text says "is", read "is to be".
 
-Adoption of this profile does not choose the contract-account route in Q13 or Q14. Its lawful
-confirmation and represented-demander requirements remain part of the design; the selected
-implementation must enforce them without treating a delegate as another demander. Work facts
+Adoption of this profile did not choose the contract-account route of Q13 and Q14; the owner
+ruled on it on 2026-11-25 (`decisions.md` A74, A75). Its lawful confirmation and
+represented-demander requirements remain part of the design; the implementation enforces them
+without treating a delegate as another demander (`ledger-v2.md` 9). Work facts
 and contribution receipts are separated by the adopted P60 (Q26): that part is no longer an
 open choice. These distinctions do not change the first increment's scope or require a FOGA
 release. Acceptance rows are planned and not run until their own evidence is recorded.
@@ -499,7 +503,7 @@ to do so was obtained; the protocol records the statement and does not vouch for
 | Piece | Where it belongs |
 | --- | --- |
 | The first specification: its records, the instruction, the schema and the template; the evaluator, the counter and the canonicalization rule; a fixture set with its task descriptions and its root | this repository |
-| The next version of the ledger, with the role, the work id, the parent, the envelope commitment and the content key in a receipt; the `g1.inference` profile and its adapter | this repository; the content of that version is adopted in part (`decisions.md` A70: Q22, Q25, Q26) and waits for the rulings of Q13 and of the rest of Q16 |
+| The next version of the ledger, with the role, the work id, the parent, the envelope commitment and the content key in a receipt; the `g1.inference` profile and its adapter | this repository. The ledger is built and tested on a local network, with those fields, the two reasons and the content key counted once per ledger (`ledger-v2.md`; `decisions.md` A70, A75); it is not deployed and its interfaces are not frozen. The `g1.inference` profile and its adapter - the module that shows that a delivery is a member of the committed set and was issued by a named demander - are not built |
 | A reference worker (takes a task, calls the model service, checks its own delivery, writes the envelope, submits), a reference demander (issues fixtures, confirms) and the recount | this repository's client. FOGA is not modified |
 | The operating report of the worker | this repository's client; `supply-and-payment.md` 8 |
 | The rehearsal of the increment, with a deterministic stand-in for the model service | this repository |

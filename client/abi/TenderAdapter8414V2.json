@@ -1,0 +1,318 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IGenesisLedgerV2",
+        "name": "ledger_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ITaskTender8414",
+        "name": "taskToken_",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "profileName",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "NotDemander",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "NotOwnersPermit",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "NotSettled",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "receiptId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "ineligible",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "authorization",
+        "type": "bytes32"
+      }
+    ],
+    "name": "TenderConfirmed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "factId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "recorder",
+        "type": "address"
+      }
+    ],
+    "name": "TenderFact",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "confirm",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "receiptId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "ineligible",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "delegate",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "scope",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notBeforeEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "notAfterEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nonce",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "guard",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "guardBindingVersion",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct Permit",
+        "name": "permit",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "confirmFor",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "receiptId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "ineligible",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ledger",
+    "outputs": [
+      {
+        "internalType": "contract IGenesisLedgerV2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "profileKey",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "recordFact",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "factId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "taskToken",
+    "outputs": [
+      {
+        "internalType": "contract ITaskTender8414",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

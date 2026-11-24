@@ -1,7 +1,8 @@
 # Implementation Roadmap
 
-Design revision v0.1.9, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
-recommendations on Q17 to Q29, and the run of round R2a with its review (`decisions.md` A55-A72).
+Design revision v0.1.10, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
+recommendations on Q17 to Q29, the run of round R2a with its review, and the owner's rulings of
+2026-11-25 on Q13 to Q16 (`decisions.md` A55-A79).
 Engineering milestones are the owner's four: P1 PoUW Kernel, P2 Genesis Network, P3 SIG + IPC, P4
 FCT Economy. This document details P1 and the entry into P2. Rounds are the steps inside P1: R0
 design, R1 the kernel on a local network, R2 Finchain Sepolia, R3 a third party. Round R2 is two
@@ -27,17 +28,18 @@ close records be shown from the chain; a second hosted run and a record of the c
 transactions were made for that (A72). The advisor accepted R2a technically on 2026-11-24 after
 reviewing evidence commit `b53e52f` (`decisions.md` 6.11). Its accepted scope is public-testnet,
 controlled-self-test and operator-wallet-integration; the earlier records remain unchanged.
-R2b waits for a ruling on how a contract account takes part (Q13). Neither the alignment of
-2026-11-24 nor the reviews since changed anything in this: the software is release 0.1.3,
-and round R2a ran from it as it was prepared (A53, A55, A65, A68). What they add is design - the
+R2b runs on the next version of the ledger (A75), which is built and tested on a local network
+and is not deployed (section 5). Neither the alignment of 2026-11-24 nor the reviews up to
+round R2a changed anything in the software: round R2a ran from release 0.1.3 as it was
+prepared (A53, A55, A65, A68). What they add is design - the
 production line, in documents. The review of v0.1.4 required corrections, applied in v0.1.5; the
 review of v0.1.5 asked for conventions to be written exactly, applied in v0.1.6; the review of
 v0.1.6 accepted that revision and made the running of round R2a exact (A69). On 2026-11-24 the
 owner adopted the advisor's recommendations on Q17 to Q29 (A70): the plans of the production line
-are approved as design, and nothing of them is built. Q13 and Q14 remain open. Q15's wider
-audit arrangement remains open without reopening R2a's in-force hosted-runner route (P38,
-implementing A39). Q16 is partly settled: work facts apart from receipts are adopted through Q26;
-its remaining implementation and packaging choices are set out in section 5.
+are approved as design, and nothing of them is built. On 2026-11-25 the owner ruled on Q13 to
+Q16 (A73 to A79; `decisions.md` 12.3, 14). Release 0.1.4 carries what was built on those
+rulings: the client's audit at one block, and the contracts of ledger v2 with their tests.
+Open are the freeze of the v2 interfaces and the build of the v2 ledger (Q30, Q31).
 
 ## 1. Reused as they are (A6)
 
@@ -69,7 +71,9 @@ its remaining implementation and packaging choices are set out in section 5.
 | The R2a configuration and runbook | R2a | built; `deployments/finchain-sepolia-r2.config.json`, `docs/r2-runbook.md` |
 | The independent audit job | R2 | built; `.github/workflows/ci.yml` |
 | The Finchain Sepolia manifest; evidence records of the deployment, the rounds and the audits | R2a | in the repository: `deployments/finchain-sepolia-r2.json`, and `evidence/r2a/` with its index. Advisor technical acceptance passed on 2026-11-24 (`decisions.md` 6.11) |
-| The next version of the ledger: a cap per declared operator, work facts apart from receipts, a delegation signed by an account, the production fields of a receipt | before R3 | designs kept (`genesis-mining-mvp.md` 13.4, 13.7, 13.9). One design, with work facts apart from receipts and the production fields, is adopted (Q22, Q25, Q26; A70). A35 already requires the operator cap before R3; its implementation and packaging, and the contract-account route, remain to be decided (Q13, Q16) |
+| The next version of the ledger: a cap per declared operator, work facts apart from receipts, a bounded delegation signed by an account with a guard on the consumer's side, the production fields of a receipt | R2b, R3 | built and tested on a local network (release 0.1.4): `contracts/v2/`, `test/v2.*.test.js`, `docs/ledger-v2.md`, on the rulings A74, A75, A77 and A78. Not deployed; the interfaces are not frozen (Q30). Not built: the committed builds and the deployment from them, the client for a v2 deployment with its audit, the round's configuration and runbook (`ledger-v2.md` 16) |
+| The signing of a permit off line, with fixed vectors of the three typed statements | R2b | built, not used: `scripts/sign-permit.js`, `test/vectors/permit-v2.json`. A live key signs only under a reviewed operation package (A74) |
+| The client's audit at one finalized block; records with a canonical form and two hashes; the authority at a settlement as far as a tender's log settles it; no second sending of what is recorded | R2b, R3 | built in release 0.1.4 against the kernel of 0.1.3 (A76): `client/lib/`, `scripts/report-hash.py`, `test/snapshot.test.js`. The audit of a v2 deployment follows the freeze of the interfaces |
 | `g0.ver`, `g0.cal`, the authority at settlement, a freshness window | after rulings | designs kept (`genesis-mining-mvp.md` 13) |
 | The production line: the first specification with its evaluator, counter, canonicalization rule and committed fixture set; the `g1.inference` profile and its adapter; the reference worker, demander and recount; the operating report; the rehearsal of the increment | the first production increment | designed, not built (`production-service.md`, `supply-and-payment.md`). The design is adopted (`decisions.md` A70, 12.2) |
 | The budget book and the procurement adapters for an agent's wallet and for a fiat-billed account; an operated model as a source of supply | the second and third increments | outlined; the records an adapter is built to are specified (`supply-and-payment.md` 3, 4, 11) |
@@ -85,7 +89,7 @@ challenges, paging, SIG, IPC, FCT, node attestations, the full FOGA adapter.
 | R0 | the four design documents; the reviews of v0.1.0 and v0.1.1 | closed: the scope was ruled on (A30) |
 | R1 | the kernel, its tests, the reference client; a local run of two workers through G0 and G1 work, GMU, two epochs closed by time, and an audit by a separate process from the chain alone | passed, with conditions (A31): the account identities (A37) and the boundary of the self-dealing rule (A38), both taken up in v0.1.3 |
 | R2a | Operator-wallet integration. The kernel of R1 deployed on Finchain Sepolia from the committed builds, with a manifest of addresses, code hashes and blocks; two wallets the operator holds, admitted and declared under one operator; epochs of two hours, pools 10 / 90; epoch 0 as a controlled self-test, epoch 1 standard; in each, both wallets do the `g0.ref` job and a test tender goes each way on the World's ERC-8414 contract; the epochs close; a hosted runner that holds no key verifies the deployment and recomputes both epochs at finalized state | the matrix rows marked "Sepolia, round R2a", and the audit's figures equal to the expected ones (section 4). What it shows: the kernel on a public chain, its code checked, its epochs recomputed by a machine that is not the operator's. What it does not show: demand, computation, or an agent. Both wallets are one party and no cell takes part; deployment-result records are labelled `public-testnet`, `controlled-self-test` and `operator-wallet-integration` (A39). Run on 2026-11-24: the records and what was observed are in `evidence/r2a/README.md`; advisor technical acceptance passed after evidence commit `b53e52f` (`decisions.md` 6.11) |
-| R2b | Contract-account integration. The OG and cell-b take part as their Cell Accounts: the accounts are the admitted parties, the workers of record and the owners that confirm the tenders the cells themselves made | the matrix rows marked "Sepolia, round R2b". Needs the rulings of Q13 and Q14; by the proposed route (P35) it runs on the next version of the ledger. Until then the rehearsal shows the mechanics with test accounts, and that is all it is |
+| R2b | Contract-account integration. The OG and cell-b take part as their Cell Accounts: the accounts are the admitted parties, the workers of record and the owners that confirm the tenders the cells themselves made | the matrix rows marked "Sepolia, round R2b". By ruling it runs on the next version of the ledger, through the bounded delegation or the accounts' own `execute` (A74, A75). It needs what `ledger-v2.md` 16 lists as not built, and a reviewed operation package for the one signature of each cell. Until then the rehearsal shows the mechanics with test accounts, and that is all it is |
 | R3 | one independent party, running no Finchain node, admitted as a worker on the next version of the ledger (A35): it does the G0 job and delivers a tender; a second auditor recomputes the epoch; the failure drills of the matrix on Sepolia | the entry into P2 Genesis Network. The first G1 receipt between parties with different declared operators - which is `none-found`, not a finding of independence |
 | R4 | the design round for SIG and IPC, documents first; a Tokenomics ruling requested from the owner; a mainnet deployment of the kernel only after the owner's separate decision | - |
 
@@ -158,32 +162,38 @@ therefore leaves the two FOGA nodes exactly as they are.
 ## 5. The next version of the ledger, before R3
 
 By ruling (A35) the contracts get a second version before a third party is admitted, deployed
-beside the first and named by a manifest that says which deployment it supersedes. Its scope is
-collected in Q16: the cap per declared operator required by A35; work facts apart from receipts,
-now adopted through Q26 (P60); the proposed delegation by which a contract account names a key
-that works in its name (P35); and the mechanism and staging for authority at settlement (P36).
-The current proposal for R2b uses that delegation, subject to Q13 and Q14. A38 already requires
-settlement-time authority to be bound before any subsidy of value; the mechanism and staging
-remain to be decided. None of this is built.
+beside the first and named by a manifest that says which deployment it supersedes. Its content
+was ruled on 2026-11-25 (A74, A75, A77, A78; `decisions.md` 12.3): the cap on a declared
+operator's aggregate, with the attribution fixed when a contribution is accrued and a declared
+operator as a condition of the early subsidy; work facts apart from receipts, with a
+confirmation that does everything in one transaction; a bounded delegation that an account
+signs and that is checked at each use, with a guard on the consumer's side; and the fields of
+the production line in a receipt. Round R2b runs on it (A75).
 
 Adopted on 2026-11-24 (Q22, Q25, Q26; A70): that version is one design, with the production line
 in view (P50). A receipt also carries the role of the contribution, the work id, the parent work,
 the commitment to an evidence envelope and the content key by which a profile counts a task unit
 once (P55), so that the first production profile arrives as a profile and an adapter and not as
 a third ledger. The record that needs no demander is a work fact, kept apart from the receipt
-(P60): that meets the condition of A64, and the second item of Q16 is settled by it.
+(P60): that meets the condition of A64.
 
-What the version still waits for is the owner's ruling on the rules of authorization - Q13, how
-a contract account works as itself - and on the remaining implementation and packaging choices
-of Q16. The cap itself is already required by A35; its implementation and version grouping
-(P41), the contract-account route (P35) and the mechanism and staging for settlement-time
-authority (P36) are the choices still to settle. The relevant design is reviewed before it is
-coded. A38 is a gate before a subsidy of value, not a requirement that every test-point exercise
-first implement the deferred verification work. No postponement of A38 is approved here.
+Where it stands (`ledger-v2.md`): the contracts are written and tested on a local network -
+the 35 rows of the design's test matrix each have a test that passed - and the kernel of release
+0.1.3 is unchanged beside them. Nothing is deployed and nothing is signed. The interfaces are
+proposed and not frozen (Q30), and the ledger's build is a question of its own (Q31). What
+round R2b still needs is listed in `ledger-v2.md` 16: the committed builds and the deployment
+from them, the client for a v2 deployment with its audit, the module of the first production
+profile where that profile is to take part, the round's configuration and runbook with the
+operation package of the one signature, and a measurement against the deployed cells.
+
+The authority at settlement is not bound by this version. Rounds R2b and R3 run within the
+limit of A38, disclosed, on test points that cannot be redeemed; the audit reports what a
+tender's log shows and where that evidence is insufficient. A38 stays a gate before any subsidy
+of value, and no postponement of it is approved here.
 
 By Q22, a necessary upgrade of the ledger is not held back by production work that is not
-finished. Resolve the decisions each work item actually depends on; Q13 to Q29 are not a single
-gate for all later work. Provider selection under Q24 belongs to the second increment.
+finished: an open matter holds up the work that depends on it and no other (A73). Provider
+selection under Q24 belongs to the second increment.
 
 ## 6. Dependencies and what does not block what
 
@@ -217,7 +227,7 @@ deployment can support several operating forms at once (A41).
 | Capability | First needed in | Engineering deliverable | Milestone, round or increment | State |
 | --- | --- | --- | --- | --- |
 | Contribution records and an allocation that anyone can recompute | every stage | the kernel | P1: rounds R1, R2a | built; R2a advisor technical acceptance passed, with raw evidence preserved (`decisions.md` 6.11) |
-| An agent that takes part as its own account | every stage | the route for a contract account | P1: round R2b; the current proposal uses the next ledger version | route to be ruled (Q13, Q14) |
+| An agent that takes part as its own account | every stage | the route for a contract account | P1: round R2b, on the next ledger version | route ruled (A74, A75): a bounded delegation signed by the account, or the account's own `execute`; built and tested locally, not deployed |
 | Parties that are not the operator's; a cap per declared operator | every stage | the next ledger version; round R3 | P2 | after R2 (A35, A39) |
 | A published service specification; usage recorded by category; a delivery qualified by published checks; a contribution linked to its evidence and counted once per task unit | Stage 1, Startup | the first specification, the `g1.inference` profile, the evidence envelope, the recount | first production increment | designed |
 | A model service that a person bought, recorded as input and never as production; pause, resume and switch of a source | Stage 1, Startup | the supply and purchase records on the manual route | first production increment | designed |
@@ -294,11 +304,12 @@ The order (Q23; adopted, A70):
 
 1. Round R2a is technically accepted on software 0.1.3 (`decisions.md` 6.11). Preserve its
    deployment and evidence; later work below does not reopen it.
-2. The owner's rulings. The recommendations on Q17 to Q29 are adopted (A70). Still to be ruled,
-   for the next version of the ledger: Q13 and the rest of Q16.
-3. The next version of the ledger, with its remaining choices resolved before implementation.
-   R3 uses it as required by A35. R2b follows the route decided under Q13 and Q14; the current
-   proposal uses that next version, and remains a proposal until that route is ruled.
+2. The owner's rulings. The recommendations on Q17 to Q29 are adopted (A70), and Q13 to Q16 are
+   ruled (A74 to A77). Still to be ruled, for the next version of the ledger: the freeze of its
+   interfaces and its build (Q30, Q31).
+3. The next version of the ledger: built and tested locally; then the freeze of its interfaces,
+   its builds and deployment tooling, and its client. R3 uses it as required by A35, and R2b
+   runs on it (A75), each round with a configuration and an operation package of its own.
 4. The first production increment, beside R2b and R3: the mechanism. It needs no third party and
    no cell. The three further acceptances follow as their parties are there, in no fixed order.
 5. The second and third increments, each opened by a ruling of its own.

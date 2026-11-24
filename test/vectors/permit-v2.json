@@ -1,0 +1,131 @@
+{
+  "schema": "finchain-pouw.eip712-vectors/1",
+  "note": "Fixed vectors of the three signed statements of ledger v2. Each is signed with the private key whose value is the number one - a public test key that guards nothing - and the signer is its address. Vectors on chain 31337 and the ledger address of ones are also checked on the contract, whose code the test places at that address.",
+  "domain": {
+    "name": "PoUW Genesis Ledger",
+    "version": "2"
+  },
+  "types": {
+    "domain": "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
+    "Permit": "Permit(address account,address delegate,uint32 scope,uint64 notBeforeEpoch,uint64 notAfterEpoch,uint64 nonce,address guard,uint64 guardBindingVersion)",
+    "Revoke": "Revoke(address account,bytes32 permitDigest)",
+    "RaiseNonce": "RaiseNonce(address account,uint64 minNonce)"
+  },
+  "signer": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+  "vectors": [
+    {
+      "name": "permit of an account without code, both operations",
+      "kind": "Permit",
+      "chainId": "31337",
+      "ledger": "0x1111111111111111111111111111111111111111",
+      "message": {
+        "account": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        "delegate": "0x2222222222222222222222222222222222222222",
+        "scope": "3",
+        "notBeforeEpoch": "2",
+        "notAfterEpoch": "9",
+        "nonce": "7",
+        "guard": "0x0000000000000000000000000000000000000000",
+        "guardBindingVersion": "0"
+      },
+      "typeHash": "0xa8e87842580eebe099f1284d04489b3f8cb1c4eed6afe3ae32f8ae079204d9bd",
+      "structHash": "0x631cc9ee98fc8b62d68ead23a730954e5df1386616da98ada378c3e83d0b9434",
+      "domainSeparator": "0x77ce905cd9baa86806e2ef5bdf867a8a0cb553d800eba0c784bfacb595348b16",
+      "digest": "0x393f19501f1c98305bdea68f72e8e17b7f1cc4350577195e7b2091bbcaab5080",
+      "signature": "0x9b5d0f583865329132a2a7db20daad782646798480d4c1eba4ad96a8020a78c326eb777e6b92842a2169b548e146621170d611573ed30cecb5c58aec5597e54b1c"
+    },
+    {
+      "name": "permit of a contract account, one operation, with a guard binding",
+      "kind": "Permit",
+      "chainId": "31337",
+      "ledger": "0x1111111111111111111111111111111111111111",
+      "message": {
+        "account": "0x3333333333333333333333333333333333333333",
+        "delegate": "0x2222222222222222222222222222222222222222",
+        "scope": "1",
+        "notBeforeEpoch": "0",
+        "notAfterEpoch": "18446744073709551615",
+        "nonce": "0",
+        "guard": "0x4444444444444444444444444444444444444444",
+        "guardBindingVersion": "3"
+      },
+      "typeHash": "0xa8e87842580eebe099f1284d04489b3f8cb1c4eed6afe3ae32f8ae079204d9bd",
+      "structHash": "0x0e16e8489ba6f6ce806161679376804704973182fc14a083d42297556f08a600",
+      "domainSeparator": "0x77ce905cd9baa86806e2ef5bdf867a8a0cb553d800eba0c784bfacb595348b16",
+      "digest": "0x520f794fc6cf71021861f55082ad140fd6e952f2a2c54a15abd1a1e47b33ae0f",
+      "signature": "0x2330d3152566afadfd18b88d28ce21e40626e13ad89749b54e1ae91399c4d8a72a81ab23c068089f6aa1cb13cc6184383fecf5286ce5acecc677857a82f009a81c"
+    },
+    {
+      "name": "revocation of the first permit",
+      "kind": "Revoke",
+      "chainId": "31337",
+      "ledger": "0x1111111111111111111111111111111111111111",
+      "message": {
+        "account": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        "permitDigest": "0x393f19501f1c98305bdea68f72e8e17b7f1cc4350577195e7b2091bbcaab5080"
+      },
+      "typeHash": "0xcedb6f88a78b45a9cc4b0e6291a27a44473908ae72a5e6ab7429bdcc35933495",
+      "structHash": "0xc13847ed206a7c082889788ba30826e7a1d8fa9dffac708631cdcfd8b8e6b67e",
+      "domainSeparator": "0x77ce905cd9baa86806e2ef5bdf867a8a0cb553d800eba0c784bfacb595348b16",
+      "digest": "0xac1a303677a9352a3817700412fe81fa174085f44e55ba93c021b45245353263",
+      "signature": "0x5843552389cebf009be4da180505c121c8f586234e28898f592a2f4c1cdf4bcc171aab204fc79f653f99bca2ffb42f7642cefe317c1bc04a526b7c97710a62bc1c"
+    },
+    {
+      "name": "raising the account's minimum nonce",
+      "kind": "RaiseNonce",
+      "chainId": "31337",
+      "ledger": "0x1111111111111111111111111111111111111111",
+      "message": {
+        "account": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        "minNonce": "8"
+      },
+      "typeHash": "0x0cb885398daea16a95b032e17d16239e0f7106483d4841e32dc3e2125d11b7e7",
+      "structHash": "0x24a877c638098928f09fe527b7122a0bd2d5714998eb10e1c9c1b1584732f426",
+      "domainSeparator": "0x77ce905cd9baa86806e2ef5bdf867a8a0cb553d800eba0c784bfacb595348b16",
+      "digest": "0xa4374ca1f8985360a4000fbd24befc8675ba44cf726fae6d60083dc37dbcca09",
+      "signature": "0x0353a5d4b60dcfb45c0b8fb88280db1267b86f870bbf42f26e0bb06514fd427a3db60470fafe070dd0e85ade72b021da5c029ac7ad9bb873b6809807a658567d1b"
+    },
+    {
+      "name": "the first permit on another chain",
+      "kind": "Permit",
+      "chainId": "1",
+      "ledger": "0x1111111111111111111111111111111111111111",
+      "message": {
+        "account": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        "delegate": "0x2222222222222222222222222222222222222222",
+        "scope": "3",
+        "notBeforeEpoch": "2",
+        "notAfterEpoch": "9",
+        "nonce": "7",
+        "guard": "0x0000000000000000000000000000000000000000",
+        "guardBindingVersion": "0"
+      },
+      "typeHash": "0xa8e87842580eebe099f1284d04489b3f8cb1c4eed6afe3ae32f8ae079204d9bd",
+      "structHash": "0x631cc9ee98fc8b62d68ead23a730954e5df1386616da98ada378c3e83d0b9434",
+      "domainSeparator": "0x242517cc43c01b44599b80f8316f07833d3467e6d6cae1646448dc7db64090e0",
+      "digest": "0x098ae55b43e3c98ac35bfd1af29f1ef87e13b1b9cb25bcc92454aa87787b49cf",
+      "signature": "0x6303278aca3c8b78e306dde22b825531e84e182b2b87788b9a16325903fbf9593549385230abe71e30cd3745831be5234a2b326534dabba496fc3c9c253858a81c"
+    },
+    {
+      "name": "the first permit against another ledger",
+      "kind": "Permit",
+      "chainId": "31337",
+      "ledger": "0x5555555555555555555555555555555555555555",
+      "message": {
+        "account": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+        "delegate": "0x2222222222222222222222222222222222222222",
+        "scope": "3",
+        "notBeforeEpoch": "2",
+        "notAfterEpoch": "9",
+        "nonce": "7",
+        "guard": "0x0000000000000000000000000000000000000000",
+        "guardBindingVersion": "0"
+      },
+      "typeHash": "0xa8e87842580eebe099f1284d04489b3f8cb1c4eed6afe3ae32f8ae079204d9bd",
+      "structHash": "0x631cc9ee98fc8b62d68ead23a730954e5df1386616da98ada378c3e83d0b9434",
+      "domainSeparator": "0x4e95e89b12ecd84193a5fbfb2b60414fd1a5db3403fff86f50ce85cc884e646d",
+      "digest": "0xf06b7d27de2a8cecd1a8caa0529f69c3e29c4fa2bb43e92ebde3e3251342900f",
+      "signature": "0xa771c4f8e87ec1f9b12d75a1a3ba5d7a0ffebd3303cee21aeeec8e21f245f1771900b9bbe021a7129a2c070cd12d542295386d9f6a23a02849b030441b8e70e41b"
+    }
+  ]
+}

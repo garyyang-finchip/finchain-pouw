@@ -6,13 +6,14 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.3 - round R1 passed with conditions; round R2a passed advisor technical acceptance.**
+Status: **v0.1.4 - round R1 passed with conditions; round R2a passed advisor technical
+acceptance; ledger v2 is built and tested on a local network and is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
-contracts are those of v0.1.2. This version adds what a public deployment needs - committed
+contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
 builds, a deployment that records code hashes, a check of deployed code, an operator's round, the
-identity check - and rehearses round R2 with them. Round R2a, the operator-wallet integration,
-was run on Finchain Sepolia on 2026-11-24 from this release. Its manifest is
+identity check - and rehearsed round R2 with them. Round R2a, the operator-wallet integration,
+was run on Finchain Sepolia on 2026-11-24 from release 0.1.3. Its manifest is
 `deployments/finchain-sepolia-r2.json` and its records are under `evidence/r2a/`, with an index
 that sets what was observed against what was expected. The advisor accepted R2a on 2026-11-24
 after reviewing evidence commit `b53e52f`; the scoped outcome and its provenance are recorded in
@@ -21,11 +22,28 @@ FPM01-G v0.2 (the owner's PoUW strategy and Genesis Mining design record); `docs
 lists what is approved, what this repository proposes, what is still open for the owner's ruling,
 and which figures are only illustrative.
 
+Release 0.1.4, with design revision v0.1.10 (2026-11-25), is the first change of the software
+since 0.1.3. It follows the owner's rulings of 2026-11-25 on how a contract account takes part,
+on the next version of the ledger and on the client's audit (`docs/decisions.md` A73 to A79,
+section 14). Two things are in it:
+
+- **The reference client reads one block.** An audit and a check of a deployment take one
+  finalized block and read every log, view and piece of code at it; the record names the block
+  and has a canonical form with two hashes; the authority at a settlement is reported as far as
+  a tender's log settles it; work that is recorded is not sent again. This runs against the
+  kernel as it is deployed for round R2a.
+- **Ledger v2** (`contracts/v2/`, `docs/ledger-v2.md`): a second set of contracts beside the
+  kernel, with a bounded delegation that an account signs, a cap on a declared operator's
+  aggregate, work facts apart from receipts and the receipt fields of the production line. It is
+  written and tested on a local network. It is not deployed, no build of it is committed, its
+  interfaces are not frozen, and nothing was signed.
+
+The contracts of the kernel and their committed builds are unchanged, byte for byte. Round R2a
+ran from software 0.1.3, and its records stay as made.
+
 Design revisions v0.1.4 to v0.1.9 (all 2026-11-24) are revisions of the documents; v0.1.9 also
-adds the records of round R2a. The software is release 0.1.3, unchanged: no contract, interface,
-client, script, configuration or deployment changes with any of them. The runbook's normal-path
-command blocks stay unchanged; its fallback and evidence instructions are made explicit. Round
-R2a ran from software 0.1.3.
+adds the records of round R2a. None of them changed the software. The runbook's normal-path
+command blocks stay unchanged; its fallback and evidence instructions are made explicit.
 v0.1.4 records the alignment of the owner and the advisor on the production line - model-token
 generation as the first production commodity, the economic stages, the three operating
 dimensions, the complete AI Node, production roles, evidence, procurement and payment - and adds
@@ -82,10 +100,20 @@ contracts/             the kernel
   interfaces/            the kernel's interfaces and the part of ERC-8414 it reads
   testing/               contracts used by the tests and the rehearsal only
   vendor/erc8414/        the ERC-8414 reference contracts, pinned byte for byte, as test fixtures
-build/                 the deployable contracts as compiled: what a deployment is made from
+  v2/                    ledger v2, beside the kernel: local, not deployed, interfaces not frozen
+    GenesisPolicyV2.sol      the policy with the operator cap, the task-unit rule and guard bindings
+    GenesisLedgerV2.sol      permits checked at each use, operator aggregation, facts and receipts
+    TenderAdapter8414V2.sol  a fact by anyone; a confirmation by the owner or its delegate
+    guards/FogaCellGuard.sol an optional guard for FOGA cells; nothing of the kernel names it
+build/                 the deployable contracts of the kernel as compiled: what a deployment is made from
 client/                the reference client: pouw.js, lib/, abi/
-test/                  the test suite
+  lib/canonical.js       the one byte form of a record, and its two hashes
+  lib/permit.js          the three signed statements of ledger v2 as typed data
+  lib/ledger2.js         the encodings and the allocation of ledger v2, off chain
+test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
+  sign-permit.js         one statement of ledger v2, signed off line from a key file; no network
+  report-hash.py         the two hashes of a record, computed again from its file
   keys.js                key files for a deployment's parties, made on the host that uses them
   deploy.js              a deployment from a configuration file and build/, with a read-back
   round.js               an operator's round: test tenders, confirmations, audit jobs, close records
@@ -96,8 +124,9 @@ deployments/           the manifest format; the configuration and the manifest o
 evidence/              records, as in finchain: local-run-<time>.json, and r2a/, the records of
                        round R2a on Finchain Sepolia
 docs/                  decisions, architecture, the MVP specification with the production extension
-                       design, the plans of the first production service and of the supply and
-                       payment interfaces, roadmap, acceptance matrix, the runbook of round R2a
+                       design, ledger v2, the plans of the first production service and of the
+                       supply and payment interfaces, roadmap, acceptance matrix, the runbook of
+                       round R2a
 .github/workflows/     the tests and the rehearsal on a hosted runner; the independent audit
 ```
 
@@ -108,7 +137,7 @@ Node.js 20 or later, and nothing else: the Solidity compiler is the solc-js buil
 
 ```
 npm ci
-npm test            # the kernel, the client and its audit, deployment; on an in-process network
+npm test            # the kernel, the client and its audit, deployment, ledger v2; on an in-process network
 npm run local-run   # the rehearsal of round R2 on a development network; writes evidence/local-run-<time>.json
 ```
 
@@ -140,14 +169,19 @@ node client/pouw.js seal   <epoch> --manifest <manifest> --key-file <file>
 node client/pouw.js audit  <epoch> --manifest <manifest> [--out record.json]
 ```
 
-It speaks JSON-RPC only and runs on any machine; an ordinary full node behind the endpoint is
-enough, and the endpoint is the manifest's unless `--rpc` names another. A key is read from a
-file on the machine that holds it - a file only its owner can read - never from the command line,
-and never leaves that machine. `verify` and `audit` need no key. `verify` checks that the code at
-the manifest's addresses is this repository's build and that the contracts are wired as the
+It speaks JSON-RPC only and runs on any machine; the endpoint is the manifest's unless `--rpc`
+names another. An audit and a check of a deployment read one block - `finalized`, or the block
+`--tag` names - and nothing after it, so the endpoint must be able to serve the state of that
+block; where it cannot, the client stops with exit status 4 and reads no other block. A key is read
+from a file on the machine that holds it - a file only its owner can read - never from the command
+line, and never leaves that machine. `verify` and `audit` need no key. `verify` checks that the
+code at the manifest's addresses is this repository's build and that the contracts are wired as the
 manifest says. `audit` re-decides every receipt of an ended epoch from the chain's log, recomputes
-the totals and every allocation, and reports each figure in which the ledger differs. `work` does
-the same audit of the previous epoch before it submits, and submits nothing over a difference.
+the totals and every allocation, and reports each figure in which the ledger differs. Its record
+names the block it read by number, hash and time, and carries two hashes of its canonical form;
+`python3 scripts/report-hash.py <record>` computes them again. `work` does the same audit of the
+previous epoch before it submits, and submits nothing over a difference; `work` and `bridge` first
+look for the receipt by its contribution id, and send nothing when it is recorded.
 
 A participant is the address that sends. With `--account` the client acts through a contract
 account, and the worker of record - and the owner that confirms a tender - is the account, not
@@ -182,6 +216,7 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 | `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the reviews of design revisions v0.1.4, v0.1.5 and v0.1.6, and how each is applied; the owner's adoption of the advisor's recommendations on Q17 to Q29; this repository's proposals, each open to a veto; the questions put to the owner, open and adopted; illustrative figures |
 | `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
 | `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
+| `docs/ledger-v2.md` | Ledger v2 as built on a local network: participant, sender and origin; the permit and the two statements that end one; the check at each use; guards; ending permits and taking a key's signing right away; the receipt and the order of the reasons; the operator cap; work facts and confirmations; the authority at settlement; the interfaces proposed for freezing, with every encoding; the client's audit at one block; the test matrix with its results; what is not built |
 | `docs/production-service.md` | Plan, adopted as design (A70) and not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work with the task description behind the content key, and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
 | `docs/supply-and-payment.md` | Plan, adopted as design (A70) and not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - with the attempts under a purchase, and what settlement means per channel; the budget book of an agent's purchases and the recovery after a crash; failure and recovery; the customer's payment; the operating report; the later adaptations |
 | `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the first production increment, the staged acceptances after it and the linked chain of evidence that closes the first production milestone; the later increments and the order |

@@ -33,6 +33,7 @@ const os = require("os");
 const path = require("path");
 const { ethers } = require("ethers");
 const g = require("../client/lib/genesis");
+const canonical = require("../client/lib/canonical");
 const c = require("./lib/common");
 const { TENDER_ABI, eventIn } = require("./lib/tender");
 
@@ -229,7 +230,9 @@ async function main() {
   const pushed = await pouw(["bridge", t0.tokenId, t0.submissionId], "wallet-b");
   check("a key that does not own a tender cannot confirm it: refused with NotDemander", pushed.status === 1 && pushed.stderr.includes("NotDemander"));
   const twice = await pouw(["work"], "wallet-a");
-  check("a second submission for the same instance is refused with AlreadySubmitted", twice.status === 1 && twice.stderr.includes("AlreadySubmitted"));
+  check("a second pouw work for the same instance finds its receipt by the contribution id and sends nothing",
+    twice.status === 0 && twice.json?.alreadyRecorded === true && twice.json.txHash === null
+    && worksOf(rounds[0]).some((w) => w.worker === address["wallet-a"] && w.receiptId === twice.json.receiptId));
   const early = await pouw(["audit", 0]);
   check("an audit of an epoch that has not ended is refused (exit status 3)", early.status === 3);
   const tooEarly = await pouw(["seal", 0], "wallet-a");
@@ -281,6 +284,17 @@ async function main() {
     let same = a.json.table.length === 2;
     for (const row of a.json.table) same = same && (await reader.allocation(e, row.worker)).toString() === row.allocation;
     check(`epoch ${e}: every row of the audit's table equals the ledger's view`, same);
+    // one block for everything: named in the record with its hash and its time, the close record within it
+    const snap = a.json.snapshot ?? {};
+    check(`epoch ${e}: the audit read one block and names it; the epoch's close record lies within that block`,
+      a.json.schema === "finchain-pouw.audit/2" && a.json.snapshotTag === "finalized" && /^0x[0-9a-f]{64}$/.test(snap.hash ?? "") && Number(snap.timestamp) > 0
+      && a.json.sealed === true && a.json.closeRecord.present === true && a.json.closeRecord.block <= snap.number
+      && !Number.isNaN(Date.parse(a.json.observedAt)));
+    // the same block again, by its number: what was found is the same, the report is another, and both hashes recompute
+    const again = await pouw(["audit", e], null, ["--tag", snap.number]);
+    check(`epoch ${e}: an audit repeated at that block has the same result hash; the hashes of both records are those of their canonical form`,
+      again.status === 0 && again.json?.snapshot.hash === snap.hash && again.json.resultHash === a.json.resultHash
+      && [a.json, again.json].every((r) => canonical.reportHash(r) === r.reportHash && canonical.resultHash(r) === r.resultHash));
     audits.push(a.json);
   }
   const rowOf = (e, who) => audits[e].table.find((r) => r.worker === address[who]);

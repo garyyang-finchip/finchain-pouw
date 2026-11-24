@@ -16,9 +16,10 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
                                        previous epoch in full, submit only if the recomputation matches
   pouw bridge <tokenId> <submissionId> confirm a settled submission of an ERC-8414 tender the key owns (g1.tender)
   pouw seal <epoch>                    write the close record of an ended epoch (any key; changes no figure)
-  pouw audit <epoch>                   recompute an ended epoch from the chain and compare it with the ledger
+  pouw audit <epoch>                   recompute an ended epoch from the chain and compare it with the ledger.
+                                       Everything is read at one block, which the record names
   pouw verify                          check the deployment: the code on chain is this repository's build, and
-                                       the contracts are wired as the manifest says
+                                       the contracts are wired as the manifest says. Read at one block as well
 
   --manifest <path>    deployment manifest                       (or POUW_MANIFEST)
   --rpc <url>          JSON-RPC endpoint                          (or POUW_RPC, else the manifest's rpc)
@@ -27,14 +28,18 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
                        The worker of record, and the tender owner that bridges, is then the account and
                        not the key. The key must be the account's owner or operator
   --address <address>  status: also show this address
-  --tag <tag>          block treated as settled: finalized (default), safe, latest, or a block number
+  --tag <tag>          block treated as settled: finalized (default), safe, latest, or a block number.
+                       audit and verify take that block once and read nothing after it; a number repeats
+                       a run at the block of an earlier record
+  --require-sealed     audit: also report it as a difference when the epoch has no close record at the block
   --log-chunk <n>      largest block range of one log query; 0 = no limit   (or POUW_LOG_CHUNK, else the
                        manifest's logChunk, else 0)
   --json               print JSON instead of text
   --out <path>         audit, verify: also write the record to a file
 
 Exit status: 0 done / the audit or the check matches; 2 it differs (and work submits nothing);
-3 not settled yet; 1 any other failure.
+3 not settled yet; 4 the endpoint cannot serve state at the block that was taken (nothing is read at
+another block in its place); 1 any other failure.
 A key is read from a file and never from the command line. An audit needs no key.
 Never give this client a key that a running agent node also sends from: two programs sending from one
 key collide on nonces. A key beside an agent is its operator's wallet, not the agent: an agent whose
@@ -42,7 +47,7 @@ identity is a contract account takes part only when that account is the sender.`
 
 function parse(argv) {
   const opts = { _: [] };
-  const flags = new Set(["json", "help"]);
+  const flags = new Set(["json", "help", "require-sealed"]);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (!a.startsWith("--")) { opts._.push(a); continue; }
@@ -68,7 +73,7 @@ function need(value, what) {
   return value;
 }
 
-async function open(opts, { signer = false } = {}) {
+async function open(opts, { signer = false, pinned = false } = {}) {
   const manifestPath = need(opts.manifest ?? process.env.POUW_MANIFEST, "--manifest (or POUW_MANIFEST)");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   if (manifest.schema !== g.MANIFEST_SCHEMA) throw new Error(`${manifestPath}: schema is ${manifest.schema}, expected ${g.MANIFEST_SCHEMA}`);
@@ -82,7 +87,9 @@ async function open(opts, { signer = false } = {}) {
     runner = new ethers.Wallet(readKeyFile(keyFile), provider);
   }
   const tag = opts.tag === undefined ? "finalized" : (/^\d+$/.test(opts.tag) ? Number(opts.tag) : opts.tag);
-  const ctx = await g.connect(manifest, runner, { tag, logChunk: opts["log-chunk"] ?? process.env.POUW_LOG_CHUNK });
+  // an audit and a check take their block before anything else is read, the connection included
+  const pin = pinned ? await g.pinBlock(provider, tag) : null;
+  const ctx = await g.connect(manifest, runner, { tag, logChunk: opts["log-chunk"] ?? process.env.POUW_LOG_CHUNK, pin });
   return { ctx, rpc, provider, signer: signer ? runner : null };
 }
 
@@ -125,7 +132,9 @@ async function status(opts) {
 async function work(opts) {
   const { ctx, signer } = await open(opts, { signer: true });
   const r = await g.workAudit(ctx, signer, { account: opts.account ?? null });
-  const text = `epoch ${r.epoch}: ${r.worker}${via(r)} audited ${r.audited === null ? "the deployment's configuration" : `epoch ${r.audited} (${r.receiptsAudited} receipts)`}; `
+  const text = r.alreadyRecorded
+    ? `epoch ${r.epoch}: the audit job of ${r.worker}${via(r)} is recorded already, receipt ${r.receiptId} (${g.VERDICT_NAME[r.status.verdict]}, ${g.INELIGIBLE_NAME[r.status.ineligible]}); nothing was sent`
+    : `epoch ${r.epoch}: ${r.worker}${via(r)} audited ${r.audited === null ? "the deployment's configuration" : `epoch ${r.audited} (${r.receiptsAudited} receipts)`}; `
     + `receipt ${r.receiptId} ${g.VERDICT_NAME[r.status.verdict]}, ${g.INELIGIBLE_NAME[r.status.ineligible]}, GMU ${r.status.gmuSubsidized}/${r.status.gmuMeasured}; tx ${r.txHash}`;
   print(opts, r, text);
 }
@@ -136,7 +145,8 @@ async function bridge(opts) {
   const { ctx, signer } = await open(opts, { signer: true });
   const r = await g.bridgeTender(ctx, signer, { tokenId, submissionId, account: opts.account ?? null });
   print(opts, r, `receipt ${r.receiptId} in epoch ${r.epoch}: confirmed by ${r.demander}${via(r)} for the worker ${r.worker}; `
-    + `${g.INELIGIBLE_NAME[r.status.ineligible]}, relation ${g.RELATION_NAME[r.status.relation]}, GMU ${r.status.gmuSubsidized}/${r.status.gmuMeasured}; tx ${r.txHash}`);
+    + `${g.INELIGIBLE_NAME[r.status.ineligible]}, relation ${g.RELATION_NAME[r.status.relation]}, GMU ${r.status.gmuSubsidized}/${r.status.gmuMeasured}; `
+    + (r.alreadyRecorded ? "recorded already, nothing was sent" : `tx ${r.txHash}`));
 }
 
 async function seal(opts) {
@@ -149,8 +159,8 @@ async function seal(opts) {
 
 async function audit(opts) {
   const epoch = BigInt(need(opts._[1], "epoch"));
-  const { ctx, rpc } = await open(opts);
-  const report = await g.auditEpoch(ctx, epoch);
+  const { ctx, rpc } = await open(opts, { pinned: true });
+  const report = await g.auditEpoch(ctx, epoch, { requireSealed: Boolean(opts["require-sealed"]) });
   const record = auditRecord(ctx, report, { rpc });
   if (opts.out) fs.writeFileSync(opts.out, JSON.stringify(record, null, 2) + "\n");
   console.log(opts.json ? JSON.stringify(record, null, 2) : auditText(ctx, report));
@@ -158,18 +168,22 @@ async function audit(opts) {
 }
 
 async function verify(opts) {
-  const { ctx, rpc } = await open(opts);
+  const { ctx, rpc } = await open(opts, { pinned: true });
   const loadBuild = (name) => JSON.parse(fs.readFileSync(path.join(__dirname, "..", "build", `${name}.json`), "utf8"));
   const result = await g.verifyDeployment(ctx, loadBuild);
-  const record = g.jsonable({
-    schema: "finchain-pouw.deployment-check/1", environment: ctx.manifest.environment ?? "unspecified", labels: ctx.manifest.labels ?? [],
+  // schema 2: read at one block, which `snapshot` names; the two hashes are those of an audit record
+  const record = g.withHashes(g.jsonable({
+    schema: "finchain-pouw.deployment-check/2", environment: ctx.manifest.environment ?? "unspecified", labels: ctx.manifest.labels ?? [],
     deployment: ctx.manifest.name ?? "unnamed",
-    chainId: ctx.chainId, ledger: ctx.ledger.target, settledTag: String(ctx.tag), endpointHost: (() => { try { return new URL(rpc).host; } catch { return "unknown"; } })(),
+    chainId: ctx.chainId, ledger: ctx.ledger.target, snapshot: g.snapshotOf(result.pin), snapshotTag: result.pin.tag,
+    snapshotFinality: result.pin.finality, observedAt: result.pin.observedAt,
+    endpointHost: (() => { try { return new URL(rpc).host; } catch { return "unknown"; } })(),
     recordedAt: new Date().toISOString(), client: CLIENT, ok: result.ok, epoch: result.epoch, started: result.started, steward: result.info.steward,
     paused: result.info.paused, code: result.code, checks: result.checks,
-  });
+  }));
   if (opts.out) fs.writeFileSync(opts.out, JSON.stringify(record, null, 2) + "\n");
   const text = [`${ctx.manifest.name ?? "deployment"} on chain ${ctx.chainId}: ${result.ok ? "MATCH" : "DIFFERS"}`,
+    `  read at block ${result.pin.number} ${result.pin.hash} (${result.pin.finality}), observed ${result.pin.observedAt}`,
     ...result.checks.map((c) => `  ${c.ok ? "ok  " : "FAIL"} ${c.what}${c.ok || !c.detail ? "" : ` (${c.detail})`}`),
     `  steward ${result.info.steward}${result.info.paused ? "; recording is PAUSED" : ""}`].join("\n");
   console.log(opts.json ? JSON.stringify(record, null, 2) : text);
@@ -187,6 +201,7 @@ async function main() {
 
 main().then((code) => { process.exitCode = code; }, (e) => {
   if (e instanceof g.NotFinalYet) { console.error(`not settled yet: ${e.message}`); process.exitCode = 3; return; }
+  if (e instanceof g.StateUnavailable) { console.error(`no state at the block: ${e.message}`); process.exitCode = 4; return; }
   if (e instanceof g.AuditMismatch) { console.error(`nothing submitted: ${e.message}`); process.exitCode = 2; return; }
   const refused = g.refusal(e);
   console.error(refused ? `pouw: refused by the contract: ${refused.name}(${refused.args.join(", ")})` : `pouw: ${e.shortMessage ?? e.message}`);

@@ -1,9 +1,12 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.9, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
-recommendations on Q17 to Q29, and the run of round R2a with its review (`decisions.md` A55-A72).
+Design revision v0.1.10, with software release 0.1.4, after the reviews of v0.1.4 to v0.1.7,
+the owner's adoption of the recommendations on Q17 to Q29, the run of round R2a with its review,
+and the owner's rulings of 2026-11-25 (`decisions.md` A55-A79).
 Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
-added for the next version of the ledger (D18 to D21, A64). Sections 11 to 14 are deliverable D
+added for the next version of the ledger (D18 to D21, A64), which pass on a local network from
+release 0.1.4, and with the rows of the client's audit at one block (N9, D22, R11 to R14).
+Section 15 points to the test matrix of ledger v2. Sections 11 to 14 are deliverable D
 of the alignment of 2026-11-24 (A54): the staged acceptance of the production extension,
 corrected and extended as the two reviews asked (A56 to A60, A65). Every row of those four
 sections is planned and not run: A70 adopts the specified designs, not a test result.
@@ -36,7 +39,8 @@ at finalized state by a machine that is not the operator's. Evidence is a record
 `environment` and `recordedAt`, as in `finchain`, and with the deployment's `labels`.
 
 Tests are named by file: `policy`, `g0`, `g1`, `epoch`, `audit`, `account`, `deploy`, `round`,
-`boundaries` stand for `test/<name>.test.js`. All of them, and the rehearsal, can also be run on a
+`boundaries`, `snapshot`, and `v2.permit`, `v2.guard`, `v2.ledger`, `v2.allocation` for ledger
+v2, stand for `test/<name>.test.js`. All of them, and the rehearsal, can also be run on a
 hosted runner from a clean checkout (`.github/workflows/ci.yml`). That workflow first ran there
 on 2026-11-24, with success; the run, its commit and its record are in `decisions.md` 3.
 
@@ -53,6 +57,7 @@ on 2026-11-24, with success; the run, its commit and its record are in `decision
 | N6 | `g0.cal` re-measured by a sampled verifier | - | deferred |
 | N7 | A receipt overturned late and counted in the next epoch | - | deferred with the challenge window; R1's rule for lateness is row R9 |
 | N8 | A `g0.ver` finding that leads to an overturn | - | deferred |
+| N9 | The record of an audit is hashed | it has one byte form - RFC 8785, with integers only and larger integers as decimal strings - and two hashes over it: of what was found, which two agreeing runs at one block share, and of the whole record with its own member left out. A second implementation and a second program compute the same from the record's file | passes: `snapshot`; rehearsal (an audit repeated at the block of the first: the same result hash, another report hash) |
 
 ## 2. Participation
 
@@ -87,16 +92,17 @@ on 2026-11-24, with success; the run, its commit and its record are in `decision
 | D15 | Work delivered before the deployment's genesis | recorded and measured; not subsidized | passes: `g1`; rehearsal (a tender older than the deployment, confirmed by the account that owns it) |
 | D16 | A tender settled by default, the judge having said nothing | the worker has the bounty and cannot bridge by itself; subsidized once the demander confirms it; the audit reports the settlement as `default` | passes: `g1`, `audit` |
 | D17 | The worker judged its own delivery and handed the right to judge to another address before the bridge | not caught by the ledger: the rule reads the judge of the moment of bridging, finds another address, and the receipt is subsidized when the tender's owner - another admitted address - confirms it, within the caps. The audit reads the tender's own log, finds who judged and who owned it at settlement, and reports the receipt as an observation; `ok` is not affected | passes: `g1`, `audit` - the tests assert the boundary. Eligibility is to depend on it before any subsidy of value (A38) |
-| D18 | A third party records a settled submission before its demander confirms it (the next version of the ledger) | the third party's record is a work fact: it enters no total and does not take the contribution id. The demander's later confirmation makes the receipt, its eligibility decided as for any confirmation, in the epoch in which it is recorded. No earlier epoch changes and no recorded status changes | deferred: with the next version of the ledger. The design is adopted (A64; `decisions.md` P60, Q26, A70) and is not built |
-| D19 | The same settlement recorded as a work fact twice, by one party or by two | one fact, with one stable id of its own; the second call returns it and adds nothing | deferred: with the next version of the ledger. The design is adopted (A64; `decisions.md` P60, Q26, A70) and is not built |
-| D20 | A work fact for a delivery under a production profile | it takes neither the contribution id nor the content key, and uses up no cap and no counter. The confirmation that follows takes the counting as if no fact existed | deferred: with the next version of the ledger. The design is adopted (A64; `decisions.md` P60, Q26, A70) and is not built |
-| D21 | A confirmation with no fact before it; a fact recorded after the receipt; a demander that never confirms | all three are valid, and the fact and the receipt of one work are found by its source. In the third the work has a public fact and no receipt: it is in no epoch's GMU, measured or subsidized, and no report presents it as a contribution that was counted | deferred: with the next version of the ledger. The design is adopted (A64; `decisions.md` P60, Q26, A70) and is not built |
+| D18 | A third party records a settled submission before its demander confirms it (the next version of the ledger) | the third party's record is a work fact: it enters no total and does not take the contribution id. The demander's later confirmation makes the receipt, its eligibility decided as for any confirmation, in the epoch in which it is recorded. No earlier epoch changes and no recorded status changes | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (`ledger-v2.md` 14, rows L26 and L30). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
+| D19 | The same settlement recorded as a work fact twice, by one party or by two | one fact, with one stable id of its own; the second call returns it and adds nothing | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (row L26). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
+| D20 | A work fact for a delivery under a production profile | it takes neither the contribution id nor the content key, and uses up no cap and no counter. The confirmation that follows takes the counting as if no fact existed | passes on a local network at the level of the ledger, for ledger v2, which is not deployed: `v2.ledger` (`ledger-v2.md` 14, row L29), with a module that states what a test tells it. The module of the production profile, which shows membership, is not built |
+| D21 | A confirmation with no fact before it; a fact recorded after the receipt; a demander that never confirms | all three are valid, and the fact and the receipt of one work are found by its source. In the third the work has a public fact and no receipt: it is in no epoch's GMU, measured or subsidized, and no report presents it as a contribution that was counted | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (row L26). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
+| D22 | A verifier hands the right to judge on inside its own verification: the tender's log then shows the successor as the last authority before the acceptance | the audit keeps the registered address as what the log holds, marks the evidence `evidence-insufficient`, and draws no observation about a party from it - it does not say that the worker judged its own delivery when the successor is the worker. Without the handing on, the registered authority is visible and is the verifier | passes: `snapshot` (`ledger-v2.md` 10 and 14, row L32). Derived from the reference contract's source and reproduced locally with a verifier written for the test; not observed on a public chain |
 
 ## 4. Disconnection, restart, lateness and recovery
 
 | Id | Scenario | Expected outcome | State |
 | --- | --- | --- | --- |
-| R1 | A worker is stopped and started again | it runs the job again: accepted once, refused afterwards; nothing is counted twice | passes: `g0`, `audit`, `round`; rehearsal. Sepolia, round R2a: the round command run a second time |
+| R1 | A worker is stopped and started again | it runs the job again: accepted once; afterwards the client finds the receipt and sends nothing (from release 0.1.4 - before, the second submission was sent and refused by the ledger, which still refuses one that is sent); nothing is counted twice | passes: `g0`, `audit`, `round`; rehearsal. Sepolia, round R2a: the round command run a second time |
 | R2 | Nobody writes the close record (revised: there is no keeper) | nothing depends on it: the allocation is final when the epoch has ended; the next epoch's first use, or anyone, writes the record later | passes: `epoch` |
 | R3 | The endpoint drops or rate-limits during a submission, or serves a log query over a limited range only | the command is run again: every step looks at the chain first, and at most one receipt exists. The client reads the log in ranges and gets the same result | passes: `audit` (ranges of 1, 7 and 1000 blocks); `round` (a test tender stopped after each of its steps and carried on); rehearsal (ranges of 40 blocks; the round run again). Sepolia, round R2a |
 | R4 | A reorganization before finality | the client reads logs up to the settled block; it neither audits an epoch nor does the audit job on top of it before that block has passed the epoch's end | passes: `audit`; rehearsal (the endpoint holds its finalized block back: the audit and the audit jobs wait, and go on when it moves). Sepolia, round R2a |
@@ -106,6 +112,10 @@ on 2026-11-24, with success; the run, its commit and its record are in `decision
 | R8 | An epoch nobody opens, or nobody uses | the first receipt captures the seed; an unused epoch is empty, allocates nothing and can be sealed | passes: `epoch` |
 | R9 | Late acceptance: delivered in one epoch, accepted in a second, bridged in a third | one receipt, in the epoch it is recorded in, under that epoch's rules; the earlier epochs do not move | passes: `epoch` |
 | R10 | A G0 submission that lands after its epoch, or an old epoch's output submitted for the current one | the first reverts and spends nothing; the second is recorded as rejected | passes: `g0` |
+| R11 | An audit, or a check of a deployment, while the chain goes on | it takes one block and reads everything at it: the logs up to it, and every view, nested read and piece of code at its number. The record names the block by number, hash and time and keeps the time of observation apart. The close record is verified within the block, and an epoch that was not yet sealed at that block is reported as not sealed, whatever is true later | passes: `snapshot` (every read of a watched endpoint names the block); rehearsal (`ledger-v2.md` 14, row L34) |
+| R12 | The endpoint cannot serve state at the block the audit took | the run fails with that reason (exit status 4) and reads no other block in its place; a revert is the contract's answer and is not taken for a missing state | passes: `snapshot` (row L34) |
+| R13 | The answer to a submission or a confirmation is lost, or the process stops after sending | after a restart the client finds the receipt by its contribution id and sends nothing; a confirmation is looked up for the tender's owner only, and anybody else is refused by the adapter as before | passes: `snapshot` (row L33), `audit`, `account`; rehearsal |
+| R14 | The block an audit read no longer has the hash it had | nothing is reported | passes: `snapshot` |
 
 ## 5. Versions
 
@@ -172,11 +182,12 @@ checks, all of which must hold for the record to say `ok`:
 | before genesis the round does nothing and says when to come back | - |
 | epoch 0, a controlled self-test: a test tender each way is settled and confirmed, both wallets do the audit job; each wallet is allocated the capped quarter of either pool and half the budget stays unallocated | N1, N2, N3, D10 |
 | run again in the same epoch, the round finds its work on chain and does nothing twice | D1, D2, R1, R3 |
-| a key that does not own a tender cannot confirm it; a second submission for the same instance is refused; a close record for a running epoch is refused | D11, D1, R7 |
+| a key that does not own a tender cannot confirm it; a second `pouw work` for the same instance finds its receipt and sends nothing; a close record for a running epoch is refused | D11, R1, R13, R7 |
 | an epoch that has not ended, or has ended and is not settled, is not audited; the audit jobs of the next epoch wait for it, and go on when the settled block moves | R4 |
 | epoch 1, standard: the tenders between declared-related wallets are measured and not subsidized; each audit job recomputes epoch 0 in full | D9, N1 |
 | after the last epoch the round writes its close record and starts no new work | N3 |
 | per epoch: the audit, as a separate process with the manifest and the endpoint only, agrees with the ledger on every figure, and every row of its table equals the ledger's view | N3, N4, N5, T5 |
+| per epoch: the audit read one block and names it, with the epoch's close record within it; an audit repeated at that block has the same result hash, and the hashes of both records are those of their canonical form | R11, N9 |
 | the audit adds the table up per declared operator: one operator, two addresses, twice the share an address can have | D6 |
 | every deployment-result record carries the deployment's labels; no contract of the kernel holds funds | M6, X11 |
 | the identity check reads that the agents are contract accounts, that the tender is the account's and that a key alone would not be accepted | T7 |
@@ -232,8 +243,11 @@ update. This outcome neither adopts Q13/Q14/the remaining Q16 choices nor accept
 
 Round R2b is not accepted by any of this. It is accepted when the Cell Accounts of the two cells
 are the admitted parties, the workers of record and the owners that confirm the cells' own
-tenders (T6), by a route that leaves each cell's key inside the cell's own software (A37). Until
-then the rehearsal's second deployment shows the mechanics with test accounts and nothing more.
+tenders (T6), by a route that leaves each cell's key inside the cell's own software (A37). The
+route is ruled (A74, A75): the next version of the ledger, through a bounded delegation that the
+account signs or through the account's own `execute`. That version is built and tested on a
+local network and is not deployed (`ledger-v2.md`; section 15). Until the round is run the
+rehearsal's second deployment shows the mechanics with test accounts and nothing more.
 
 ## 10. What the rounds prove, and what they do not
 
@@ -414,3 +428,25 @@ No increment and no acceptance shows, and none will claim:
 - self-sufficiency, from a renewal that happened by itself or from a token count;
 - anything about real payments, from a mocked provider, a sandbox bill or a test asset;
 - an economic stage: completing an increment certifies none (A53).
+
+## 15. Ledger v2: the test matrix, as run on a local network
+
+The next version of the ledger (`ledger-v2.md`) has a test matrix of its own, of 35 rows, in
+section 14 of that document, with the result of each row and the limits of what a pass covers.
+On 2026-11-25 every row had at least one test that carried its id and passed, on the in-process
+network; the whole suite was 131 tests, of which 83 are the kernel's.
+
+The ids L1 to L35 are those of that document. They are not row L1 of section 11 here, the
+linked chain of evidence: where both could be meant, the document is named.
+
+| Rows of `ledger-v2.md` 14 | What they cover | Tests |
+| --- | --- | --- |
+| L1 to L8, L11, L12, L16, L17 | the permit and the two statements that end one: bound to chain, ledger, account, delegate, operations, epochs and nonce; ended per account; one accepted form of a signature; a check that cannot take the call with it | `v2.permit` |
+| L9, L10, L13 to L15 | a change of an account's keys; the guard, its binding and its version; what stays open while an account is suspended | `v2.guard` |
+| L18 to L20, L25 to L31 | participant, sender and origin; one reason in one order; work facts apart from receipts; a task unit counted once; the epoch of a confirmation; the ledger's reading of a tender | `v2.ledger` |
+| L21 to L24 | the cap on a declared operator's aggregate, the rounding, the zero cases and the attribution fixed at recording; also as properties of scenarios drawn at random | `v2.allocation` |
+| L31 (the audit's part), L32 to L35 | the client of release 0.1.4, against the kernel of 0.1.3: the authority at a settlement, no second sending, one block for an audit, the hashes of a record | `audit`, `snapshot` |
+
+None of these rows is an acceptance of round R2b or of round R3: nothing of ledger v2 is
+deployed, its interfaces are not frozen (`decisions.md` Q30), and the client for a v2 deployment
+is not built. The rows marked "Sepolia, round R2b" in sections 1 to 7 stay as they are.

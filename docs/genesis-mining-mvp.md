@@ -22,7 +22,12 @@ baseline. Design revisions v0.1.5 and v0.1.6 apply the reviews of v0.1.4 and of 
 in the executor's plans. In this document they add a note to 13.7 and update the pointer in
 section 14; no rule, section number or acceptance row changes. Design revision v0.1.8 records the
 owner's adoption of the advisor's recommendations on Q17 to Q29 (A70): here 13.7 says which of
-its two designs is adopted, and the pointer in section 14 says that the plans are.
+its two designs is adopted, and the pointer in section 14 says that the plans are. Design
+revision v0.1.10 comes with software release 0.1.4 (`decisions.md` A73 to A79). The contracts
+of the kernel are unchanged. The reference client changed: section 12 describes how it reads the
+chain from 0.1.4 on, what a record holds and how it reports the authority at a settlement. And
+the designs kept in 13.4, 13.7 and 13.9 are built as ledger v2, a second set of contracts
+beside the kernel, which `ledger-v2.md` specifies.
 
 Sections 1-12 describe the existing contracts under `contracts/`, reference client under
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
@@ -545,6 +550,14 @@ the worker owned the tender when it settled, or the judge or the owner changed b
 settlement and the bridge. Observations are listed per receipt, with whether the receipt was
 subsidized; they are not differences and do not change `ok`.
 
+What the log shows of the judge at a settlement is the authority that was registered: the last
+`AcceptanceAuthorityChanged` record of the tender before the acceptance. From release 0.1.4 a
+G1 receipt's record keeps that address (`authority.registered`) apart from whether it can stand
+for the authority that was consulted (`authority.evidence`). Where the authority of the tender
+changed in the acceptance's own transaction the evidence is `evidence-insufficient`: the
+registered address is still recorded, and no observation about a party is drawn from it. The
+log does not establish who carried out a verification in either case (`ledger-v2.md` 10).
+
 A record names what it is in three fields that are kept apart: `environment` - `local-devnet`,
 `public-testnet` or `mainnet`; `labels`, taken from the manifest, which say what kind of exercise
 the deployment is (`controlled-self-test`, `operator-wallet-integration`); and the epoch's `mode`.
@@ -560,14 +573,38 @@ the manifest's, and that the profiles in force name the manifest's two modules -
 registered later needs a manifest of its own. It reports, without judging it, who the steward is
 and whether recording is paused. It needs no key.
 
-How the chain is read. An epoch's figures can only be changed by transactions in blocks whose
-timestamp lies inside the epoch. The client therefore asks one thing of finality: the settled
-block - `finalized` by default - must be at or past the epoch's end; until then it stops with
-"not settled yet". Logs are read up to that block. State is read at the latest block, and only
-values the settled history has frozen. No call asks for an old state, so an ordinary full node is
-enough. A public endpoint serves a log query over a limited range of blocks: the client reads in
-ranges of the size the manifest names for its endpoint (`logChunk`), and reads a tender's history
-from the block the tender was minted in, which it finds from the newest range backwards.
+How the chain is read, from release 0.1.4 on (A76; `ledger-v2.md` 13). An epoch's figures can
+only be changed by transactions in blocks whose timestamp lies inside the epoch. The client
+takes one block - the settled block, `finalized` by default - and that block must be at or past
+the epoch's end; until then it stops with "not settled yet". Everything is then read at that
+block: the logs up to it, and every view, every nested read and every piece of code at its
+number. The record names the block by number, hash and time, and keeps the time at which the
+client observed it apart. When the reads are done the block's hash is asked for again, and
+nothing is reported if it has changed. `pouw verify` reads its block the same way. An endpoint
+that cannot serve state at that block makes the run fail with that reason (exit status 4);
+there is no fallback to a later block, so the endpoint has to keep the state of the block it
+calls finalized. Release 0.1.3 read state at the latest block and only values the settled
+history had frozen, so that any full node would do; a report could then not say at which block
+its `sealed` flag had been true, which is why the rule was replaced. A public endpoint serves a
+log query over a limited range of blocks: the client reads in ranges of the size the manifest
+names for its endpoint (`logChunk`), and reads a tender's history from the block the tender was
+minted in, which it finds from the newest range backwards.
+
+The epoch's close record is verified within the block: the `EpochSealed` event, at most one,
+emitted at or after the epoch's end, its figures against the recomputed ones, and the ledger's
+`sealed` flag at that block against the presence of the event. An epoch without a close record
+at the block is reported as such; it is a difference only when the run asks for it
+(`--require-sealed`).
+
+A record has a canonical byte form - RFC 8785, with numbers restricted to integers a double
+holds exactly and larger integers as decimal strings - and two hashes over it: `resultHash`,
+over what was found, which two agreeing runs at one block share, and `reportHash`, over the
+whole record with its own member left out. `scripts/report-hash.py` computes both again from a
+record's file. Records of this client carry schema 2; the records of round R2a are of schema 1
+and stay as made.
+
+`pouw work` and `pouw bridge` look for the receipt by its contribution id before they send, so
+that a submission whose answer was lost is found after a restart and is not sent again.
 
 Two auditors who agree hold the same `tableHash`. The audit is a check: the ledger's view is the
 source, and an audit that differs is a finding about the ledger or about the auditor's endpoint.
@@ -576,6 +613,10 @@ source, and an audit that differs is a finding about the ledger or about the aud
 
 The retained designs in this section are not implemented or tested in R1. Section 13.7 is
 adopted through P60 and A70; the other deferred choices retain their stated decision status.
+Three of them were ruled on 2026-11-25 and are built as ledger v2, on a local network and not
+deployed: the cap per declared operator (13.4; A75), receipts without the demander as work
+facts (13.7; A75) and the delegation signed by an account (13.9; A74). `ledger-v2.md` is their
+specification as built, and governs wherever it differs from the kept design below.
 Sections 14-15 add the production direction and its planned acceptance work. Neither a design
 adoption nor its planned checks implement functionality or alter the as-built rules above.
 

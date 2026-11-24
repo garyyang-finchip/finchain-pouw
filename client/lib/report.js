@@ -3,6 +3,7 @@
 
 const { ethers } = require("ethers");
 const g = require("./genesis");
+const { sealed } = require("./canonical");
 
 const CLIENT = { name: "finchain-pouw", version: require("../../package.json").version };
 const points = (v) => ethers.formatUnits(v, 18);
@@ -14,9 +15,18 @@ function endpointHost(rpc) {
 }
 
 /// The record of one epoch's audit: everything a second auditor needs to compare, nothing secret.
+///
+/// Schema 2 (release 0.1.4). The audit reads one block, and the record says which: `snapshot` holds
+/// the block's number, hash and time; `snapshotTag` and `snapshotFinality` say how it was asked for;
+/// and `observedAt` is the time at which the client took it - not the block's time. `closeRecord` is the epoch's close event within that block. A G1 receipt's
+/// `tender.authority` says what the tender's log shows of the authority at the settlement and
+/// whether that evidence suffices. Two hashes are over the record's canonical form (canonical.js):
+/// `resultHash` over what was found, which two agreeing runs at one block share, and `reportHash`
+/// over the whole record, its own member left out. Every integer that can exceed 2^53 is a decimal
+/// string.
 function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOString() } = {}) {
-  return g.jsonable({
-    schema: "finchain-pouw.audit/1",
+  return sealed(g.jsonable({
+    schema: "finchain-pouw.audit/2",
     environment: ctx.manifest.environment ?? "unspecified",
     labels: ctx.manifest.labels ?? [],
     deployment: ctx.manifest.name ?? "unnamed",
@@ -26,8 +36,10 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
     epoch: report.epoch,
     epochStart: ctx.genesisTime + report.epoch * ctx.epochDuration,
     epochEnd: g.epochEnd(ctx, report.epoch),
-    settledTag: String(ctx.tag),
-    settledBlock: report.settledBlock,
+    snapshot: g.snapshotOf(report.pin),
+    snapshotTag: report.pin.tag,
+    snapshotFinality: report.pin.finality,
+    observedAt: report.pin.observedAt,
     endpointHost: endpointHost(rpc),
     recordedAt,
     client: CLIENT,
@@ -45,6 +57,7 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
     subsidized: { g0: report.totals.subsidized[0], g1: report.totals.subsidized[1] },
     subject: report.subject,
     sealed: report.isSealed,
+    closeRecord: report.closeRecord,
     allocated: report.allocated,
     unallocated: report.unallocated,
     tableHash: report.tableHash,
@@ -72,12 +85,14 @@ function auditRecord(ctx, report, { rpc = "", recordedAt = new Date().toISOStrin
         ? "This epoch subsidized declared-related parties: it is a controlled self-test and no evidence of external demand."
         : "A settled tender is evidence of a settlement confirmed by its owner, not of independent demand.",
       "The ledger reads a tender as it stands when it is bridged; observations list what the tender's log shows about the moment it settled.",
+      "The tender's log shows the authority that was registered before an acceptance. It does not establish who carried out a verification; where the authority changed in the acceptance's own transaction the record says evidence-insufficient and concludes nothing about a party.",
+      "Everything was read at the one block named in snapshot; sealed and closeRecord are as of that block.",
       ...((ctx.manifest.labels ?? []).includes("controlled-self-test")
         ? ["Every party of this deployment belongs to one operator: the deployment as a whole is a controlled self-test, whatever the mode of an epoch."] : []),
       ...((ctx.manifest.labels ?? []).includes("operator-wallet-integration")
         ? ["The parties are wallets held by an operator. No agent's contract account took part: this is not a record of an agent mining as itself."] : []),
     ],
-  });
+  }));
 }
 
 function pad(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n - s.length); }
@@ -86,6 +101,10 @@ function pad(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n 
 function auditText(ctx, report) {
   const lines = [];
   lines.push(`epoch ${report.epoch}  ${report.ok ? "MATCH" : "DIFFERS"}  mode ${report.mode}  settled block ${report.settledBlock}`);
+  lines.push(`  read at block ${report.pin.number} ${report.pin.hash} (${report.pin.finality}), block time ${new Date(Number(report.pin.timestamp) * 1000).toISOString()}, observed ${report.pin.observedAt}`);
+  lines.push(report.closeRecord.present
+    ? `  close record in block ${report.closeRecord.block}, tx ${report.closeRecord.txHash}`
+    : "  no close record at that block (it changes no figure; `pouw seal` writes it)");
   if ((ctx.manifest.labels ?? []).length > 0) lines.push(`  ${ctx.manifest.environment ?? "environment unspecified"}: ${ctx.manifest.labels.join(", ")}`);
   lines.push(`  parameters v${report.paramsVersion}  budget ${points(report.budget)} (G0 ${points(report.pools[0])}, G1 ${points(report.pools[1])})  share cap ${Number(report.params.workerCapBps) / 100}% per address`);
   lines.push(`  receipts ${report.receiptCount}  measured GMU G0 ${report.totals.measured[0]} G1 ${report.totals.measured[1]}  subsidized GMU G0 ${report.totals.subsidized[0]} G1 ${report.totals.subsidized[1]}`);
@@ -116,6 +135,12 @@ function auditText(ctx, report) {
     lines.push("");
     lines.push("  observations (not differences: what the tender's log shows and the ledger's rules cannot read):");
     for (const o of report.observations) lines.push(`    receipt ${o.receiptId}${o.subsidized ? ", subsidized" : ""}: ${o.noted.join(", ")}`);
+  }
+  const insufficient = report.receipts.filter((it) => it.tender && it.tender.authority.evidence === g.AUTHORITY_EVIDENCE.INSUFFICIENT);
+  if (insufficient.length > 0) {
+    lines.push("");
+    lines.push("  authority at settlement: evidence-insufficient (the authority changed in the acceptance's own transaction; no party is named):");
+    for (const it of insufficient) lines.push(`    receipt ${it.id}: tender ${it.tender.tokenId}, submission ${it.tender.submissionId}`);
   }
   if (!report.ok) {
     lines.push("");

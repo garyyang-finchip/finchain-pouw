@@ -8,6 +8,13 @@ standard epoch. Afterwards a machine that holds no key recomputes both.
 Every command below is rehearsed by `npm run local-run`, which runs the same scripts with the same
 configuration against a development network, including a settled block that lags.
 
+This is the runbook round R2a was run with, under release 0.1.3, and it describes that release.
+The round is closed (`decisions.md` 6.11) and is not to be run again from it. Where it says what
+an audit reads and records - the `settledBlock`, the `sealed` flag read at the latest block - it
+describes the client of 0.1.3. From release 0.1.4 an audit reads one block for everything and
+names it in its record (`genesis-mining-mvp.md` 12); the commands are the same, and the records
+of round R2a stay as they were made. Round R2b has a runbook of its own, which is not written.
+
 What this round is not. No FOGA cell takes part: a cell's identity is its Cell Account, and this
 round uses plain keys. It is not evidence of demand or of computation: both wallets are one
 party's, the tenders are test tenders that carry no task, and the audit job measures presence.

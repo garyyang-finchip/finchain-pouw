@@ -4,17 +4,24 @@
 // block header and a few view calls - with the same encodings the contracts use. Nothing in this
 // file holds a key. It needs ethers v6 and nothing else, and speaks JSON-RPC only.
 //
-// How the chain is read. An epoch's figures can only be changed by transactions in blocks whose
-// timestamp lies inside the epoch. The client therefore asks one thing of finality: the header of
-// the block at `ctx.tag` (`finalized` on a public chain) must be at or past the epoch's end. Logs
-// are read up to that block. State is then read at the latest block, and only values that the
-// settled history has already frozen: an ended epoch's figures, immutable configuration, and the
-// immutable parts of an ERC-8414 tender. No call asks a node for an old state, so an ordinary
-// full node - which keeps recent state only - is enough for a complete audit.
+// How the chain is read. An audit, and a check of a deployment, read one block and nothing else:
+// the block at `ctx.tag` (`finalized` on a public chain) is taken once - its number, its hash and
+// its time - and from then on every log is read up to it and every view, every nested read and
+// every piece of code is asked for at that block number. When the reads are done the block's hash
+// is asked for again, and a different answer fails the run. The block's own time and the time at
+// which it was observed are recorded apart. An epoch's figures can only be changed by transactions
+// in blocks whose timestamp lies inside the epoch, so the one condition on the block is that its
+// time is at or past the epoch's end.
+//
+// An endpoint that cannot serve state at that block makes the run fail, with that reason
+// (StateUnavailable). There is no fallback to a later block. Up to release 0.1.3 state was read at
+// the latest block, on the ground that only frozen values were read: that left a report unable to
+// say at which block the `sealed` flag had been true, and is replaced.
 
 "use strict";
 
 const { ethers } = require("ethers");
+const { sealed: withHashes } = require("./canonical");
 
 const abi = {
   policy: require("../abi/GenesisPolicy.json"),
@@ -138,6 +145,10 @@ function jsonable(v) {
 
 class AuditMismatch extends Error {}
 class NotFinalYet extends Error {}
+/// The endpoint could not serve state at the block the run reads. Nothing was read at another block.
+class StateUnavailable extends Error {}
+/// The block the run read no longer has the hash it had when the run began.
+class SnapshotMoved extends Error {}
 
 // The call shape of a contract account: the common `execute(target, value, data)`. An agent whose
 // on-chain identity is a contract (a FOGA cell account, any smart account of this shape) acts
@@ -189,17 +200,23 @@ async function actorOf(signer, account) {
 ///   tag      - the block the client treats as settled: "finalized" (default), "safe", "latest", or a number
 ///   logChunk - largest block range of one log query; 0 = no limit. Public endpoints cap the range of
 ///              a log query; the default is the manifest's own hint for its chain's endpoint, if any
-async function connect(manifest, runner, { tag = "finalized", logChunk } = {}) {
+///   pin      - a block taken with `pinBlock`: the connection itself is then read at that block, and
+///              an audit or a check made with it reads nothing else
+async function connect(manifest, runner, { tag = "finalized", logChunk, pin = null } = {}) {
   logChunk = Number(logChunk ?? manifest.logChunk ?? 0);
   const provider = runner.provider ?? runner;
   const ledger = new ethers.Contract(manifest.contracts.GenesisLedger, abi.ledger, runner);
-  const policy = new ethers.Contract(await ledger.policy(), abi.policy, runner);
-  const seedSource = await ledger.seedSource();
+  const read = (what, call) => (pin ? stateRead(pin, what, () => call(at(pin))) : call({}));
+  if (pin && (await stateRead(pin, "the ledger's code", () => provider.getCode(ledger.target, pin.number))) === "0x") {
+    throw new Error(`no contract at the ledger's address ${ledger.target} at block ${pin.number}`);
+  }
+  const policy = new ethers.Contract(await read("the ledger's policy", (o) => ledger.policy(o)), abi.policy, runner);
+  const seedSource = await read("the ledger's seed source", (o) => ledger.seedSource(o));
   const { chainId } = await provider.getNetwork();
   if (manifest.chainId !== undefined && BigInt(manifest.chainId) !== chainId) {
     throw new Error(`the manifest is for chain ${manifest.chainId}; the endpoint answers for chain ${chainId}`);
   }
-  const domain = await ledger.domain();
+  const domain = await read("the ledger's domain", (o) => ledger.domain(o));
   const expected = ledgerDomain(chainId, await ledger.getAddress());
   if (domain !== expected) throw new Error(`ledger domain ${domain} is not the domain of chain ${chainId} and this address`);
   const same = (a, b) => a === undefined || ethers.getAddress(a) === ethers.getAddress(b);
@@ -207,13 +224,71 @@ async function connect(manifest, runner, { tag = "finalized", logChunk } = {}) {
   if (!same(manifest.contracts.SeedSource, seedSource)) throw new Error("the manifest's SeedSource is not the ledger's seed source");
   return {
     manifest, provider, runner, ledger, policy, seedSource, chainId, domain,
-    genesisTime: await policy.genesisTime(), epochDuration: await policy.epochDuration(),
+    genesisTime: await read("the policy's genesis time", (o) => policy.genesisTime(o)),
+    epochDuration: await read("the policy's epoch duration", (o) => policy.epochDuration(o)),
     fromBlock: manifest.deployBlock ?? 0, tenderFromBlock: manifest.external?.taskToken8414?.deployBlock ?? 0,
-    tag, logChunk,
+    tag, logChunk, pin,
   };
 }
 
-/// The block the client treats as settled.
+// ---------------------------------------------------------------- one block, and nothing after it
+
+/// Take the block a run reads: the block at `tag`, with its number, hash and time, and the time at
+/// which it was observed. A tag that is a number names a block outright; whether that block is at or
+/// below the endpoint's finalized block is recorded with it, as far as the endpoint says.
+async function pinBlock(provider, tag = "finalized") {
+  const observedAt = new Date().toISOString();
+  const block = await provider.getBlock(tag);
+  if (!block) throw new Error(`the endpoint has no block for ${tag}`);
+  let finality = String(tag);
+  if (typeof tag === "number") {
+    let finalized = null;
+    try { finalized = await provider.getBlock("finalized"); } catch { finalized = null; }
+    finality = finalized ? (block.number <= finalized.number ? "at-or-below-finalized" : "above-finalized") : "unknown";
+  }
+  return { tag: String(tag), number: block.number, hash: block.hash, timestamp: BigInt(block.timestamp), finality, observedAt };
+}
+
+/// The overrides of a view call at the pinned block.
+const at = (pin) => ({ blockTag: pin.number });
+
+/// Whether a failed call is the contract's own answer - a revert, which is state that was served -
+/// rather than the endpoint failing to serve the state.
+function isContractAnswer(e) {
+  const data = [e?.data, e?.info?.error?.data, e?.error?.data].find((d) => typeof d === "string" && d.startsWith("0x"));
+  if (data !== undefined) return true;
+  if (e?.code === "BAD_DATA") return true; // an answer that is not what the interface says: no contract there, or another one
+  // a provider that reports a revert in words only; ethers' own "missing revert data" is not one
+  return e?.code !== "CALL_EXCEPTION" && /execution reverted|reverted with/i.test(String(e?.message ?? ""));
+}
+
+/// One read of state at the pinned block. A failure that is not the contract's own answer is the
+/// endpoint's: the run stops with StateUnavailable and reads no other block in its place.
+async function stateRead(pin, what, call) {
+  try {
+    return await call();
+  } catch (e) {
+    if (isContractAnswer(e)) throw e;
+    const why = e?.info?.error?.message ?? e?.error?.message ?? e?.shortMessage ?? e?.message ?? String(e);
+    throw new StateUnavailable(`the endpoint could not serve ${what} at block ${pin.number} (${why}); the run reads this block only and does not fall back to a later one`);
+  }
+}
+
+/// The pinned block must still have the hash it had: asked for again after the reads.
+async function recheck(provider, pin) {
+  const again = await provider.getBlock(pin.number);
+  if (!again || again.hash !== pin.hash) {
+    throw new SnapshotMoved(`block ${pin.number} had the hash ${pin.hash} when the run began and has ${again?.hash ?? "none"} now: nothing of this run is reported`);
+  }
+}
+
+/// The block a run reads, as it goes into a record: what was read. How the block was asked for - by
+/// which tag, and how it stood to the endpoint's finalized block - belongs to the run, and is recorded
+/// beside it (`snapshotTag`, `snapshotFinality`).
+const snapshotOf = (pin) => ({ number: pin.number, hash: pin.hash, timestamp: pin.timestamp });
+
+/// The block the client treats as settled, asked for now. An audit takes it once (`pinBlock`); this
+/// is for a caller that waits for the settled block to pass a moment.
 async function horizon(ctx) {
   const block = await ctx.provider.getBlock(ctx.tag);
   if (!block) throw new Error(`the endpoint has no block for ${ctx.tag}`);
@@ -222,15 +297,18 @@ async function horizon(ctx) {
 
 const epochEnd = (ctx, epoch) => ctx.genesisTime + (BigInt(epoch) + 1n) * ctx.epochDuration;
 
-/// The settled block's number, once that block is at or past the end of `epoch`: from then on no
+/// The pinned block's number, once that block is at or past the end of `epoch`: from then on no
 /// reorganization can change the epoch's receipts. Before that, NotFinalYet.
-async function requireEnded(ctx, epoch) {
-  const h = await horizon(ctx);
+function requireEndedAt(ctx, epoch, pin) {
   const end = epochEnd(ctx, epoch);
-  if (h.timestamp < end) {
-    throw new NotFinalYet(`epoch ${epoch} ends at ${end}; the ${ctx.tag} block (${h.number}) is at ${h.timestamp}: wait until it passes the epoch's end`);
+  if (pin.timestamp < end) {
+    throw new NotFinalYet(`epoch ${epoch} ends at ${end}; the ${ctx.tag} block (${pin.number}) is at ${pin.timestamp}: wait until it passes the epoch's end`);
   }
-  return h.number;
+  return pin.number;
+}
+
+async function requireEnded(ctx, epoch) {
+  return requireEndedAt(ctx, epoch, ctx.pin ?? await pinBlock(ctx.provider, ctx.tag));
 }
 
 // ---------------------------------------------------------------- reading the log
@@ -296,18 +374,19 @@ function replayRecorded(epoch, items) {
 /// What the audit job of `epoch` commits to, recomputed from the chain: the previous epoch replayed
 /// from its log, or - for epoch 0 - the deployment's configuration. Throws AuditMismatch when the
 /// recomputation and the ledger disagree; a worker does not submit over a disagreement.
-async function auditSubjectFor(ctx, epoch) {
+async function auditSubjectFor(ctx, epoch, pin = null) {
   epoch = BigInt(epoch);
+  pin = pin ?? ctx.pin ?? await pinBlock(ctx.provider, ctx.tag);
   if (epoch === 0n) {
     const mine = configHash(ctx.domain, await ctx.policy.getAddress(), ctx.seedSource, ctx.genesisTime, ctx.epochDuration);
-    const theirs = await ctx.ledger.configHash();
+    const theirs = await stateRead(pin, "the ledger's configuration hash", () => ctx.ledger.configHash(at(pin)));
     if (mine !== theirs) throw new AuditMismatch(`configuration: recomputed ${mine}, ledger ${theirs}`);
     return { audited: null, subject: mine, receipts: 0 };
   }
-  const toBlock = await requireEnded(ctx, epoch - 1n);
+  const toBlock = requireEndedAt(ctx, epoch - 1n, pin);
   const items = await readEpochReceipts(ctx, epoch - 1n, toBlock);
   const replay = replayRecorded(epoch - 1n, items);
-  const theirs = await ctx.ledger.auditSubject(epoch - 1n);
+  const theirs = await stateRead(pin, `the audit subject of epoch ${epoch - 1n}`, () => ctx.ledger.auditSubject(epoch - 1n, at(pin)));
   if (replay.subject !== theirs) {
     throw new AuditMismatch(`epoch ${epoch - 1n}: recomputed subject ${replay.subject}, ledger ${theirs}`);
   }
@@ -329,6 +408,17 @@ async function workAudit(ctx, signer, { wait = 1, account = null, expectEpoch = 
   const ledger = ctx.ledger.connect(signer);
   const epoch = await ctx.policy.currentEpoch();
   if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the work was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}`);
+  // A submission can have been sent and its answer lost, or the process stopped after sending. The
+  // work is found by its contribution id before anything is done: what is recorded is not sent again.
+  const existing = await ledger.receiptOfContribution(g0ContributionId(ctx.domain, AUDIT_V1_FUNCTION_ID, epoch, 0, actor.address));
+  if (existing !== 0n) {
+    const recorded = plainReceipt(await ledger.receipt(existing));
+    return {
+      worker: actor.address, key: actor.key, account: actor.account, epoch, audited: null, receiptsAudited: 0, auditedTableHash: null,
+      instance: recorded.ref, output: recorded.outputHash, receiptId: existing, status: plainStatus(await ledger.status(existing)),
+      txHash: null, gasUsed: 0n, alreadyRecorded: true,
+    };
+  }
   let audited = null; let subject; let receiptsAudited = 0; let auditedTableHash = null;
   if (epoch === 0n) {
     ({ subject } = await auditSubjectFor(ctx, 0n));
@@ -352,7 +442,7 @@ async function workAudit(ctx, signer, { wait = 1, account = null, expectEpoch = 
   const id = eventOf(rc, ledger, "ReceiptRecorded").args.id;
   return {
     worker: actor.address, key: actor.key, account: actor.account, epoch, audited, receiptsAudited, auditedTableHash, instance, output,
-    receiptId: id, status: plainStatus(await ledger.status(id)), txHash: rc.hash, gasUsed: rc.gasUsed,
+    receiptId: id, status: plainStatus(await ledger.status(id)), txHash: rc.hash, gasUsed: rc.gasUsed, alreadyRecorded: false,
   };
 }
 
@@ -374,13 +464,23 @@ async function bridgeTender(ctx, signer, { tokenId, submissionId, wait = 1, acco
   const epoch = await ctx.policy.currentEpoch();
   const profile = await ctx.policy.activeProfile(profileKey(PROFILE_G1_TENDER), epoch);
   const adapter = new ethers.Contract(profile.module, abi.adapter, signer);
-  const tx = await actor.send(adapter.target, adapter.interface.encodeFunctionData("bridge", [tokenId, submissionId]));
-  const rc = await tx.wait(wait);
-  const id = eventOf(rc, adapter, "TenderBridged").args.receiptId;
+  // Found by its contribution id first, as in `workAudit`: a confirmation that is recorded is not sent
+  // again. This holds for the tender's owner only - anybody else is refused by the adapter, whether a
+  // receipt exists or not, and is to be told so by the adapter.
+  const source = await adapter.taskToken();
+  let existing = await ctx.ledger.receiptOfContribution(g1ContributionId(ctx.domain, source, tokenId, submissionId));
+  if (existing !== 0n && (await new ethers.Contract(source, abi.taskTender, signer).ownerOf(tokenId)) !== actor.address) existing = 0n;
+  let id = existing; let rc = null;
+  if (existing === 0n) {
+    const tx = await actor.send(adapter.target, adapter.interface.encodeFunctionData("bridge", [tokenId, submissionId]));
+    rc = await tx.wait(wait);
+    id = eventOf(rc, adapter, "TenderBridged").args.receiptId;
+  }
   const receipt = plainReceipt(await ctx.ledger.receipt(id));
   return {
-    demander: actor.address, key: actor.key, account: actor.account, adapter: adapter.target, receiptId: id, epoch: receipt.epoch,
-    worker: receipt.worker, status: plainStatus(await ctx.ledger.status(id)), txHash: rc.hash, gasUsed: rc.gasUsed,
+    demander: receipt.counterparty, key: actor.key, account: actor.account, adapter: adapter.target, receiptId: id, epoch: receipt.epoch,
+    worker: receipt.worker, status: plainStatus(await ctx.ledger.status(id)), txHash: rc?.hash ?? null, gasUsed: rc?.gasUsed ?? 0n,
+    alreadyRecorded: existing !== 0n,
   };
 }
 
@@ -393,22 +493,26 @@ function maskedCode(code, ranges) {
   return ethers.hexlify(bytes);
 }
 
-const codeHashOf = async (provider, address) => ethers.keccak256(await provider.getCode(address));
+const codeHashOf = async (provider, address, blockTag = "latest") => ethers.keccak256(await provider.getCode(address, blockTag));
 
 /// Check a deployment against this repository's builds and against its own manifest: the code at
 /// each address is the build's runtime code (immutable values aside) and has the hash the manifest
 /// records; the contracts point at one another and at the external tender contract as the manifest
 /// says; the profiles in force name these modules. `loadBuild(name)` returns build/<name>.json.
-async function verifyDeployment(ctx, loadBuild) {
+/// Everything is read at one block - `pin`, the connection's, or the block at the connection's tag
+/// taken now - and the result names it.
+async function verifyDeployment(ctx, loadBuild, { pin = null } = {}) {
+  pin = pin ?? ctx.pin ?? await pinBlock(ctx.provider, ctx.tag);
   const m = ctx.manifest;
   const checks = [];
   const check = (what, ok, detail) => { checks.push({ what, ok: Boolean(ok), ...(detail === undefined ? {} : { detail: String(detail) }) }); return Boolean(ok); };
   const eq = (a, b) => typeof a === "string" && typeof b === "string" && a.toLowerCase() === b.toLowerCase();
+  const codeAt = (address) => stateRead(pin, `the code at ${address}`, () => ctx.provider.getCode(address, pin.number));
   const code = {};
   for (const [role, entry] of Object.entries(m.code ?? {})) {
     const address = m.contracts?.[role];
     if (!address) { check(`${role}: the manifest records its code and names its address`, false, "no address"); continue; }
-    const onchain = await ctx.provider.getCode(address);
+    const onchain = await codeAt(address);
     const build = loadBuild(entry.contract);
     const hash = ethers.keccak256(onchain);
     code[role] = { address, contract: entry.contract, codeHash: hash };
@@ -425,43 +529,51 @@ async function verifyDeployment(ctx, loadBuild) {
   check("the manifest names every contract of the deployment and records its code", missing.length === 0, missing.length === 0 ? undefined : `missing: ${missing.join(", ")}`);
 
   const ledgerAddress = ctx.ledger.target;
-  // a contract that is not what its role says does not answer these reads: that is a failed check, not a failure
-  const read = async (call) => { try { return await call(); } catch { return null; } };
+  // a contract that is not what its role says does not answer these reads: that is a failed check, not
+  // a failure. An endpoint that cannot serve the block is a failure, and stops the run
+  const read = async (what, call) => {
+    try { return await stateRead(pin, what, () => call(at(pin))); } catch (e) { if (e instanceof StateUnavailable) throw e; return null; }
+  };
   check("the ledger's policy is the manifest's GenesisPolicy", eq(m.contracts.GenesisPolicy, ctx.policy.target), ctx.policy.target);
   check("the ledger's seed source is the manifest's SeedSource", eq(m.contracts.SeedSource, ctx.seedSource), ctx.seedSource);
+  // the connection's own values, asked for again at the block of this check
+  check("the ledger answers at this block as it did when the connection was made",
+    eq(await read("the ledger's policy", (o) => ctx.ledger.policy(o)), ctx.policy.target) && eq(await read("the ledger's seed source", (o) => ctx.ledger.seedSource(o)), ctx.seedSource)
+      && (await read("the ledger's domain", (o) => ctx.ledger.domain(o))) === ctx.domain);
   if (m.clock) {
     check("the policy's clock is the manifest's", BigInt(m.clock.genesisTime) === ctx.genesisTime && BigInt(m.clock.epochDuration) === ctx.epochDuration,
       `genesis ${ctx.genesisTime}, epochs of ${ctx.epochDuration} s`);
   }
   if (m.contracts.AuditV1) {
     const fn = new ethers.Contract(m.contracts.AuditV1, abi.audit, ctx.provider);
-    check("the audit function reads this ledger", eq(await read(() => fn.ledger()), ledgerAddress));
-    check("the audit function is audit-v1", (await read(() => fn.functionId())) === AUDIT_V1_FUNCTION_ID);
+    check("the audit function reads this ledger", eq(await read("the audit function's ledger", (o) => fn.ledger(o)), ledgerAddress));
+    check("the audit function is audit-v1", (await read("the audit function's id", (o) => fn.functionId(o))) === AUDIT_V1_FUNCTION_ID);
   }
   if (m.contracts.TenderAdapter8414) {
     const adapter = new ethers.Contract(m.contracts.TenderAdapter8414, abi.adapter, ctx.provider);
-    const reads = await read(() => adapter.taskToken());
-    check("the adapter reports to this ledger", eq(await read(() => adapter.ledger()), ledgerAddress));
+    const reads = await read("the adapter's tender contract", (o) => adapter.taskToken(o));
+    check("the adapter reports to this ledger", eq(await read("the adapter's ledger", (o) => adapter.ledger(o)), ledgerAddress));
     check("the adapter reads the manifest's ERC-8414 contract", eq(reads, m.external?.taskToken8414?.address), reads ?? "no answer");
-    check("the adapter records under g1.tender", (await read(() => adapter.profileKey())) === profileKey(PROFILE_G1_TENDER));
+    check("the adapter records under g1.tender", (await read("the adapter's profile", (o) => adapter.profileKey(o))) === profileKey(PROFILE_G1_TENDER));
   }
   if (m.external?.taskToken8414?.codeHash) {
-    const hash = await codeHashOf(ctx.provider, m.external.taskToken8414.address);
+    const hash = ethers.keccak256(await codeAt(m.external.taskToken8414.address));
     check("the ERC-8414 contract's code is what it was when the adapter was pointed at it", eq(hash, m.external.taskToken8414.codeHash), hash);
   }
 
-  // the profiles in force (for the running epoch, or for epoch 0 before the start) name these modules
-  const started = await ctx.policy.started();
-  const epoch = started ? await ctx.policy.currentEpoch() : 0n;
-  const moduleOf = async (name) => { try { return (await ctx.policy.activeProfile(profileKey(name), epoch)).module; } catch { return null; } };
+  // the profiles in force (for the epoch of the block, or for epoch 0 before the start) name these modules
+  const started = pin.timestamp >= ctx.genesisTime;
+  const epoch = started ? (pin.timestamp - ctx.genesisTime) / ctx.epochDuration : 0n;
+  const moduleOf = async (name) => (await read(`the ${name} profile`, (o) => ctx.policy.activeProfile(profileKey(name), epoch, o)))?.module ?? null;
   const g0Module = await moduleOf(PROFILE_G0_REF);
   check(`epoch ${epoch}: the g0.ref profile's function is the manifest's AuditV1`, g0Module && eq(g0Module, m.contracts.AuditV1), g0Module ?? "no profile in force");
   const g1Module = await moduleOf(PROFILE_G1_TENDER);
   check(`epoch ${epoch}: the g1.tender profile's adapter is the manifest's TenderAdapter8414`, g1Module && eq(g1Module, m.contracts.TenderAdapter8414), g1Module ?? "no profile in force");
 
   // not checks: who can register versions and admit parties, and whether recording is paused
-  const info = { steward: await read(() => ctx.policy.steward()), paused: await read(() => ctx.policy.paused()) };
-  return { ok: checks.every((c) => c.ok), checks, code, epoch, started, info };
+  const info = { steward: await read("the steward", (o) => ctx.policy.steward(o)), paused: await read("the pause", (o) => ctx.policy.paused(o)) };
+  await recheck(ctx.provider, pin);
+  return { ok: checks.every((c) => c.ok), checks, code, epoch, started, info, pin };
 }
 
 // ---------------------------------------------------------------- the independent audit of an epoch
@@ -546,19 +658,48 @@ async function tenderHistory(ctx, tender, tokenId, toBlock) {
   };
 }
 
+// What the tender's log can say about the authority at a settlement.
+const AUTHORITY_EVIDENCE = {
+  REGISTERED: "registered-authority-visible", // the last registered authority before the acceptance, and no change in its transaction
+  INSUFFICIENT: "evidence-insufficient",      // the authority of this tender changed in the acceptance's own transaction
+  NO_ACCEPTANCE: "no-acceptance-record",      // the log has no acceptance of this submission before the receipt
+};
+const OBSERVATION_ORDER = ["authority-changed-in-the-acceptance-transaction", "worker-judged-its-own-delivery",
+  "worker-owned-the-tender-when-it-settled", "judge-changed-between-settlement-and-bridge", "owner-changed-between-settlement-and-bridge"];
+
+/// The authority of one tender at one acceptance, as far as that tender's own log settles it.
+/// `hist` is the history of one tender of one source, so a change counts only when it is of the same
+/// source and the same token and in the same transaction as the acceptance. Two things are kept
+/// apart: `registered`, the address the last record before the acceptance names - a fact of the log
+/// in every case - and `evidence`, which says whether that fact can stand for the authority that
+/// was consulted. Who carried out a verification is established in neither case.
+function authorityAtSettlement(hist, settled) {
+  if (!settled) return { registered: null, changedInAcceptanceTransaction: false, evidence: AUTHORITY_EVIDENCE.NO_ACCEPTANCE };
+  const registered = lastBefore(hist.judges, settled)?.args.newAuthority ?? null;
+  const changed = hist.judges.some((ev) => ev.transactionHash === settled.transactionHash);
+  return { registered, changedInAcceptanceTransaction: changed, evidence: changed ? AUTHORITY_EVIDENCE.INSUFFICIENT : AUTHORITY_EVIDENCE.REGISTERED };
+}
+
 /// Recompute an ended epoch from primary data and compare every figure with the ledger:
 ///  - each receipt's verdict and eligibility, re-decided from the seed, the previous epoch, the
 ///    ERC-8414 contract's own log and the policy in force;
 ///  - the digest, the totals and the audit subject;
-///  - every worker's allocation.
-/// Returns a report; `report.ok` is true only when nothing differs.
-async function auditEpoch(ctx, epoch) {
+///  - every worker's allocation;
+///  - the epoch's close record, when there is one.
+/// Everything is read at one block: `pin`, the connection's, or the block at the connection's tag
+/// taken now. Returns a report; `report.ok` is true only when nothing differs.
+///   requireSealed - also report it as a difference when the epoch has no close record at that block
+async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false } = {}) {
   epoch = BigInt(epoch);
+  pin = pin ?? ctx.pin ?? await pinBlock(ctx.provider, ctx.tag);
   const findings = [];
   const note = (what, expected, found) => findings.push({ what, recomputed: String(expected), ledger: String(found) });
+  const state = (what, call) => stateRead(pin, what, () => call(at(pin)));
 
-  const toBlock = await requireEnded(ctx, epoch);
-  const summary = await ctx.ledger.epochSummary(epoch);
+  const toBlock = requireEndedAt(ctx, epoch, pin);
+  // the connection's own values at this block: a ledger that was not there yet, or another one, does not pass
+  if ((await state("the ledger's domain", (o) => ctx.ledger.domain(o))) !== ctx.domain) note("ledger domain at the block", ctx.domain, "another");
+  const summary = await state(`the summary of epoch ${epoch}`, (o) => ctx.ledger.epochSummary(epoch, o));
   const pol = await policyAt(ctx, epoch, toBlock);
   const items = await readEpochReceipts(ctx, epoch, toBlock);
 
@@ -570,7 +711,7 @@ async function auditEpoch(ctx, epoch) {
     if (seed !== opened[0].args.seed) note("seed", seed, opened[0].args.seed);
   }
   if (seed !== summary.seed) note("seed (stored)", seed, summary.seed);
-  const g0Subject = items.some((it) => it.receipt.pool === POOL_G0) ? (await auditSubjectFor(ctx, epoch)).subject : null;
+  const g0Subject = items.some((it) => it.receipt.pool === POOL_G0) ? (await auditSubjectFor(ctx, epoch, pin)).subject : null;
 
   // the bridge records of the epoch's G1 adapters, by the transaction that made each receipt
   const ledgerAddress = await ctx.ledger.getAddress();
@@ -578,9 +719,9 @@ async function auditEpoch(ctx, epoch) {
   for (const p of pol.profiles.values()) {
     if (p.pool !== POOL_G1) continue;
     const adapter = new ethers.Contract(p.module, abi.adapter, ctx.provider);
-    const reportsTo = await adapter.ledger();
+    const reportsTo = await state(`the ledger of the adapter ${p.module}`, (o) => adapter.ledger(o));
     if (reportsTo !== ledgerAddress) note(`adapter ${p.module}: ledger`, ledgerAddress, reportsTo);
-    const source = await adapter.taskToken();
+    const source = await state(`the tender contract of the adapter ${p.module}`, (o) => adapter.taskToken(o));
     for (const ev of await logs(ctx, adapter, "TenderBridged", [], ctx.fromBlock, toBlock)) {
       bridged.set(`${ev.transactionHash}:${ev.args.receiptId}`, { source, tokenId: ev.args.tokenId, submissionId: ev.args.submissionId });
     }
@@ -617,7 +758,10 @@ async function auditEpoch(ctx, epoch) {
     if (recorded.verifier !== p.module) note(`receipt ${it.id}: verifier`, p.module, recorded.verifier);
 
     if (r.pool === POOL_G0) {
-      if (!functionIds.has(p.module)) functionIds.set(p.module, await new ethers.Contract(p.module, abi.audit, ctx.provider).functionId());
+      if (!functionIds.has(p.module)) {
+        const fn = new ethers.Contract(p.module, abi.audit, ctx.provider);
+        functionIds.set(p.module, await state(`the function id of ${p.module}`, (o) => fn.functionId(o)));
+      }
       const functionId = functionIds.get(p.module);
       if (functionId !== AUDIT_V1_FUNCTION_ID) note(`receipt ${it.id}: function`, "a function this client can re-evaluate", functionId);
       let jobIndex = -1;
@@ -648,8 +792,9 @@ async function auditEpoch(ctx, epoch) {
       const binding = lastBefore(hist.bindings, it);
       const settled = hist.settled.find((ev) => ev.args.submissionId === b.submissionId && before(ev, it));
       const byDefault = hist.defaults.some((ev) => ev.args.submissionId === b.submissionId && before(ev, it));
-      const sub = await tender.submissionOf(b.tokenId, b.submissionId); // fixed once delivered; Accepted is terminal
-      const terms = await tender.tenderTermsOf(b.tokenId);              // immutable from mint
+      // fixed once delivered, and Accepted is terminal; the terms are immutable from the mint: both are read at the block all the same
+      const sub = await state(`submission ${b.submissionId} of tender ${b.tokenId}`, (o) => tender.submissionOf(b.tokenId, b.submissionId, o));
+      const terms = await state(`the terms of tender ${b.tokenId}`, (o) => tender.tenderTermsOf(b.tokenId, o));
       if (!settled) note(`receipt ${it.id}: settlement`, "a FulfillmentAccepted record of the tender before the receipt", "none");
       if (Number(sub.status) !== 1) note(`receipt ${it.id}: tender status`, "Accepted", sub.status);
       if (r.ref !== g1Ref(b.source, b.tokenId, b.submissionId)) note(`receipt ${it.id}: ref`, g1Ref(b.source, b.tokenId, b.submissionId), r.ref);
@@ -680,17 +825,30 @@ async function auditEpoch(ctx, epoch) {
       // how the tender settled: the ledger counts the three paths alike, the report tells them apart
       const settlement = sub.machineSettled ? "verified" : byDefault ? "default" : "judged";
       // The ledger's rules read the tender as it stands when it is bridged: ERC-8414 keeps no state of
-      // who owned or judged it when it settled, and both can be handed on in between. The log has it.
+      // who owned or judged it when it settled, and both can be handed on in between. The log has it,
+      // within a limit. What the log shows is the authority that was registered: the last
+      // AcceptanceAuthorityChanged record of this tender before the acceptance. It does not show who
+      // carried out a verification. The reference contract calls a verifier before it emits the
+      // acceptance, and the right to judge can be handed on from inside that call: the record before
+      // the acceptance is then the successor's. So where the authority of this tender changed in the
+      // acceptance's own transaction, the registered address is still reported for what it is, the
+      // evidence is marked insufficient, and nothing is concluded about a party from it.
       const ownerAtSettlement = settled ? lastBefore(hist.owners, settled)?.args.to ?? null : null;
-      const judgeAtSettlement = settled ? lastBefore(hist.judges, settled)?.args.newAuthority ?? null : null;
+      const authority = authorityAtSettlement(hist, settled);
       const noted = [];
-      if (judgeAtSettlement && r.worker === judgeAtSettlement) noted.push("worker-judged-its-own-delivery");
+      if (authority.evidence === AUTHORITY_EVIDENCE.INSUFFICIENT) {
+        noted.push("authority-changed-in-the-acceptance-transaction");
+      } else if (authority.registered) {
+        if (r.worker === authority.registered) noted.push("worker-judged-its-own-delivery");
+        if (authority.registered !== judge) noted.push("judge-changed-between-settlement-and-bridge");
+      }
       if (ownerAtSettlement && r.worker === ownerAtSettlement) noted.push("worker-owned-the-tender-when-it-settled");
-      if (judgeAtSettlement && judgeAtSettlement !== judge) noted.push("judge-changed-between-settlement-and-bridge");
       if (ownerAtSettlement && ownerAtSettlement !== owner) noted.push("owner-changed-between-settlement-and-bridge");
+      // one fixed order, whatever was found
+      noted.sort((x, y) => OBSERVATION_ORDER.indexOf(x) - OBSERVATION_ORDER.indexOf(y));
       it.tender = {
         source: b.source, tokenId: b.tokenId, submissionId: b.submissionId, demander: owner, judge, asset: terms.asset,
-        reward: BigInt(terms.rewardPerCompletion), settlement, ownerAtSettlement, judgeAtSettlement,
+        reward: BigInt(terms.rewardPerCompletion), settlement, ownerAtSettlement, authority,
       };
       if (noted.length > 0) observations.push({ receiptId: it.id, worker: r.worker, subsidized: st.gmuSubsidized > 0n, noted });
     }
@@ -709,7 +867,7 @@ async function auditEpoch(ctx, epoch) {
     if (replay.totals.measured[pool] !== onchain.measured[pool]) note(`measured G${pool}`, replay.totals.measured[pool], onchain.measured[pool]);
     if (replay.totals.subsidized[pool] !== onchain.subsidized[pool]) note(`subsidized G${pool}`, replay.totals.subsidized[pool], onchain.subsidized[pool]);
   }
-  const subjectOnchain = await ctx.ledger.auditSubject(epoch);
+  const subjectOnchain = await state(`the audit subject of epoch ${epoch}`, (o) => ctx.ledger.auditSubject(epoch, o));
   if (replay.subject !== subjectOnchain) note("audit subject", replay.subject, subjectOnchain);
 
   // the allocation table
@@ -720,7 +878,7 @@ async function auditEpoch(ctx, epoch) {
   for (const [worker, w] of replay.workers) {
     const perPool = [POOL_G0, POOL_G1].map((pool) => share(pools[pool], w.subsidized[pool], replay.totals.subsidized[pool], pol.params.workerCapBps));
     const mine = perPool[0] + perPool[1];
-    const theirs = await ctx.ledger.allocation(epoch, worker);
+    const theirs = await state(`the allocation of ${worker}`, (o) => ctx.ledger.allocation(epoch, worker, o));
     if (mine !== theirs) note(`allocation of ${worker}`, mine, theirs);
     allocated += mine;
     table.push({ worker, operator: pol.operatorOf(worker), admitted: pol.isAdmitted(worker), receipts: w.receipts,
@@ -728,6 +886,24 @@ async function auditEpoch(ctx, epoch) {
   }
   table.sort((a, b) => (a.worker.toLowerCase() < b.worker.toLowerCase() ? -1 : 1));
   if (allocated > budget) note("sum of allocations", `at most the budget ${budget}`, allocated);
+
+  // The close record: the EpochSealed event of this ledger, within the block. It changes no figure;
+  // when it is there, its figures are the recomputed ones and it was emitted after the epoch's end.
+  const seals = await logs(ctx, ctx.ledger, "EpochSealed", [epoch], ctx.fromBlock, toBlock);
+  const closeRecord = { present: seals.length > 0, block: null, blockTimestamp: null, txHash: null, logIndex: null };
+  if (seals.length > 1) note("close records", "at most one", seals.length);
+  if (Boolean(summary.isSealed) !== closeRecord.present) note("sealed flag", closeRecord.present, summary.isSealed);
+  if (closeRecord.present) {
+    const ev = seals[0]; const a = ev.args;
+    const sealBlock = await ctx.provider.getBlock(ev.blockNumber);
+    Object.assign(closeRecord, { block: ev.blockNumber, blockTimestamp: BigInt(sealBlock.timestamp), txHash: ev.transactionHash, logIndex: ev.index });
+    if (BigInt(sealBlock.timestamp) < epochEnd(ctx, epoch)) note("close record: time", `at or after the epoch's end ${epochEnd(ctx, epoch)}`, sealBlock.timestamp);
+    const want = { digest: replay.digest, receiptCount: replay.receiptCount, paramsVersion: BigInt(pol.paramsVersion), budget,
+      measuredG0: replay.totals.measured[0], measuredG1: replay.totals.measured[1], subsidizedG0: replay.totals.subsidized[0], subsidizedG1: replay.totals.subsidized[1] };
+    for (const [k, v] of Object.entries(want)) if (a[k] !== v) note(`close record: ${k}`, v, a[k]);
+  } else if (requireSealed) {
+    note("close record", "an EpochSealed event at or before the block", "none");
+  }
 
   // What the figures do not say by themselves. The share cap binds an address; the same table read
   // per declared operator shows a concentration across addresses when it was declared - and only then.
@@ -742,13 +918,16 @@ async function auditEpoch(ctx, epoch) {
   const count = (list, f) => list.reduce((acc, it) => { const k = f(it); acc[k] = (acc[k] ?? 0) + 1; return acc; }, {});
   const subsidizedG1 = g1.filter((it) => it.status.gmuSubsidized > 0n);
 
+  // the block is still the block it was: only then is anything reported
+  await recheck(ctx.provider, pin);
+
   return {
-    ok: findings.length === 0, findings, epoch, settledBlock: toBlock, seed, paramsVersion: pol.paramsVersion, params: pol.params,
+    ok: findings.length === 0, findings, epoch, pin, settledBlock: toBlock, seed, paramsVersion: pol.paramsVersion, params: pol.params,
     // an epoch whose parameters subsidize declared-related parties is a controlled self-test, not evidence of demand
     mode: pol.params.subsidizeDeclaredRelated ? "controlled-self-test" : "standard",
     budget, pools, receipts: redecided, digest: replay.digest, receiptCount: replay.receiptCount, totals: replay.totals,
     subject: replay.subject, table, tableHash: tableHashOf(table), allocated, unallocated: budget - allocated,
-    isSealed: summary.isSealed, observations,
+    isSealed: closeRecord.present, closeRecord, observations,
     operators: [...operators.values()].sort((a, b) => a.operator - b.operator),
     undeclaredAddresses: table.filter((t) => t.operator === 0).length,
     g1: {
@@ -757,6 +936,7 @@ async function auditEpoch(ctx, epoch) {
       bySettlement: count(g1.filter((it) => it.tender), (it) => it.tender.settlement),
       subsidizedByRelation: count(subsidizedG1, (it) => RELATION_NAME[it.status.relation]),
       subsidizedBySettlement: count(subsidizedG1.filter((it) => it.tender), (it) => it.tender.settlement),
+      byAuthorityEvidence: count(g1.filter((it) => it.tender), (it) => it.tender.authority.evidence),
     },
   };
 }
@@ -767,6 +947,7 @@ module.exports = {
   g0ContributionId, g1ContributionId, g1Ref, auditInputHash, auditOutput, digestStep, auditSubject, tableHashOf, budgetOf,
   poolBudgets, share, connect, refusal, actorOf, eventOf, horizon, epochEnd, requireEnded, readEpochReceipts, replayRecorded,
   auditSubjectFor, workAudit, bridgeTender, policyAt, mintBlockOf, tenderHistory, auditEpoch, verifyDeployment, maskedCode, codeHashOf,
-  AuditMismatch, NotFinalYet, ACCOUNT_ABI,
+  pinBlock, snapshotOf, recheck, stateRead, authorityAtSettlement, AUTHORITY_EVIDENCE, withHashes,
+  AuditMismatch, NotFinalYet, StateUnavailable, SnapshotMoved, ACCOUNT_ABI,
   plainParams, plainProfile, plainReceipt, plainStatus, jsonable,
 };

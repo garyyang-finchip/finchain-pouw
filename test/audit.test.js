@@ -72,8 +72,13 @@ describe("The reference client: a worker's audit job and the independent audit o
     expect(second.audited).to.equal(0n);
     expect(second.receiptsAudited).to.equal(2);
     expect(second.status.verdict).to.equal(g.VERDICT.ACCEPTED);
-    // the same worker cannot do the job twice
-    await h.revertsWith(g.workAudit(d.ctx, w2), "AlreadySubmitted");
+    // the same worker cannot do the job twice: the client finds the receipt by its contribution id and
+    // sends nothing, and the ledger refuses a second submission all the same
+    const sent = await ethers.provider.getTransactionCount(w2.address);
+    const again = await g.workAudit(d.ctx, w2);
+    expect([again.alreadyRecorded, again.receiptId, again.txHash, second.alreadyRecorded]).to.deep.equal([true, second.receiptId, null, false]);
+    expect(await ethers.provider.getTransactionCount(w2.address)).to.equal(sent);
+    await h.revertsWith(d.ledger.connect(w2).submitG0(KEY, 1, 0, second.output), "AlreadySubmitted");
   });
 
   it("recomputes a mixed epoch from primary data and agrees with the ledger on every figure (N5, T5)", async () => {
@@ -167,7 +172,7 @@ describe("The reference client: a worker's audit job and the independent audit o
     expect((await g.connect(d.manifest, ethers.provider)).logChunk).to.equal(0);
   });
 
-  it("reports what a tender's log shows and the ledger's rules cannot read: who owned and judged it when it settled (D11, D17)", async () => {
+  it("reports what a tender's log shows and the ledger's rules cannot read: who owned and judged it when it settled (D11, D17; L31, the audit's part)", async () => {
     const [, a, b, c] = await ethers.getSigners();
     const d = await h.deploy({ admit: [a, c], params: { maxSubsidizedPerPair: 5, maxSubsidizedPerDemander: 5 } });
     const plain = await h.bridge(d, await h.tender(d, { owner: c, worker: a }));               // nothing to note
@@ -195,9 +200,11 @@ describe("The reference client: a worker's audit job and the independent audit o
         "owner-changed-between-settlement-and-bridge"] },
     ]);
     const item = report.receipts.find((it) => it.id === handedOn.id);
-    expect(item.tender.judgeAtSettlement).to.equal(a.address);
+    // what the tender's log shows: the authority registered before the acceptance, with no change in the acceptance's transaction
+    expect(item.tender.authority).to.deep.equal({ registered: a.address, changedInAcceptanceTransaction: false, evidence: "registered-authority-visible" });
     expect(item.tender.judge).to.equal(b.address);
-    expect(report.receipts.find((it) => it.id === plain.id).tender.judgeAtSettlement).to.equal(c.address);
+    expect(report.receipts.find((it) => it.id === plain.id).tender.authority.registered).to.equal(c.address);
+    expect(report.g1.byAuthorityEvidence).to.deep.equal({ "registered-authority-visible": report.g1.receipts });
   });
 
   it("labels an epoch that subsidizes declared-related parties as a controlled self-test (D10)", async () => {
