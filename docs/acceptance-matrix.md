@@ -1,6 +1,6 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.12, with software release 0.1.6, after the reviews of v0.1.4 to v0.1.7,
+Design revision v0.1.13, with software release 0.1.6, after the reviews of v0.1.4 to v0.1.7,
 the owner's adoption of the recommendations on Q17 to Q29, the run of round R2a with its review,
 the owner's rulings of 2026-11-25 and the review of the local implementation of ledger v2
 (`decisions.md` A55-A86).

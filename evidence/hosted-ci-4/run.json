@@ -1,0 +1,11 @@
+{
+  "schema": "finchain-pouw.audit-run/1",
+  "repository": "garyyang-finchip/finchain-pouw",
+  "commit": "d8363aba0d427d0e377692ab241641721308779c",
+  "workflowRun": "https://github.com/garyyang-finchip/finchain-pouw/actions/runs/45546136600",
+  "runner": "Linux/X64",
+  "node": "v22.23.5",
+  "manifest": "deployments/finchain-sepolia-r2.json",
+  "epochs": "0 1",
+  "startedAt": "2026-11-25T04:20:51.416Z"
+}

@@ -12,7 +12,13 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.12, with software release 0.1.6. It applies A82 and records no new
+Design revision v0.1.13; the software stays release 0.1.6. It records the hosted run that A85
+agreed to: on 2026-11-25 the client of release 0.1.5 checked and audited the deployment of
+round R2a on its public endpoint, each of its three reports at a finalized block of its own,
+and found every figure of the round (15.6; `evidence/hosted-ci-4/`). Nothing of round R2a is
+reopened or changed, and no file but documents and that record changes.
+
+Design revision v0.1.12 came with software release 0.1.6. It applies A82 and records no new
 ruling (section 16). The contracts of ledger v2 are compiled behind a boundary of their own, by
 solc 0.8.39, and their builds are committed under `build/v2` with a record of how they were
 made and a reading of the compiler's own list of known bugs. No rule of the ledger and no
@@ -1021,8 +1027,8 @@ Three findings came out of the work:
    block, as A76 rules, gives that up: an endpoint that keeps recent state only, and whose
    finalized block lies further back, cannot serve the audit, and the client then fails with
    that reason. Reads at the finalized block were served by the endpoint of round R2a when the
-   Cell Accounts were read on 2026-11-24 and 2026-11-25; the audit itself has not been run
-   there with release 0.1.4.
+   Cell Accounts were read on 2026-11-24 and 2026-11-25; the audit itself was not run there
+   with release 0.1.4. It was with release 0.1.5, and the endpoint served it (15.6).
 
 ### 14.5 This repository's proposals made with the implementation
 
@@ -1050,9 +1056,9 @@ A first use of the new client on a public endpoint needs no key and changes noth
 hosted workflow, started by hand with the manifest of round R2a, checks that deployment and
 audits its two epochs, each command at a finalized block of its own. It would show whether the
 endpoint serves such a block, and whether the new client agrees with the ledger there as the
-old one did. The owner agreed to it on 2026-11-25 (A85; 15.6). It is run once release 0.1.5 is
-uploaded and checked and has not been run; it reopens nothing of round R2a, whose records stay
-as made.
+old one did. The owner agreed to it on 2026-11-25 (A85) and it was run on the same day, once
+release 0.1.5 was uploaded and checked (15.6). It reopens nothing of round R2a, whose records
+stay as made.
 
 ## 15. The review of the local implementation of ledger v2, and the rulings on it
 
@@ -1106,7 +1112,7 @@ evidence and is not recorded as checked independently.
 | 3. A small delta first, with three corrections | A84 | 15.4; release 0.1.5 |
 | 4. Q31 and P66: the IR pipeline, a compile boundary and a locked compiler for v2, the kernel's boundary untouched | A82 | 15.5; `ledger-v2.md` 1. Not built in this revision |
 | 5. P61 to P65, each with its boundary | A83 | 14.5; `ledger-v2.md` 3, 6, 11.7, 13 |
-| 6. The hosted run, once the small delta is uploaded and checked | A85 | 15.6. Not run |
+| 6. The hosted run, once the small delta is uploaded and checked | A85 | 15.6; `evidence/hosted-ci-4/` |
 | 7. The next delivery and what stays | A86 | 15.7 |
 
 The owner's statement adopts P61 to P65 in the short form of A83. The advisor's review words
@@ -1193,19 +1199,36 @@ them.
 
 ### 15.6 The hosted run of the new client (A85)
 
-Not run. It is started by hand once release 0.1.5 is on `main` and compared with the delivery:
-the existing workflow, with the manifest `deployments/finchain-sepolia-r2.json` and the epochs
-`0 1`. It needs no key and sends no transaction.
+Run on 2026-11-25, after release 0.1.5 was on `main` and compared with the delivery: the
+existing workflow, started by hand by the owner, with the manifest
+`deployments/finchain-sepolia-r2.json` and the epochs `0 1`. It needs no key and sends no
+transaction. Its record, with the reports as they were downloaded, is `evidence/hosted-ci-4/`.
 
-It is recorded as the new client's verification of the existing deployment of round R2a on a
-public endpoint, with an audit at a pinned block. Kept: the commit, the link of the run, the
-exit status of each command and the three reports - the check of the deployment and the audits
-of the two epochs. Each of the three commands takes a block of its own, so each report names
-its own block, hash and time; that the whole run read one block is said only if the three
-reports show it. The workflow also runs the tests and the rehearsal on the hosted machine.
+It is recorded as what A85 says: the new client's verification of the existing deployment of
+round R2a on a public endpoint, with an audit at a pinned block.
+
+| | |
+| --- | --- |
+| Run | ci #4, `https://github.com/garyyang-finchip/finchain-pouw/actions/runs/45546136600`, started at 12:20 (UTC+8) |
+| Commit | `d8363aba0d427d0e377692ab241641721308779c`: release 0.1.5 |
+| Result | Success: both jobs, `test` and `audit`. The exit status of each command is not in a record of its own and the logs were not read; the `audit` job stops at the first command that fails, and each of the three reports says `ok` |
+| The three reports | the check of the deployment and the audits of epochs 0 and 1. Each command connected by itself and took the endpoint's finalized block of that moment; the three reports name the same block, 582204, with one hash and one time. The reports show that; nothing made it so |
+| The block | finalized, 23 minutes old when it was read; the close records of both epochs lie within it |
+| The deployment | the code at the manifest's five addresses is this repository's build, by the same five code hashes as in the round's records; 23 checks, none failed |
+| The two epochs | every figure of round R2a, in both epochs, against each of the round's three sets of audit records: the subject, the table and its hash, the allocation, the GMU, the digest, the seed, the parameters |
+| What differs from the round's records | what the client of 0.1.4 on adds: the block read, the close record, the two hashes, and for each tender the authority that was registered with its evidence state - `registered-authority-visible` for all four |
+| The hashes | both hashes of each of the three reports recompute with `scripts/report-hash.py` |
+| The hosted rehearsal | 41 checks, all passed, from a clean checkout of the commit; the 76 source hashes are the commit's |
+| The artifacts | downloaded by the owner; each archive has the digest that the run's page shows |
+
+What it shows: on that day the public endpoint served the state of its finalized block to a
+client that asks for every view, every code and every log at one block, and the client of
+release 0.1.5 found there what the client of 0.1.3 had found. What it does not show: anything
+lasting about the endpoint, which a single run cannot; that the block has that hash on another
+node, which was not asked; anything about ledger v2, of which nothing is deployed.
 
 The run reopens nothing of round R2a. Its acceptance (6.11) and its records stay as they are,
-and no file under `evidence/r2a/` is changed. It does not wait for the build of v2.
+and no file under `evidence/r2a/` is changed. It did not wait for the build of v2.
 
 ### 15.7 What the executor verified, and what comes next
 
@@ -1234,8 +1257,8 @@ part of this revision or follows from it without one.
 It applies A82 and holds no new ruling. Release 0.1.5 was uploaded on 2026-11-25 at 11:33
 (UTC+8) as one commit, `d8363aba0d427d0e377692ab241641721308779c`, made by the owner through
 the web interface; the executor compared `main` with its own copy file by file and found them
-equal. This revision has that commit as its base. The hosted run of A85 is the owner's to
-start on that commit; its record is not part of this revision.
+equal. This revision has that commit as its base. The hosted run of A85 was the owner's to
+start on that commit; its record came with the revision after this one (15.6).
 
 ### 16.2 What was done
 

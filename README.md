@@ -59,6 +59,11 @@ of what the compiler's own list of known bugs held for that compiler on the day 
 `npm ci && npm run export-abi` writes the same bytes again. No rule of the ledger and no
 compiled interface changed.
 
+On 2026-11-25 the client of release 0.1.5, on a hosted runner and with no key, checked and
+audited the deployment of round R2a on its public endpoint, at one finalized block, and found
+every figure of the round (`evidence/hosted-ci-4/`). That run is a check of the client; it
+reopens nothing of the round.
+
 The contracts of the kernel and their committed builds are unchanged, byte for byte. Round R2a
 ran from software 0.1.3, and its records stay as made.
 
