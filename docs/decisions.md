@@ -12,13 +12,19 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.15 comes with software release 0.1.8. It records no new ruling. It is the
-small correction that the advisor's functional review of release 0.1.7 asks for before the
-audit library passes that review: three faults of the client, each reproduced here, and one
-claim of evidence restated (section 18). No contract, no compiled interface and no build
-changes; nothing is deployed and nothing is signed. The advisor's recommendations of that
-review - on P71 to P76, and on the four earlier choices P69, Q33/P70, Q32 and P68 - are
-recorded beside their items under A66 and await the owner's adoption in words of his own.
+Design revision v0.1.16 comes with software release 0.1.9. It records one ruling, A87: on
+2026-11-26 at 02:38 (UTC+8) the owner adopted, in words of his own, the advisor's
+recommendations on P71 to P76, P69, Q33/P70, Q32 and P68 (section 19.1). Q32 and Q33 are ruled;
+the deployment tooling of v2 and its manifest may now be developed. The release is the second
+correction of the audit library: the advisor's review of 0.1.8 found one regression that the
+new history checks had introduced and one part of the reading of signing records still open;
+both are reproduced here and corrected, and the wording the review listed is settled (section
+19). No contract, no compiled interface and no build changes; nothing is deployed and nothing
+is signed.
+
+Design revision v0.1.15 came with software release 0.1.8 and recorded no new ruling. It was
+the correction that the advisor's functional review of release 0.1.7 asked for: three faults of
+the client, each reproduced, and one claim of evidence restated (section 18).
 
 Design revision v0.1.14 came with software release 0.1.7 and recorded no new ruling. It was the
 first part of the client for a v2 deployment that A86 names: the audit of an epoch of ledger
@@ -173,6 +179,7 @@ and authorized follow-up that keep their existing A71/A72 identifiers.
 | A84 | Three corrections of tools, delivered first and as a small delta. (1) `scripts/sign-permit.js`: `--out` creates its file exclusively and refuses to overwrite a file that exists. Regressions cover the same path, an output that exists, a symbolic link and a hard-link alias, and show that the bytes of the input key are unchanged after the refusal; a new output path succeeds as before. (2) `client/lib/canonical.js` refuses an array with an empty slot explicitly; `scripts/report-hash.py` refuses a JSON key given twice, nested objects included; a regression for each. (3) The wording of P63 is made exact (A83), and leftovers of wording are corrected with it, among them that a public fact is not made automatically. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
 | A85 | The hosted run of the existing workflow, started by hand once the small delta is uploaded and checked: manifest `deployments/finchain-sepolia-r2.json`, epochs `0 1`. It is recorded as the new client's verification of the existing deployment, on a public endpoint and with an audit at a pinned block. The commit, the link of the run, the exit results and the reports are kept. Each report records its own snapshot as it was. Round R2a is not reopened and its original evidence is not changed. The run does not wait for the build of v2. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
 | A86 | The next delivery, and what stays. Its main line is the reproducible build of v2 with the deployment tooling, the client for v2 with its audit, and the run record. The production module and the two discussion drafts proceed in parallel. A signature with a real key, a deployment and an operation on a chain continue to follow their own operation packages. Finchain, FOGA and this repository stay independent. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A87 | The owner's adoption of 2026-11-26, 02:38 (UTC+8), in words of his own, after the advisor's reviews of releases 0.1.7 and 0.1.8: the direction of P71 to P76, and the advisor's specific recommendations on P69, Q33/P70, Q32 and P68. Q33/P70: a v2 deployment takes copies of `AuditV1` and of the seed source compiled inside the v2 boundary, with the algorithm, the identifiers and the encodings unchanged, and the new `AuditV1` bound to the new ledger; the deployment tooling and the manifest proceed on that basis, as local development. Q32: an isolated, bounded check of the old compiler's known defect; the old builds are not replaced, round R2a is not reopened, v2 is not held up. P68: the v2 client's official outputs are created, never overwritten. The owner asked that the advisor's recommendation, his adoption and the executor's evidence stay distinguished, as A66 has it. He also stated that release 0.1.8 is not yet accepted and named the two corrections to make first (19.2); that M29 needs no further run and no full rerun of the mutation check is needed; that the production module is a precondition only where its profile is used in a round, the first production increment keeping its parallel relation to R2b and R3; and that Finchain, FOGA and finchain-pouw stay independent, with every deployment, host-key signature and chain operation under its own operation package | 2026-11-26 |
 
 ### 1.1 Review and authorized follow-up records
 
@@ -853,14 +860,17 @@ recommendation recorded; owner adoption pending - and none was an approval (A66)
 adopted all thirteen on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as
 adopted. What is adopted there is design, and nothing of the production line is built. Q30 and
 Q31, which the implementation of ledger v2 raised, were ruled on 2026-11-25 (A81, A82) and are
-listed in 12.4. Open now are the two questions of 12.1.
+listed in 12.4. Q32 and Q33, which the compile boundary and the audit raised, were ruled on
+2026-11-26 (A87) and are listed in 12.5. No question is open now.
 
 ### 12.1 Open for the owner's ruling
 
+None at this revision. Q32 and Q33 moved to 12.5 with A87.
+
 | Id | Question | This repository's suggestion | Recorded advice and current status |
 | --- | --- | --- | --- |
-| Q32 | Whether the kernel's six committed builds of release 0.1.3, from which the deployment of round R2a was made, are checked against the known bugs of their compiler, solc 0.8.24 (P67; 15.5, 16.3) | No rebuild and no change of round R2a: its deployment carries test points only, and A82 keeps the kernel's builds as they are. The compiler's list has seven entries for 0.8.24. Three need the IR pipeline, which the kernel does not use; three need a construct that the kernel's sources do not have or cannot reach; one - the bug of the Yul optimizer that A82 answers for v2 - cannot be excluded by reading the sources. A check of that one, if it is wanted, by a method the compiler's maintainers describe, recorded as a check and as nothing more | Advisor recommendation recorded (2026-11-26, relayed by the owner at 00:47 UTC+8; 18.6): a bounded, local comparison of compilation behaviour under the same compiler version, in a directory of its own; the kernel's official builds and round R2a kept; v2's main line not held up by it. Owner adoption pending |
-| Q33 | What a deployment of ledger v2 takes for its G0 function and its seed source (P70; 16.4). Both are contracts of the kernel - `AuditV1`, and `L1BlockSeedSource` or `PrevBlockSeedSource` - and their builds are those of solc 0.8.24 | Give v2 its own copies of the two sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and one build record. The kernel's files and builds stay as they are. The alternative is to deploy v2 with the kernel's builds of these two contracts, on the record; for round R2b, which carries test points only, either is defensible | Advisor recommendation recorded (2026-11-26, relayed by the owner at 00:47 UTC+8; 18.6): `AuditV1` and the seed source go into v2's 0.8.39 build; the new `AuditV1` is bound to the new ledger; the algorithm and the encodings stay as they are - that is, P70. Owner adoption pending. The deployment tooling waits for the adoption |
+| Q32 | Whether the kernel's six committed builds of release 0.1.3, from which the deployment of round R2a was made, are checked against the known bugs of their compiler, solc 0.8.24 (P67; 15.5, 16.3) | No rebuild and no change of round R2a: its deployment carries test points only, and A82 keeps the kernel's builds as they are. The compiler's list has seven entries for 0.8.24. Three need the IR pipeline, which the kernel does not use; three need a construct that the kernel's sources do not have or cannot reach; one - the bug of the Yul optimizer that A82 answers for v2 - cannot be excluded by reading the sources. A check of that one, if it is wanted, by a method the compiler's maintainers describe, recorded as a check and as nothing more | Ruled 2026-11-26 (A87; 12.5): the advisor's recommendation adopted - an isolated, bounded check; old builds and R2a kept; v2 not held up |
+| Q33 | What a deployment of ledger v2 takes for its G0 function and its seed source (P70; 16.4). Both are contracts of the kernel - `AuditV1`, and `L1BlockSeedSource` or `PrevBlockSeedSource` - and their builds are those of solc 0.8.24 | Give v2 its own copies of the two sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and one build record. The kernel's files and builds stay as they are. The alternative is to deploy v2 with the kernel's builds of these two contracts, on the record; for round R2b, which carries test points only, either is defensible | Ruled 2026-11-26 (A87; 12.5): the advisor's recommendation adopted - copies of `AuditV1` and the seed source compiled inside the v2 boundary (P70); the deployment tooling proceeds |
 
 ### 12.2 Adopted by the owner on 2026-11-24 (A70)
 
@@ -904,6 +914,17 @@ recommendation in its review of the implementation, which the owner adopted (15.
 | --- | --- | --- | --- | --- | --- |
 | Q30 | Whether the interfaces of ledger v2 are frozen as `ledger-v2.md` 11 has them, with this repository's choices P61 to P65 (14.5) | Freeze them after the review of the implementation. The committed builds, the deployment tooling and the client for a v2 deployment follow the freeze | Freeze. The five compiled interfaces equal a fresh compilation, and no finding of the review needs a change of an interface. The reference is, together: the complete Solidity types and interface sources, the five compiled interfaces, the typed statements with the domain's encoding and the fixed vectors, and the version or commit. The interfaces can be final now; the deployable bytecode waits for the compiler | A81: frozen as they stand at commit `b3e07df`; the interfaces and the deployable bytecode are recorded apart | `ledger-v2.md` 11.8; `contracts/v2/interfaces.frozen.json`; `test/v2.frozen.test.js` |
 | Q31 | The build of the v2 ledger (P66): through the compiler's IR pipeline, at 21,674 bytes, or a smaller ledger under the kernel's settings, which leave it 34 bytes under a chain's limit | The IR pipeline, with a test that holds the code 1,024 bytes under the limit. A smaller ledger would, for one, store a commitment to a fact in place of its content | The IR pipeline; 34 bytes of room are too few to maintain a contract in, and no adopted function of the ledger is cut for the sake of the old settings. Not the present build as the deployment build: solc 0.8.24 is inside the range of a known bug of the optimizer, fixed in 0.8.38. A compiler of its own for v2, 0.8.39 verified first; the kernel's boundary and its six builds kept | A82 | 15.5; `ledger-v2.md` 1. The compile boundary and the build are not made: they are the first item of the next delivery |
+
+### 12.5 Ruled by the owner on 2026-11-26 (A87)
+
+The third column is what this repository had suggested; the fourth the advisor's
+recommendation, given in the reviews of 0.1.7 and 0.1.8 and recorded under A66 until the owner
+adopted it in words of his own.
+
+| Id | Question | This repository's suggestion | The advisor's recommendation | The ruling | Applied in |
+| --- | --- | --- | --- | --- | --- |
+| Q32 | Whether the kernel's six committed builds of release 0.1.3 are checked against the known bugs of their compiler (P67) | No rebuild and no change of round R2a; a check of the one defect that reading the sources cannot exclude, if it is wanted, recorded as a check and nothing more | An isolated, bounded comparison of compilation behaviour under the same compiler version, in a directory of its own; the old builds and R2a kept; v2's main line not held up | The recommendation, as given | Not yet started; it waits for nothing and holds nothing up |
+| Q33 | What a deployment of ledger v2 takes for its G0 function and its seed source (P70) | Copies of the two sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and one build record | The same: `AuditV1` and the seed source into v2's 0.8.39 build; the new `AuditV1` bound to the new ledger; algorithm, identifiers and encodings unchanged; the deployment tooling and the manifest developed on that basis | The recommendation, as given; P70 adopted | The next delivery: the two copies, their builds under `build/v2`, the deployment tooling and the manifest |
 
 ## 13. Illustrative (figures used to explain, not parameters)
 
@@ -1177,7 +1198,7 @@ still replace a file that matters there, a key file included.
 
 | Id | Proposal | Why | Status |
 | --- | --- | --- | --- |
-| P68 | From the client for a v2 deployment on, the client's `--out` creates its file and refuses a path that exists. The scripts that write into a directory of their own keep replacing their own records. Release 0.1.5 leaves both as they are | The fault of this section was the replacing, and it is as easy to mistype a path there. Changing it now would change commands that the runbook of round R2a and the hosted workflow use as they are, and the owner asked for three corrections | Proposed; to be ruled with the next delivery. Advisor recommendation recorded (2026-11-26; 18.6): adopted for the v2 client's official outputs, with an exception for temporary files that are not yet sealed and can be regenerated. Owner adoption pending |
+| P68 | From the client for a v2 deployment on, the client's `--out` creates its file and refuses a path that exists. The scripts that write into a directory of their own keep replacing their own records. Release 0.1.5 leaves both as they are | The fault of this section was the replacing, and it is as easy to mistype a path there. Changing it now would change commands that the runbook of round R2a and the hosted workflow use as they are, and the owner asked for three corrections | Adopted 2026-11-26 (A87): the v2 client's official outputs are created, never overwritten; overwriting only for temporary, regenerable files that are not yet sealed. Applies from the commands of the v2 client on, which are not yet built |
 
 ### 15.5 The compiler, and the kernel's builds
 
@@ -1343,8 +1364,8 @@ this reading; P67 and Q32 stand as they were, with this fuller ground.
 
 | Id | Proposal | Why | Status |
 | --- | --- | --- | --- |
-| P69 | The shape of the boundary as 16.2 has it: the directory as the boundary; v2's own copies of three interfaces under the kernel's names; the fixtures that import v2 inside the boundary; the reference contracts pinned to the kernel's compiler; each compiler a package pinned by the lock file; the ledger alone through the IR pipeline; the kernel's optimizer runs and EVM version for v2 | A82 asks for a boundary of its own and leaves its shape open. The names are kept because a compiled interface records them and the compiled interfaces are frozen. The settings are kept so that the compiler is the one thing that changes between the builds that were tested before and the builds that are tested now | Implemented in release 0.1.6; to be confirmed or changed with the review of this delivery. Advisor recommendation recorded (2026-11-26; 18.6): confirm the boundary as built. Owner adoption pending |
-| P70 | v2 gets its own copies of `AuditV1` and of the seed sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and has one build record. The kernel's files and builds stay as they are | Otherwise a deployment of v2 holds two contracts built by a compiler that A82 moved v2 away from. They are small and without storage of their own to corrupt, and round R2b carries test points only, so deploying the kernel's builds of them is defensible as well | Proposed; not built; Q33 |
+| P69 | The shape of the boundary as 16.2 has it: the directory as the boundary; v2's own copies of three interfaces under the kernel's names; the fixtures that import v2 inside the boundary; the reference contracts pinned to the kernel's compiler; each compiler a package pinned by the lock file; the ledger alone through the IR pipeline; the kernel's optimizer runs and EVM version for v2 | A82 asks for a boundary of its own and leaves its shape open. The names are kept because a compiled interface records them and the compiled interfaces are frozen. The settings are kept so that the compiler is the one thing that changes between the builds that were tested before and the builds that are tested now | Implemented in 0.1.6; adopted 2026-11-26 (A87): the boundary as built is confirmed |
+| P70 | v2 gets its own copies of `AuditV1` and of the seed sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and has one build record. The kernel's files and builds stay as they are | Otherwise a deployment of v2 holds two contracts built by a compiler that A82 moved v2 away from. They are small and without storage of their own to corrupt, and round R2b carries test points only, so deploying the kernel's builds of them is defensible as well | Adopted 2026-11-26 with Q33 (A87); not yet built - the next delivery |
 
 ### 16.5 What was verified
 
@@ -1420,12 +1441,12 @@ audit and its records are as they were.
 
 | Id | Proposal | Why | Status |
 | --- | --- | --- | --- |
-| P71 | A report keeps differences and undecided receipts apart: `findings`, `undecided`, and the three flags `agrees`, `complete` and `ok`. A command built on the audit succeeds only when `ok`, and tells "agrees, not complete" from "differs" by its exit status | Finding 3. A receipt whose work was not read again is not shown to be wrong, and is not shown to be right either | Implemented in 0.1.7; the command and its exit statuses are not built. Advisor recommendation recorded (2026-11-26; 18.6): adopt, with `complete` meaning the completeness of the work's re-decision within what the client reads and not that every link of the historical authorization was proven again; the authorization evidence states its own reach. Release 0.1.8 words the library, its record and the documents so. Owner adoption pending |
-| P72 | The permit behind a delegated receipt is read from the receipt's own transaction when that transaction is the delegate's call to the ledger or to the module; otherwise it is looked for among permits given to the run; otherwise the digest alone is reported, and said to be alone. A round whose delegates are keys that send their own transactions publishes no permit. A round that uses a contract delegate or a relay puts the signing script's record of each such permit with its evidence | Finding 1. It keeps the audit "from the chain alone" for the arrangement the rounds use, and does not ask a third party to trust a file where the chain has the same content | Implemented in 0.1.7. Advisor recommendation recorded (2026-11-26; 18.6): adopt, once the entry's own call is held to the receipt in full and an invalid permit in it is a difference, not a missing one (18.2, second fault), and once signing records are read by their own domain (third fault). Both done in 0.1.8. Owner adoption pending |
-| P73 | Which of the ledger's two rules a permit passed is read from the permit and not from the account's code at the audit's block. No guard named: an account without code, and a signature that must recover to it in the one accepted form. A guard named: an account with code, the binding in force for the epoch, and a signature the audit does not ask the account for again. The account's code at the block is reported and decides nothing | Finding 2. A finding raised on the code an account has today would be false for an account that gained code after it signed; and asking a contract account today would report today's answer as that moment's | Implemented in 0.1.7. Advisor recommendation recorded (2026-11-26; 18.6): adopt, stated as an inference from the permit's form and the frozen rules of the ledger, not as a reading of the account's code at the time. Release 0.1.8 words it so. Owner adoption pending |
-| P74 | A G0 receipt of a function the client does not carry: the verdict is taken as recorded and everything that follows from it is re-decided. A G1 receipt of a module the client does not read: the recorded status is replayed as it is; the two rules for task units, the taking of its key and the ledger's store of the key are held all the same | Those rules need the receipt and the log only. Holding them costs nothing and leaves the undecided part as small as it can be | Implemented in 0.1.7. Advisor recommendation recorded (2026-11-26; 18.6): adopt; each receipt says which of its verdict and facts stand as recorded, and arithmetic that agrees is not a check of the work's facts. Owner adoption pending |
-| P75 | Content keys taken before the epoch's first receipt are read from the ledger's log of keys; from there on the audit derives the taking from the epoch's own receipts in their order and compares it with the log and with the store | Finding 4. Each epoch's audit holds its own part, and the audits of all epochs together hold the whole. Reading every earlier receipt in every audit would hold it twice and cost a full history each time | Implemented in 0.1.7. Advisor recommendation recorded (2026-11-26; 18.6): adopt; the epoch's own taking is derived, the occupancy from before it is a dependence on the history, and one epoch's audit does not claim to have proven that history again. Owner adoption pending |
-| P76 | The record of a v2 audit has a schema name of its own, `finchain-pouw.ledger-v2.audit/1`, and the permits a run was given are members of what it found, so they enter the result hash | The kernel's client goes on writing schema 2 for kernel deployments, so a third revision of that name would not be a later form of the same record. Two runs that were given different permits did not find the same thing | Implemented in 0.1.7. Advisor recommendation recorded (2026-11-26; 18.6): adopt; given records are checked and sorted before the canonical record and its hashes are formed, which 0.1.8 does. Owner adoption pending |
+| P71 | A report keeps differences and undecided receipts apart: `findings`, `undecided`, and the three flags `agrees`, `complete` and `ok`. A command built on the audit succeeds only when `ok`, and tells "agrees, not complete" from "differs" by its exit status | Finding 3. A receipt whose work was not read again is not shown to be wrong, and is not shown to be right either | Implemented in 0.1.7 and corrected in 0.1.8 and 0.1.9; adopted in its direction 2026-11-26 (A87), with the advisor's boundary: `complete` is the completeness of the work's re-decision within what the client reads, the authorization evidence states its own reach, and an authorization that contradicts the receipt is a finding. The command and its exit statuses are not built |
+| P72 | The permit behind a delegated receipt is read from the receipt's own transaction when that transaction is the delegate's call to the ledger or to the module; otherwise it is looked for among permits given to the run; otherwise the digest alone is reported, and said to be alone. A round whose delegates are keys that send their own transactions publishes no permit. A round that uses a contract delegate or a relay puts the signing script's record of each such permit with its evidence | Finding 1. It keeps the audit "from the chain alone" for the arrangement the rounds use, and does not ask a third party to trust a file where the chain has the same content | Implemented in 0.1.7, corrected in 0.1.8 (the entry's own call held in full; an invalid permit in it a finding) and 0.1.9 (full records read as they are); adopted in its direction 2026-11-26 (A87) |
+| P73 | Which of the ledger's two rules a permit passed is read from the permit and not from the account's code at the audit's block. No guard named: an account without code, and a signature that must recover to it in the one accepted form. A guard named: an account with code, the binding in force for the epoch, and a signature the audit does not ask the account for again. The account's code at the block is reported and decides nothing | Finding 2. A finding raised on the code an account has today would be false for an account that gained code after it signed; and asking a contract account today would report today's answer as that moment's | Implemented in 0.1.7; adopted in its direction 2026-11-26 (A87), stated as an inference from the permit's form and the frozen rules, not as a reading of the account's code at the time |
+| P74 | A G0 receipt of a function the client does not carry: the verdict is taken as recorded and everything that follows from it is re-decided. A G1 receipt of a module the client does not read: the recorded status is replayed as it is; the two rules for task units, the taking of its key and the ledger's store of the key are held all the same | Those rules need the receipt and the log only. Holding them costs nothing and leaves the undecided part as small as it can be | Implemented in 0.1.7; adopted in its direction 2026-11-26 (A87): each receipt says which of its verdict and facts stand as recorded, and arithmetic that agrees is not a check of the work's facts |
+| P75 | Content keys taken before the epoch's first receipt are read from the ledger's log of keys; from there on the audit derives the taking from the epoch's own receipts in their order and compares it with the log and with the store | Finding 4. Each epoch's audit holds its own part, and the audits of all epochs together hold the whole. Reading every earlier receipt in every audit would hold it twice and cost a full history each time | Implemented in 0.1.7; adopted in its direction 2026-11-26 (A87): the epoch's own taking is derived, the occupancy from before it is a dependence on the history, and one epoch's audit does not claim to have proven that history again |
+| P76 | The record of a v2 audit has a schema name of its own, `finchain-pouw.ledger-v2.audit/1`, and the permits a run was given are members of what it found, so they enter the result hash | The kernel's client goes on writing schema 2 for kernel deployments, so a third revision of that name would not be a later form of the same record. Two runs that were given different permits did not find the same thing | Implemented in 0.1.7 and 0.1.8; adopted in its direction 2026-11-26 (A87): given records are checked and sorted before the canonical record and its hashes are formed |
 
 P68 stands as it was: the client's own `--out` still replaces a file that exists, and the
 change is for the commands of the v2 client, which this revision does not add.
@@ -1486,9 +1507,13 @@ it was corrected.
 | 2. The entry's own call not bound to the receipt | With the receipts and the logs kept and one transaction's response replaced for the audit alone: a `submitG0For` whose permit carried a scope bit this version does not know was reported as `permit-not-available` and the audit passed; so did another output hash, another profile key, and the direct entry in place of the delegated one; an input that decodes as nothing passed too. The audit had read an input it could hold against the receipt and did not | A transaction sent to the ledger or to a module the client reads can have recorded the receipt only through its top-level call, so that call is held to the receipt in full: the kind of entry - direct or delegated, G0 or G1 - and for G0 the profile, epoch, job index and output hash, for G1 the tender and the submission of the module's confirmation record. An input that is no entry, or holds no permit of this ledger's version, is a difference and no given permit stands in for it. A transaction sent to another contract is still read for its origin alone, so the supplied-permit and digest-only paths of P72 stay as they were. Test L45 |
 | 3. A record's own domain ignored | `permitIndex` took a signing record's message and rebuilt the statement in this run's domain. A record with its `typedData.domain.chainId` set to 1, its digest and its signature left as made here, was read as a local permit, `foreign` stayed empty and the audit passed | A bare message is read, by agreement, in this run's domain. A record that carries its own domain is read as what it says: domain, primary type, types and stated digest must agree with each other and with the frozen types. A consistent record for another chain or ledger is foreign; a record that contradicts itself is unusable; neither is read in this domain. Test L46 |
 
-The three corrections are in `client/lib/audit2.js`; the record (`client/lib/report2.js`)
-changes only its description and its reading lines. No contract, no compiled interface and no
-build changes.
+The three corrections are in `client/lib/audit2.js`. The record (`client/lib/report2.js`)
+changes its description and its reading lines, and carries three members more than in 0.1.7:
+each receipt's `entry.transaction` (`the-entry`, `to-a-module-not-read` or
+`through-a-contract`), the summary `entries.byTransaction`, and for a foreign typed record its
+own `domain` in `permits.foreign`. None of these is a change of a frozen interface; the schema
+name `finchain-pouw.ledger-v2.audit/1` is kept because no record of that schema has been
+published. No contract, no compiled interface and no build changes.
 
 ### 18.3 The claim of evidence, restated
 
@@ -1513,9 +1538,11 @@ refusals now carry the same 1,500,000 gas limit as the static calls beside them,
 that part of the test states - that within a fixed limit the outcome is the ledger's refusal.
 Measured three times on the whole test file under M29: a peak of about 1.7 gigabytes, and the
 assertion "a refused guard check used 985408 gas" against its ceiling of 700,000 each time. The
-forty changes of release 0.1.6 were not rerun; the records keep the distinction between the
-forty run on the working tree during development and the thirty run on the final clean copy,
-and add the twelve of this release and the rerun of M29.
+records of release 0.1.8 hold 82 changes and 84 runs: 39 of release 0.1.6 as recorded then,
+on the working tree during development; the 42 of releases 0.1.7 and 0.1.8 run on the final
+clean copy; and M29 run three times on it. The 39 were not rerun. The advisor reran M29 once
+on his own and found the same assertion; the peak-memory figures and their cause are the
+executor's measurement and no one else's.
 
 ### 18.4 What was verified
 
@@ -1527,7 +1554,7 @@ and add the twelve of this release and the rerun of M29.
 | The contracts, the builds and the compiled interfaces | byte for byte those of `4bb88ec` |
 | A clean copy | `npm ci`, `npm test`, `npm run export-abi`: 154 tests pass and the builds are rewritten byte for byte as committed |
 | The rehearsal | 41 of 41 checks, with release 0.1.8 from a clean copy; its record is under `evidence/` |
-| The changes that should break the tests | 82 in all, with verdicts read from the test summaries: the 40 of release 0.1.6 as recorded then, M29 rerun and killed by its assertion; the 30 of release 0.1.7 rerun on this release's clean copy, two of them reworded for lines that moved; 12 new ones on the three corrections, all killed. One of the twelve survived its first run - a policy log that begins at a later parameters version - because the test only looked at an epoch those parameters were not in force for; the test now also audits an epoch they are in force for, and the change is killed |
+| The changes that should break the tests | 82 in all and 84 runs, with verdicts read from the test summaries: 39 of release 0.1.6 as recorded then; M29 run three times on the final clean copy and killed by its assertion each time; the 30 of release 0.1.7 rerun on that copy, three of them reworded for lines that moved; 12 new ones on the three corrections, all killed. One of the twelve survived its first run - a policy log that begins at a later parameters version - because the test only looked at an epoch those parameters were not in force for; the test now also audits an epoch they are in force for, and the change is killed |
 
 ### 18.5 Wording made consistent
 
@@ -1556,3 +1583,66 @@ pending" until the owner adopts it in words of his own.
 | The next batch | This correction first; then the v2 deployment tooling and manifest, work and confirmation through a delegate, and the full local rehearsal; the production module and the two discussion drafts beside them; contracts, frozen interfaces, the kernel's builds and the existing evidence unchanged; Finchain, FOGA and finchain-pouw independent; deployments and public-chain operations by their own operation packages |
 
 The deployment tooling of v2 waits for the adoption on Q33.
+
+## 19. The second correction of the audit library, and the owner's adoption
+
+### 19.1 The adoption (A87)
+
+Release 0.1.8 was uploaded on 2026-11-26 at 01:57 (UTC+8) as one commit,
+`39f8a9a85a0fbf906a34d98eb0f793ed6594868c`; the executor compared `main` with its own copy file
+by file and found them equal. The advisor's review of it, with a package that holds his
+reviews of 0.1.7 and 0.1.8 together, reached the executor on 2026-11-26 at 02:38 (UTC+8). In
+the same message, in words of his own, the owner adopted the advisor's recommendations on P71
+to P76, P69, Q33/P70, Q32 and P68, and set the conditions of this release (A87). The three
+things are recorded apart, as he asked: the advisor's recommendation (18.6), the owner's
+adoption (A87, 12.5, and the status of each item), and the executor's evidence (18.4, 19.4).
+
+### 19.2 The two faults, each reproduced
+
+The advisor's package arrived complete this time: the review of 0.1.7 that had not reached the
+executor, and the review of 0.1.8 with its probes and their outputs. The two probes of this
+round were run on the 0.1.8 tree before anything was changed and found what the review says.
+
+| Fault | What the advisor found and the executor reproduced | Correction |
+| --- | --- | --- |
+| V018-01. A lawful correction of a profile read as a gap | The history check of 0.1.8 required each `ProfileRegistered` to carry the next version number. The frozen policy allows the steward to replace the last version while its activation epoch is still ahead: the same version number and id, new values, retirement cleared. Three lawful histories - version 1 corrected before the genesis; version 2 for epoch 1 registered twice during epoch 0; a future version registered, retired and registered again - passed the audit of 0.1.7 and were refused by 0.1.8 as `HistoryIncomplete`. The second shows the reach: a correction of a future configuration stopped the audit of an epoch already past | The replay follows the policy's transitions: a registration adds the next version when its activation epoch is later than the last one's, or replaces the last version when the version, the id and the activation epoch are the last one's, with the new values and no retirement; a retirement marks the last version. Anything else - a version without its predecessor, a re-registration for another epoch, a retirement of a version that is not the last - is still refused as a log that does not begin at the start. Tests L44 (the refusals) and L47 (the three lawful histories, and a retirement that stands) |
+| V018-02. A full record read through the shorthand | 0.1.8 checked a full record's domain against this run's, but read its message through the signing script's normalizer first, which fills in guard fields, reads the scope by name and tolerates what it does not know, and then hashed the repaired result. Four records were accepted as `permit-supplied` with the signature verified: types without a Permit definition; a message without the guard fields; a `uint32` scope written as `submit-g0`; a domain with an added `salt` | A full record is read as it is. Its structure is checked first - primary type Permit, types defining Permit as the frozen type and nothing else, a domain with the four frozen fields and no other, a message with the eight fields and no other, every value a value of its declared type - and only then its own digest is computed, from its own domain and message as given, and compared with its stated digest and with this domain. A record that fails the structure is unusable, whatever a repaired version of it would have been. A bare message keeps the shorthand, by agreement. Test L46, extended with the four records and six more |
+
+The rest of the library and the record are unchanged. No contract, no compiled interface and
+no build changes.
+
+### 19.3 Wording settled with the review
+
+- The production module is a precondition only where a round uses its profile (`ledger-v2.md`
+  16; A87). R3's basic access follows A35 and A39; the first production increment runs beside
+  R2b and R3 (A70, Q23).
+- The record's members added in 0.1.8 are named in 18.2.
+- The mutation records are described as 39 inherited, 42 rerun on the final copy and M29 three
+  times (18.3), and the review records of 0.1.8 name the rehearsal record that was delivered,
+  `local-run-20261125T173705Z.json`.
+- The runner writes no cause for a process that ended without a test summary unless the output
+  names one; the exit status is recorded and the cause is left undiagnosed.
+- P71: the authorization evidence has states of its own and is neither a finding nor undecided;
+  an authorization that contradicts the receipt - a permit the ledger would have refused, a
+  signature that is not the account's, a call whose input is not the receipt's - is a finding.
+
+### 19.4 What was verified
+
+| What | Result |
+| --- | --- |
+| The tests | 155 pass, none fails: the 154 of release 0.1.8, of which L44 and L46 carry more cases, and one new one, L47 |
+| The rows L1 to L47 | every row has a passing test that carries its id |
+| The advisor's probes | run on the 0.1.8 tree: `profile-replacement.test.js` 0 of 3, `full-typed-record.js` four records accepted. Run on this release: 3 of 3; the four records unusable with the fault named, the control still `permit-supplied`; `deploy-start.js` as before |
+| The contracts, the builds and the compiled interfaces | byte for byte those of `39f8a9a` |
+| A clean copy | `npm ci`, `npm test`, `npm run export-abi`: 155 tests pass and the builds are rewritten byte for byte as committed |
+| The rehearsal | 41 of 41 checks, with release 0.1.9 from a clean copy; its record is under `evidence/` |
+| The changes that should break the tests | 7 new ones on the two corrections, all killed; the 17 that touch the audit's history and record reading rerun on the final clean copy, all killed. The rest as recorded for 0.1.8, M29 included, not rerun (A87) |
+
+### 19.5 What comes next
+
+With Q33 ruled, the next delivery is the deployment of v2: the copies of `AuditV1` and of the
+seed source inside the v2 boundary with their builds and the known-bugs record, the deployment
+tooling, and the manifest with `supersedes` and the guards' code hashes; then the commands of
+the v2 client on it, work and confirmation through a delegate, and the run record. The
+isolated check of Q32 is a task of its own that holds nothing up. The production module and
+the two discussion drafts continue beside them.

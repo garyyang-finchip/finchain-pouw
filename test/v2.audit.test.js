@@ -557,14 +557,23 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     await refused({ policyDeployBlock: policyBlock, ledgerDeployBlock: second.rc.blockNumber }, /starts in the middle of the history: receipt 2 is the first .* receipt 1 is not in it/);
     // a ledger start after the epoch misses it whole: the ledger counts what the log does not show
     await refused({ policyDeployBlock: policyBlock, ledgerDeployBlock: second.rc.blockNumber + 1 }, /shows no receipt of epoch 0, and the ledger counts 2/);
-    // a profile version that appears without its predecessor
+    // a profile version shown without its predecessor; a version re-registered for another epoch; a
+    // retirement of a version that is not the last: none is a transition the policy makes
     const ctx = await a2.connect({ ledger: d.ledgerAddress, deployBlock: policyBlock }, ethers.provider, { tag: "latest" });
-    const skipped = withLog(ctx.policy, "ProfileRegistered", (ev) => (ev.args.profile.version === 1n && ev.args.key === key(PROFILE.G0)
-      ? { ...ev, args: { key: ev.args.key, id: ev.args.id, profile: { ...ev.args.profile.toObject(), version: 2n } } } : ev));
-    let error = null;
-    try { await a2.auditEpoch({ ...ctx, policy: skipped }, 0); } catch (e) { error = e; }
-    expect(error).to.be.instanceOf(a2.HistoryIncomplete);
-    expect(error.message).to.match(/shows version 2 of profile .* and no earlier one/);
+    const g0 = (await ctx.policy.queryFilter(ctx.policy.filters.ProfileRegistered(key(PROFILE.G0))))[0];
+    const plainEvent = { blockNumber: g0.blockNumber, index: g0.index + 1, transactionHash: g0.transactionHash };
+    const refusedWith = async (policy, pattern) => {
+      let error = null;
+      try { await a2.auditEpoch({ ...ctx, policy }, 0); } catch (e) { error = e; }
+      expect(error, String(pattern)).to.be.instanceOf(a2.HistoryIncomplete);
+      expect(error.message).to.match(pattern);
+    };
+    await refusedWith(withLog(ctx.policy, "ProfileRegistered", (ev) => (ev.args.profile.version === 1n && ev.args.key === key(PROFILE.G0)
+      ? { ...ev, args: { key: ev.args.key, id: ev.args.id, profile: { ...ev.args.profile.toObject(), version: 2n } } } : ev)), /shows version 2 of profile .* and no earlier one/);
+    await refusedWith(withLog(ctx.policy, "ProfileRegistered", undefined, [{ ...plainEvent, fragment: g0.fragment,
+      args: { key: g0.args.key, id: g0.args.id, profile: { ...g0.args.profile.toObject(), activeFromEpoch: 3n } } }]), /version 1 of profile .* after version 1 .* not a transition the policy makes/);
+    await refusedWith(withLog(ctx.policy, "ProfileRetired", undefined, [{ ...plainEvent, fragment: ctx.policy.interface.getEvent("ProfileRetired"),
+      args: { key: g0.args.key, id: ethers.id("not the last version"), retiredFromEpoch: 5n } }]), /retirement of version .* that is not its last registered version/);
     expect(first.id).to.equal(1n);
   });
 
@@ -674,8 +683,37 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     got = sorted(await run([otherType, revoke, otherDomainType, otherKind, otherSchema, noDomain]));
     expect(got.unusable.map(([i, why]) => [i, why.replace(/:.*/, "")])).to.deep.equal([
       [0, "its Permit type is not the frozen one"], [1, "primary type Revoke is not Permit"], [2, "its domain type is not the frozen one"], [3, "a Revoke, not a Permit"],
-      [4, "schema finchain-pouw.signed-statement/2 is not finchain-pouw.signed-statement/1"], [5, "its domain cannot be read"]]);
+      [4, "schema finchain-pouw.signed-statement/2 is not finchain-pouw.signed-statement/1"], [5, "its domain lacks verifyingContract"]]);
     expect([got.supplied, got.foreign, got.evidence]).to.deep.equal([0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+
+    // a full record is read as it is: nothing is filled in, converted or dropped for it. Each of these
+    // would be another permit, or none, once repaired; each is unusable, and the receipt it was given
+    // for keeps the digest alone
+    const noPermitType = copy(); noPermitType.typedData.types = { Unrelated: [{ name: "x", type: "uint256" }] };
+    const noGuardFields = copy(); delete noGuardFields.typedData.message.guard; delete noGuardFields.typedData.message.guardBindingVersion;
+    const scopeByName = copy(); scopeByName.typedData.message.scope = "submit-g0";
+    const salted = copy(); salted.typedData.domain.salt = ethers.id("explicit salt outside the frozen domain");
+    const saltedNoDigest = copy(); saltedNoDigest.typedData.domain.salt = ethers.id("explicit salt outside the frozen domain"); delete saltedNoDigest.digest;
+    const extraField = copy(); extraField.typedData.message.memo = "a field Permit does not have";
+    const noTypes = copy(); delete noTypes.typedData.types;
+    const fraction = copy(); fraction.typedData.message.nonce = "1.5";
+    const wide = copy(); wide.typedData.message.scope = String(1n << 32n);
+    const notAnAddress = copy(); notAnAddress.typedData.message.delegate = "relay";
+    got = sorted(await run([noPermitType, noGuardFields, scopeByName, salted, saltedNoDigest, extraField, noTypes, fraction, wide, notAnAddress]));
+    expect(got.unusable.map(([i, why]) => [i, why.replace(/: .*/, "")])).to.deep.equal([
+      [0, "its types do not define Permit"], [1, "its message lacks guard"], [2, "message scope"], [3, "its domain has salt, which the frozen domain does not"],
+      [4, "its domain has salt, which the frozen domain does not"], [5, "its message has memo, which Permit does not"], [6, "no types"], [7, "message nonce"],
+      [8, "message scope"], [9, "message delegate"]]);
+    expect(got.unusable[2][1]).to.contain("\"submit-g0\" is not a whole number for uint32");
+    expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    // the same shorthand in a bare message is read by agreement: the scope by its name, the guard fields left out
+    const shorthand = { ...good.typedData.message, scope: "submit-g0" }; delete shorthand.guard; delete shorthand.guardBindingVersion;
+    got = sorted(await run([{ message: shorthand, signature: good.signature }]));
+    expect([got.ok, got.supplied, got.unusable, got.evidence]).to.deep.equal([true, 1, [], a2.PERMIT_EVIDENCE.SUPPLIED]);
+    // another lawful spelling of the same typed values is the same record
+    const spelled = copy(); spelled.typedData.message.scope = 1; spelled.typedData.message.nonce = "0x1"; spelled.typedData.domain.chainId = Number(d.chainId);
+    got = sorted(await run([spelled]));
+    expect([got.supplied, got.unusable, got.evidence]).to.deep.equal([1, [], a2.PERMIT_EVIDENCE.SUPPLIED]);
     // a stated digest that is not the record's own
     const wrongDigest = copy(); wrongDigest.digest = ethers.id("some other digest");
     got = sorted(await run([wrongDigest]));
@@ -690,6 +728,58 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     // the records a good run is given are not changed by a foreign one beside them
     got = sorted(await run([chain1bare, good]));
     expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 1, [0], a2.PERMIT_EVIDENCE.SUPPLIED]);
+  });
+
+  it("replays a profile version that the policy replaced while it was still ahead - the same version with new values, its retirement cleared - as the policy does (L47)", async () => {
+    const [, w1] = await ethers.getSigners();
+    const audit = (d, epoch) => a2.connect({ ledger: d.ledgerAddress }, ethers.provider, { tag: "latest" }).then((ctx) => a2.auditEpoch(ctx, epoch));
+    const spec = (d, gmu, fields = {}) => ({ ...d.spec(PROFILE.G0, 0, d.audit.target, gmu, gmu, 1), ...fields });
+
+    // version 1 corrected before the genesis: the audit uses the corrected values
+    const a = await t.deploy({ admit: [w1], start: false });
+    await (await a.policy.registerProfile(spec(a, 11))).wait();
+    expect((await a.policy.profileVersions(key(PROFILE.G0))).map((p) => [p.version, p.baseGmu])).to.deep.equal([[1n, 11n]]);
+    await h.setTime(a.genesisTime);
+    await t.submitDirect(a, w1);
+    await h.toEpoch(a, 1);
+    const ra = await audit(a, 0);
+    expect([ra.ok, ra.totals.measured[0]], show(ra)).to.deep.equal([true, 11n]);
+
+    // version 2 for epoch 1 registered twice during epoch 0: epoch 0 keeps version 1, epoch 1 has the second registration
+    const b = await t.deploy({ admit: [w1] });
+    await t.submitDirect(b, w1);
+    await (await b.policy.registerProfile(spec(b, 11, { activeFromEpoch: 1 }))).wait();
+    await (await b.policy.registerProfile(spec(b, 12, { activeFromEpoch: 1 }))).wait();
+    expect((await b.policy.profileVersions(key(PROFILE.G0))).map((p) => [p.version, p.baseGmu])).to.deep.equal([[1n, 10n], [2n, 12n]]);
+    await h.toEpoch(b, 1);
+    const rb0 = await audit(b, 0);
+    expect([rb0.ok, rb0.totals.measured[0]], show(rb0)).to.deep.equal([true, 10n]);
+    await t.submitDirect(b, w1);
+    await h.toEpoch(b, 2);
+    const rb1 = await audit(b, 1);
+    expect([rb1.ok, rb1.totals.measured[0]], show(rb1)).to.deep.equal([true, 12n]);
+
+    // a future version registered, retired, then registered again: the retirement goes with the replaced entry
+    const c = await t.deploy({ admit: [w1] });
+    await (await c.policy.registerProfile(spec(c, 11, { activeFromEpoch: 1 }))).wait();
+    await (await c.policy.retireProfile(key(PROFILE.G0), 1)).wait();
+    await (await c.policy.registerProfile(spec(c, 12, { activeFromEpoch: 1 }))).wait();
+    await h.toEpoch(c, 1);
+    expect((await c.policy.activeProfile(key(PROFILE.G0), 1)).baseGmu).to.equal(12n);
+    await t.submitDirect(c, w1);
+    await h.toEpoch(c, 2);
+    const rc = await audit(c, 1);
+    expect([rc.ok, rc.totals.measured[0]], show(rc)).to.deep.equal([true, 12n]);
+
+    // a retirement that stands is replayed too: the future version retired and not replaced leaves epoch 1 without the profile
+    const e = await t.deploy({ admit: [w1] });
+    await (await e.policy.registerProfile(spec(e, 11, { activeFromEpoch: 1 }))).wait();
+    await (await e.policy.retireProfile(key(PROFILE.G0), 1)).wait();
+    await h.toEpoch(e, 1);
+    await t.refuses(e.ledger.connect(w1).submitG0(key(PROFILE.G0), 1, 0, ethers.id("anything")), "NoActiveProfile");
+    await h.toEpoch(e, 2);
+    const re = await audit(e, 1);
+    expect([re.ok, re.receiptCount], show(re)).to.deep.equal([true, 0n]);
   });
 
   it("writes the audit as a record with a canonical form and two hashes, which a second program recomputes (L41)", async function () {

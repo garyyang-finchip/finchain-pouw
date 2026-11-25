@@ -6,10 +6,10 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.8 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.1.9 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
-builds are committed with their record, the client audits an epoch of it as a library, and it
-is not deployed.**
+builds are committed with their record, the client audits an epoch of it as a library, the
+owner has ruled what a v2 deployment takes (Q33), and it is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -49,6 +49,15 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.9, with design revision v0.1.16 (2026-11-26), is the second correction of the audit
+of ledger v2, after the advisor's review of 0.1.8 (`docs/decisions.md` 19): a profile version
+that the policy replaced while it was still ahead is replayed as the policy replays it, instead
+of being refused as a gap in the log; a full signing record given to the audit is read as it
+is, its structure checked before its digest, and one that would need repair is unusable. The
+same revision records the owner's adoption of the advisor's recommendations on P71 to P76, P69,
+Q33/P70, Q32 and P68 (A87): Q32 and Q33 are ruled, and the deployment of v2 is the next
+delivery. No contract, no compiled interface and no build changed.
 
 Release 0.1.8, with design revision v0.1.15 (2026-11-26), is the small correction that the
 advisor's functional review of 0.1.7 asked for (`docs/decisions.md` 18): the audit reads the

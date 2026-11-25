@@ -179,19 +179,30 @@ async function policyAt(ctx, epoch, toBlock) {
       ? `starts at parameters version ${first}` : `holds no parameters in force for epoch ${epoch}`}: the policy's first parameters are registered when it is deployed, so the log was read from too late a block (policyDeployBlock or deployBlock), or the endpoint served an incomplete log`);
   }
 
+  // The profile versions of each key, replayed as the policy changes them (GenesisPolicyV2
+  // registerProfile and retireProfile). A registration either adds the next version, or replaces the
+  // last one while that one is still ahead: the same version number and id, the same activation
+  // epoch, the new values, and no retirement - the policy pops the old entry and pushes a fresh one.
+  // A retirement marks the last version. Anything else is not a transition this policy makes, so a
+  // log that shows it does not begin at the start, or was served incomplete.
   const versions = new Map(); // key -> [{ profile, retiredFrom }] by version
   const profileEvents = [...await read("ProfileRegistered"), ...await read("ProfileRetired")].sort((a, b) => (g.before(a, b) ? -1 : 1));
+  const gap = (what) => new HistoryIncomplete(`the policy's log from block ${from} ${what}: the log was read from too late a block, or the endpoint served an incomplete log`);
   for (const ev of profileEvents) {
     const list = versions.get(ev.args.key) ?? [];
+    const n = list.length; const last = n > 0 ? list[n - 1] : null;
     if (ev.fragment.name === "ProfileRegistered") {
       const profile = plainProfile(ev.args.profile);
-      if (profile.version !== list.length + 1) {
-        throw new HistoryIncomplete(`the policy's log from block ${from} shows version ${profile.version} of profile ${ev.args.key} ${list.length === 0 ? "and no earlier one" : `after version ${list.length}`}: the log was read from too late a block, or the endpoint served an incomplete log`);
+      if (profile.version === n + 1 && (last === null || profile.activeFromEpoch > last.profile.activeFromEpoch)) {
+        list.push({ profile, retiredFrom: null }); // the next version
+      } else if (profile.version === n && last !== null && profile.id === last.profile.id && profile.activeFromEpoch === last.profile.activeFromEpoch) {
+        list[n - 1] = { profile, retiredFrom: null }; // the last version replaced while still ahead: new values, retirement cleared
+      } else {
+        throw gap(`shows version ${profile.version} of profile ${ev.args.key} from epoch ${profile.activeFromEpoch} ${n === 0 ? "and no earlier one" : `after version ${n} from epoch ${last.profile.activeFromEpoch}`}, which is not a transition the policy makes`);
       }
-      list[profile.version - 1] = { profile, retiredFrom: null };
     } else {
-      const entry = list.find((v) => v && v.profile.id === ev.args.id);
-      if (entry) entry.retiredFrom = BigInt(ev.args.retiredFromEpoch);
+      if (last === null || last.profile.id !== ev.args.id) throw gap(`shows a retirement of version ${ev.args.id} of profile ${ev.args.key} that is not its last registered version`);
+      last.retiredFrom = BigInt(ev.args.retiredFromEpoch);
     }
     versions.set(ev.args.key, list);
   }
@@ -305,40 +316,93 @@ async function auditSubjectFor(ctx, epoch, pin = null) {
 /// read, under two rules:
 ///
 ///  - a bare message - the permit's eight fields, alone or under `message`, with an optional
-///    `signature` - is read, by agreement, as a permit for this chain and this ledger;
-///  - a record of `scripts/sign-permit.js`, or any typed data with its own `domain`, is read as
-///    what it says: its domain, its primary type, its types and its stated digest must agree with
-///    each other and with the frozen types. A record whose domain is another chain or another
-///    ledger is foreign, and a record that contradicts itself - a type that is not the frozen one,
-///    a digest that is not its own typed data's - is unusable. Neither is read in this domain
-///    instead.
+///    `signature` - is read, by agreement, as a permit for this chain and this ledger, in the
+///    shorthand the signing script accepts (operation names for the scope, guard fields left out
+///    for an account without code);
+///  - a record of `scripts/sign-permit.js`, or any typed data that carries its own `domain`, is
+///    read as what it says and nothing is filled in, converted or dropped for it: its primary type
+///    is Permit and its types define it as the frozen type; its domain has the frozen fields and no
+///    other; its message has the eight fields, each a value of its declared type; its stated digest,
+///    where it has one, is the digest of that typed data. A record that fails any of this is
+///    unusable, whatever a repaired version of it would have been. A record that passes and whose
+///    domain is another chain or another ledger is foreign. Neither is read in this domain instead.
 ///
 /// Foreign and unusable records are listed and used for nothing.
 const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
+const DOMAIN_FIELDS = ["name", "version", "chainId", "verifyingContract"];
+
+/// A typed-data value of `type` as it is, or the reason it is not one: addresses as address strings,
+/// unsigned integers as whole numbers (a number, a bigint, a decimal or 0x string) within the width.
+function typedValueFault(value, type) {
+  if (type === "address") return typeof value === "string" && ethers.isAddress(value) ? null : `${JSON.stringify(value)} is not an address`;
+  const m = /^uint(\d+)$/.exec(type);
+  if (m) {
+    let v;
+    if (typeof value === "bigint") v = value;
+    else if (typeof value === "number" && Number.isInteger(value)) v = BigInt(value);
+    else if (typeof value === "string" && /^(0x[0-9a-fA-F]+|\d+)$/.test(value)) v = BigInt(value);
+    else return `${JSON.stringify(value)} is not a whole number for ${type}`;
+    return v >= 0n && v < (1n << BigInt(m[1])) ? null : `${value} does not fit ${type}`;
+  }
+  if (type === "string") return typeof value === "string" ? null : `${JSON.stringify(value)} is not a string`;
+  return `type ${type} is not one this reader knows`;
+}
+
+/// The structural check of a full typed-data record. Returns the record's own digest, computed from
+/// its own domain and message as given, or throws with the first fault found.
+function ownDigestOfTyped(typed) {
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const fail = (why) => { throw new Error(why); };
+  if (typed.primaryType !== undefined && typed.primaryType !== "Permit") fail(`primary type ${typed.primaryType} is not Permit`);
+  const types = typed.types;
+  if (types === undefined || typeof types !== "object") fail("no types: a full record defines its types");
+  if (types.Permit === undefined) fail("its types do not define Permit");
+  if (!same(types.Permit, permitLib.TYPES.Permit)) fail("its Permit type is not the frozen one");
+  if (types.EIP712Domain !== undefined && !same(types.EIP712Domain, permitLib.DOMAIN_TYPE)) fail("its domain type is not the frozen one");
+  const extraTypes = Object.keys(types).filter((k) => k !== "Permit" && k !== "EIP712Domain");
+  if (extraTypes.length > 0) fail(`its types define ${extraTypes.join(", ")}, which Permit does not use`);
+  const d = typed.domain;
+  if (d === undefined || typeof d !== "object") fail("no domain");
+  const extraDomain = Object.keys(d).filter((k) => !DOMAIN_FIELDS.includes(k));
+  if (extraDomain.length > 0) fail(`its domain has ${extraDomain.join(", ")}, which the frozen domain does not`);
+  for (const f of permitLib.DOMAIN_TYPE) {
+    if (d[f.name] === undefined) fail(`its domain lacks ${f.name}`);
+    const why = typedValueFault(d[f.name], f.type); if (why) fail(`domain ${f.name}: ${why}`);
+  }
+  const msg = typed.message;
+  if (msg === undefined || typeof msg !== "object") fail("no message");
+  const extraMessage = Object.keys(msg).filter((k) => !permitLib.TYPES.Permit.some((f) => f.name === k));
+  if (extraMessage.length > 0) fail(`its message has ${extraMessage.join(", ")}, which Permit does not`);
+  for (const f of permitLib.TYPES.Permit) {
+    if (msg[f.name] === undefined) fail(`its message lacks ${f.name}`);
+    const why = typedValueFault(msg[f.name], f.type); if (why) fail(`message ${f.name}: ${why}`);
+  }
+  return ethers.TypedDataEncoder.hash(d, { Permit: permitLib.TYPES.Permit }, msg);
+}
+
 function permitIndex(ctx, permits = []) {
   const byDigest = new Map(); const foreign = []; const unusable = [];
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   permits.forEach((given, index) => {
-    const typed = given?.typedData ?? (given?.domain && given?.message ? given : null);
-    const message = typed ? typed.message : given?.message ?? given;
+    const typed = given?.typedData ?? (given?.domain !== undefined && given?.message !== undefined ? given : null);
     const refuse = (why) => unusable.push({ index, why });
     if (given?.schema !== undefined && given.schema !== RECORD_SCHEMA) return refuse(`schema ${given.schema} is not ${RECORD_SCHEMA}`);
     if (given?.kind !== undefined && given.kind !== "Permit") return refuse(`a ${given.kind}, not a Permit`);
+    const stated = given?.digest !== undefined ? String(given.digest).toLowerCase() : null;
+    let message = typed ? typed.message : given?.message ?? given;
+    let own = null;
+    if (typed) {
+      // read as it is: structure first, then its own digest, then where it belongs
+      try { own = ownDigestOfTyped(typed); } catch (e) { return refuse(e.message); }
+      if (stated !== null && stated !== own) return refuse(`its stated digest ${stated} is not the digest of its own typed data ${own}`);
+    }
     let st;
     try { st = permitLib.statement("Permit", ctx.chainId, ctx.address, message ?? {}); } catch (e) { return refuse(e.message); }
     const digest = permitLib.digestOf(st);
-    const stated = given?.digest !== undefined ? String(given.digest).toLowerCase() : null;
     if (typed) {
-      // the record is read as it is: its own domain and types decide what it is, not this run's
-      if (typed.primaryType !== undefined && typed.primaryType !== "Permit") return refuse(`primary type ${typed.primaryType} is not Permit`);
-      const types = typed.types ?? {};
-      if (types.Permit !== undefined && !same(types.Permit, permitLib.TYPES.Permit)) return refuse("its Permit type is not the frozen one");
-      if (types.EIP712Domain !== undefined && !same(types.EIP712Domain, permitLib.DOMAIN_TYPE)) return refuse("its domain type is not the frozen one");
-      const d = typed.domain ?? {};
-      let own;
-      try { own = ethers.TypedDataEncoder.hash({ name: d.name, version: d.version, chainId: BigInt(d.chainId), verifyingContract: ethers.getAddress(d.verifyingContract) }, { Permit: permitLib.TYPES.Permit }, st.message); } catch (e) { return refuse(`its domain cannot be read: ${e.message}`); }
-      if (stated !== null && stated !== own) return refuse(`its stated digest ${stated} is not the digest of its own typed data ${own}`);
-      if (own !== digest) { foreign.push({ index, domain: { name: d.name, version: d.version, chainId: String(d.chainId), verifyingContract: d.verifyingContract }, digest: own }); return; }
+      if (own !== digest) {
+        const d = typed.domain;
+        foreign.push({ index, domain: { name: d.name, version: d.version, chainId: String(d.chainId), verifyingContract: d.verifyingContract }, digest: own }); return;
+      }
     } else if (stated !== null && stated !== digest) {
       foreign.push({ index, statedDigest: stated, digestHere: digest }); return;
     }
@@ -915,5 +979,5 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
 
 module.exports = {
   ENTRY, PERMIT_EVIDENCE, SIGNATURE_EVIDENCE, ACCOUNT_AT_USE, FACTS_EVIDENCE, TRANSACTION, HistoryIncomplete, plainParams, plainProfile, connect, policyAt, readEpochReceipts, replay,
-  auditSubjectFor, permitIndex, recoverAsTheLedger, auditEpoch,
+  auditSubjectFor, permitIndex, ownDigestOfTyped, typedValueFault, recoverAsTheLedger, auditEpoch,
 };
