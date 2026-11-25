@@ -265,6 +265,8 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     // four were sent by the delegate's key to the ledger or to the adapter: their permits are in their transactions
     expect(report.entries.byPermitEvidence).to.deep.equal({ [a2.PERMIT_EVIDENCE.IN_TRANSACTION]: 4, [a2.PERMIT_EVIDENCE.NOT_AVAILABLE]: 1 });
     expect(report.entries.bySignatureEvidence).to.deep.equal({ [a2.SIGNATURE_EVIDENCE.VERIFIED]: 2, [a2.SIGNATURE_EVIDENCE.CONTRACT]: 2 });
+    // every transaction but the relay's is the entry's own call, held to its receipt in full
+    expect(report.entries.byTransaction).to.deep.equal({ [a2.TRANSACTION.ENTRY]: 23, [a2.TRANSACTION.THROUGH_A_CONTRACT]: 1 });
     expect([entry(r.g0w1).kind, entry(r.g0w1).sender, entry(r.g0w1).authorization]).to.deep.equal([a2.ENTRY.DIRECT, w1.address, NONE]);
     expect([entry(r.g0account).kind, entry(r.g0account).participant, entry(r.g0account).sender, entry(r.g0account).origin, entry(r.g0account).authorization])
       .to.deep.equal([a2.ENTRY.DELEGATED, account.target, w.delegate.address, w.delegate.address, w.permits.account.digest]);
@@ -402,7 +404,7 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     const odd = await a2.auditEpoch(ctx, 0, { permits: [recordOf(other, fresh), { message: { account: fresh.address } }, { ...w.permits.fresh.st.message, scope: 8 }] });
     expect(odd.ok, show(odd)).to.equal(true);
     expect(odd.permits.supplied).to.deep.equal([]);
-    expect(odd.permits.foreign.map((x) => [x.index, x.statedDigest])).to.deep.equal([[0, other.digest]]);
+    expect(odd.permits.foreign.map((x) => [x.index, x.digest, x.domain.verifyingContract, x.domain.chainId])).to.deep.equal([[0, other.digest, elsewhere.address, String(d.chainId)]]);
     expect(odd.permits.unusable.map((x) => x.index)).to.deep.equal([1, 2]);
     expect(entry(r.g0relayed, odd).permit).to.deep.equal({ evidence: a2.PERMIT_EVIDENCE.NOT_AVAILABLE });
   });
@@ -517,6 +519,177 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
       try { await a2.connect(deployment, ethers.provider, { tag: "latest" }); } catch (e) { refused = e; }
       expect(String(refused?.message), JSON.stringify(deployment)).to.match(why);
     }
+  });
+
+  it("reads the policy's log from the policy's own start, and refuses a log that does not reach back to what it needs instead of auditing a shorter history (L44)", async () => {
+    const [, w1, w2] = await ethers.getSigners();
+    const d = await t.deploy({ admit: [w1, w2] });
+    const blockOf = async (c) => (await ethers.provider.getTransactionReceipt(c.deploymentTransaction().hash)).blockNumber;
+    const policyBlock = await blockOf(d.policy); const ledgerBlock = await blockOf(d.ledger);
+    expect(policyBlock).to.be.lessThan(ledgerBlock); // the policy is deployed first, and its first parameters with it
+    const first = await t.submitDirect(d, w1);
+    await ethers.provider.send("evm_mine", []);
+    const second = await t.submitDirect(d, w2);
+    await h.toEpoch(d, 1);
+    const audit = (deployment, epoch = 0) => a2.connect({ ledger: d.ledgerAddress, ...deployment }, ethers.provider, { tag: "latest" }).then((ctx) => a2.auditEpoch(ctx, epoch));
+    const refused = async (deployment, pattern, epoch = 0) => {
+      let error = null;
+      try { await audit(deployment, epoch); } catch (e) { error = e; }
+      expect(error, JSON.stringify(deployment)).to.be.instanceOf(a2.HistoryIncomplete);
+      expect(error.message).to.match(pattern);
+    };
+    // the deployment's first block, as the kernel's manifests have it; the starts named apart; and no start at all
+    for (const deployment of [{ deployBlock: policyBlock }, { policyDeployBlock: policyBlock, ledgerDeployBlock: ledgerBlock }, {}, { deployBlock: ledgerBlock, policyDeployBlock: policyBlock }]) {
+      const report = await audit(deployment);
+      expect([report.ok, report.receiptCount], JSON.stringify(deployment)).to.deep.equal([true, 2n]);
+    }
+    // the ledger's block as the one start misses the policy's first parameters: refused, and named
+    await refused({ deployBlock: ledgerBlock }, /policy's log from block \d+ to \d+ (holds no parameters|starts at parameters version \d+): .* too late a block \(policyDeployBlock or deployBlock\)/);
+    // a policy start after a later change shows parameters that do not begin at version 1: refused
+    // for an epoch those parameters are in force for too, where the audit would otherwise go on
+    await d.policy.registerParams({ ...t.DEFAULT_PARAMS, activeFromEpoch: 3n });
+    const changed = await ethers.provider.getBlockNumber();
+    await h.toEpoch(d, 4);
+    expect((await audit({ deployBlock: policyBlock }, 3)).paramsVersion).to.equal(2);
+    await refused({ policyDeployBlock: changed }, /starts at parameters version 2/, 3);
+    await refused({ policyDeployBlock: changed }, /starts at parameters version 2/);
+    // a ledger start inside the epoch misses its first receipt: refused, not reported as a difference
+    await refused({ policyDeployBlock: policyBlock, ledgerDeployBlock: second.rc.blockNumber }, /starts in the middle of the history: receipt 2 is the first .* receipt 1 is not in it/);
+    // a ledger start after the epoch misses it whole: the ledger counts what the log does not show
+    await refused({ policyDeployBlock: policyBlock, ledgerDeployBlock: second.rc.blockNumber + 1 }, /shows no receipt of epoch 0, and the ledger counts 2/);
+    // a profile version that appears without its predecessor
+    const ctx = await a2.connect({ ledger: d.ledgerAddress, deployBlock: policyBlock }, ethers.provider, { tag: "latest" });
+    const skipped = withLog(ctx.policy, "ProfileRegistered", (ev) => (ev.args.profile.version === 1n && ev.args.key === key(PROFILE.G0)
+      ? { ...ev, args: { key: ev.args.key, id: ev.args.id, profile: { ...ev.args.profile.toObject(), version: 2n } } } : ev));
+    let error = null;
+    try { await a2.auditEpoch({ ...ctx, policy: skipped }, 0); } catch (e) { error = e; }
+    expect(error).to.be.instanceOf(a2.HistoryIncomplete);
+    expect(error.message).to.match(/shows version 2 of profile .* and no earlier one/);
+    expect(first.id).to.equal(1n);
+  });
+
+  it("holds the entry's own call to the receipt in full, and never reads a given permit in place of an invalid one in that call (L45)", async () => {
+    const { d, w1, d1, r, elsewhere, tn } = w;
+    const base = await connect(d);
+    const txOf = async (x) => ethers.provider.getTransaction((await a2.readEpochReceipts(base, 0, await ethers.provider.getBlockNumber())).find((it) => it.id === x.id).txHash);
+    const shown = (hash, patch) => ({ ...base, provider: tampered(ethers.provider, { getTransaction: async (hsh) => {
+      const tx = await ethers.provider.getTransaction(hsh);
+      return hsh === hash ? { blockNumber: tx.blockNumber, to: tx.to, from: tx.from, data: tx.data, ...patch } : tx;
+    } }) });
+    const seen = async (x, patch, options = {}) => {
+      const tx = await txOf(x);
+      const report = await a2.auditEpoch(shown(tx.hash, patch), 0, options);
+      const e = report.receipts.find((it) => it.id === x.id).entry;
+      return { whats: whats(report), permit: e.permit?.evidence ?? null, transaction: e.transaction };
+    };
+    const face = d.ledger.interface; const aface = d.adapter.interface;
+    const g0 = await txOf(r.g0w2); const g0call = face.parseTransaction({ data: g0.data }); const a = g0call.args; const tuple = a[0].toObject();
+    const enc = (name, args) => face.encodeFunctionData(name, args);
+
+    // the delegated G0 receipt, shown with an input that does not match it
+    const cases = [
+      ["a permit with a scope bit this version does not know", enc("submitG0For", [{ ...tuple, scope: 8n }, a[1], a[2], a[3], a[4], a[5]]), [`receipt ${r.g0w2.id}: entry, in the transaction`], a2.PERMIT_EVIDENCE.INVALID_IN_TRANSACTION],
+      ["another outputHash", enc("submitG0For", [tuple, a[1], a[2], a[3], a[4], ethers.id("another output")]), [`receipt ${r.g0w2.id}: outputHash, in the transaction`], a2.PERMIT_EVIDENCE.IN_TRANSACTION],
+      ["another profile", enc("submitG0For", [tuple, a[1], ethers.id("another profile"), a[3], a[4], a[5]]), [`receipt ${r.g0w2.id}: profile, in the transaction`], a2.PERMIT_EVIDENCE.IN_TRANSACTION],
+      ["another epoch and job index", enc("submitG0For", [tuple, a[1], a[2], 7n, 3, a[5]]), [`receipt ${r.g0w2.id}: epoch, in the transaction`, `receipt ${r.g0w2.id}: jobIndex, in the transaction`], a2.PERMIT_EVIDENCE.IN_TRANSACTION],
+      ["the direct entry instead of the delegated one", enc("submitG0", [a[2], a[3], a[4], a[5]]), [`receipt ${r.g0w2.id}: entry, in the transaction`], a2.PERMIT_EVIDENCE.INVALID_IN_TRANSACTION],
+      ["another function of the ledger", enc("raiseMinNonce", [9n]), [`receipt ${r.g0w2.id}: entry, in the transaction`], a2.PERMIT_EVIDENCE.INVALID_IN_TRANSACTION],
+      ["an input that decodes as nothing", "0x12345678deadbeef", [`receipt ${r.g0w2.id}: entry, in the transaction`], a2.PERMIT_EVIDENCE.INVALID_IN_TRANSACTION],
+      ["another permit of the same account, under the first one's signature", enc("submitG0For", [{ ...tuple, nonce: 9n }, a[1], a[2], a[3], a[4], a[5]]),
+        [`receipt ${r.g0w2.id}: authorization`, `receipt ${r.g0w2.id}: permit: signature`], a2.PERMIT_EVIDENCE.IN_TRANSACTION],
+    ];
+    for (const [name, data, expected, evidence] of cases) {
+      const got = await seen(r.g0w2, { data });
+      expect(got.whats, name).to.deep.equal(expected);
+      expect([got.permit, got.transaction], name).to.deep.equal([evidence, a2.TRANSACTION.ENTRY]);
+      // a permit given to the run does not stand in for the call's own: the call is the evidence
+      const given = await seen(r.g0w2, { data }, { permits: [recordOf(w.permits.w2, w.w2)] });
+      expect(given.permit, name).to.equal(evidence);
+    }
+    // the same call sent to the receipt's own module - the function contract - is no G0 entry; sent to another contract it is a relay's
+    const sentToModule = await seen(r.g0w2, { to: d.audit.target });
+    expect([sentToModule.whats, sentToModule.transaction]).to.deep.equal([[`receipt ${r.g0w2.id}: entry, in the transaction`], a2.TRANSACTION.ENTRY]);
+    const sentElsewhere = await seen(r.g0w2, { to: d.adapter.target });
+    expect([sentElsewhere.whats, sentElsewhere.permit, sentElsewhere.transaction]).to.deep.equal([[], a2.PERMIT_EVIDENCE.NOT_AVAILABLE, a2.TRANSACTION.THROUGH_A_CONTRACT]);
+    // the direct G0 receipt shown as a delegated call, and with another output
+    expect((await seen(r.g0w1, { data: g0.data })).whats).to.deep.equal([`receipt ${r.g0w1.id}: entry, in the transaction`]);
+    const direct = await txOf(r.g0w1); const dc = face.parseTransaction({ data: direct.data });
+    expect((await seen(r.g0w1, { data: enc("submitG0", [dc.args[0], dc.args[1], dc.args[2], ethers.id("other")]) })).whats).to.deep.equal([`receipt ${r.g0w1.id}: outputHash, in the transaction`]);
+
+    // G1: the confirmation's tender and submission are the ones the module recorded
+    const c = await txOf(r.eligible); const cc = aface.parseTransaction({ data: c.data });
+    expect(cc.name).to.equal("confirm");
+    const otherTender = await seen(r.eligible, { data: aface.encodeFunctionData("confirm", [tn.pairCap.tokenId, cc.args[1]]) });
+    expect(otherTender.whats).to.deep.equal([`receipt ${r.eligible.id}: tokenId, in the transaction`]);
+    const otherSubmission = await seen(r.eligible, { data: aface.encodeFunctionData("confirm", [cc.args[0], 77n]) });
+    expect(otherSubmission.whats).to.deep.equal([`receipt ${r.eligible.id}: submissionId, in the transaction`]);
+    const asDelegated = await seen(r.eligible, { data: aface.encodeFunctionData("confirmFor", [w.permits.d1.tuple, w.permits.d1.signature, cc.args[0], cc.args[1]]) });
+    expect(asDelegated.whats).to.deep.equal([`receipt ${r.eligible.id}: entry, in the transaction`]);
+    const toLedger = await seen(r.eligible, { to: d.ledgerAddress });
+    expect(toLedger.whats).to.deep.equal([`receipt ${r.eligible.id}: entry, in the transaction`]);
+    const dg = await txOf(r.delegated); const dgc = aface.parseTransaction({ data: dg.data });
+    expect(dgc.name).to.equal("confirmFor");
+    const asDirect = await seen(r.delegated, { data: aface.encodeFunctionData("confirm", [dgc.args[2], dgc.args[3]]) });
+    expect([asDirect.whats, asDirect.permit]).to.deep.equal([[`receipt ${r.delegated.id}: entry, in the transaction`], a2.PERMIT_EVIDENCE.INVALID_IN_TRANSACTION]);
+
+    // the relay's transaction is through a contract: its input is not read, whatever it looks like
+    const relayed = await seen(r.g0relayed, { data: enc("submitG0For", [{ ...tuple, scope: 8n }, a[1], a[2], a[3], a[4], a[5]]) });
+    expect([relayed.whats, relayed.permit, relayed.transaction]).to.deep.equal([[], a2.PERMIT_EVIDENCE.NOT_AVAILABLE, a2.TRANSACTION.THROUGH_A_CONTRACT]);
+    // and a given permit still serves it
+    const served = await seen(r.g0relayed, {}, { permits: supplied });
+    expect([served.whats, served.permit]).to.deep.equal([[], a2.PERMIT_EVIDENCE.SUPPLIED]);
+    expect([w1.address, d1.address, elsewhere.address].length).to.equal(3);
+  });
+
+  it("reads a signing record by its own domain and types: a record for another chain or ledger is foreign, one that contradicts itself is unusable, and neither is read in this domain instead (L46)", async () => {
+    const { d, fresh, relay, r, elsewhere } = w;
+    const ctx = await connect(d);
+    const good = recordOf(w.permits.fresh, fresh);
+    const copy = () => JSON.parse(JSON.stringify(good));
+    const run = (permits) => a2.auditEpoch(ctx, 0, { permits });
+    const sorted = (report) => ({ ok: report.ok, supplied: report.permits.supplied.length, foreign: report.permits.foreign.map((x) => x.index), unusable: report.permits.unusable.map((x) => [x.index, x.why]),
+      evidence: report.receipts.find((it) => it.id === r.g0relayed.id).entry.permit.evidence });
+    expect(sorted(await run([good]))).to.deep.equal({ ok: true, supplied: 1, foreign: [], unusable: [], evidence: a2.PERMIT_EVIDENCE.SUPPLIED });
+
+    // the record's own domain says another chain, with the digest and the signature of this one: it contradicts itself
+    const chain1 = copy(); chain1.typedData.domain.chainId = "1";
+    let got = sorted(await run([chain1]));
+    expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    expect(got.unusable[0][1]).to.match(/stated digest .* is not the digest of its own typed data/);
+    // the same with the digest removed: a consistent record for chain 1, which is foreign here
+    const chain1bare = copy(); chain1bare.typedData.domain.chainId = "1"; delete chain1bare.digest;
+    got = sorted(await run([chain1bare]));
+    expect([got.supplied, got.foreign, got.unusable, got.evidence]).to.deep.equal([0, [0], [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    // another ledger in the domain, made consistently by the signer: foreign
+    const otherLedger = await t.signed(d, fresh, fresh.address, { delegate: relay.target, scope: 1 }, { ledger: elsewhere.address });
+    got = sorted(await run([recordOf(otherLedger, fresh)]));
+    expect([got.foreign, got.unusable]).to.deep.equal([[0], []]);
+    // a type that is not the frozen one; a primary type that is not Permit; a domain type that is not the frozen one
+    const otherType = copy(); otherType.typedData.types.Permit = otherType.typedData.types.Permit.slice(0, 7);
+    const revoke = copy(); revoke.typedData.primaryType = "Revoke";
+    const otherDomainType = copy(); otherDomainType.typedData.types.EIP712Domain = otherDomainType.typedData.types.EIP712Domain.slice(0, 3);
+    const otherKind = copy(); otherKind.kind = "Revoke";
+    const otherSchema = copy(); otherSchema.schema = "finchain-pouw.signed-statement/2";
+    const noDomain = copy(); delete noDomain.typedData.domain.verifyingContract;
+    got = sorted(await run([otherType, revoke, otherDomainType, otherKind, otherSchema, noDomain]));
+    expect(got.unusable.map(([i, why]) => [i, why.replace(/:.*/, "")])).to.deep.equal([
+      [0, "its Permit type is not the frozen one"], [1, "primary type Revoke is not Permit"], [2, "its domain type is not the frozen one"], [3, "a Revoke, not a Permit"],
+      [4, "schema finchain-pouw.signed-statement/2 is not finchain-pouw.signed-statement/1"], [5, "its domain cannot be read"]]);
+    expect([got.supplied, got.foreign, got.evidence]).to.deep.equal([0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    // a stated digest that is not the record's own
+    const wrongDigest = copy(); wrongDigest.digest = ethers.id("some other digest");
+    got = sorted(await run([wrongDigest]));
+    expect(got.unusable.length).to.equal(1);
+    // the same record given as typed data without the signing script's wrapper, and as its bare message
+    const typedOnly = { ...good.typedData, signature: good.signature };
+    expect(sorted(await run([typedOnly])).evidence).to.equal(a2.PERMIT_EVIDENCE.SUPPLIED);
+    expect(sorted(await run([good.typedData.message])).evidence).to.equal(a2.PERMIT_EVIDENCE.SUPPLIED);
+    // a bare message with a stated digest of another domain: foreign, as before
+    got = sorted(await run([{ message: good.typedData.message, digest: otherLedger.digest }]));
+    expect([got.foreign, got.supplied]).to.deep.equal([[0], 0]);
+    // the records a good run is given are not changed by a foreign one beside them
+    got = sorted(await run([chain1bare, good]));
+    expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 1, [0], a2.PERMIT_EVIDENCE.SUPPLIED]);
   });
 
   it("writes the audit as a record with a canonical form and two hashes, which a second program recomputes (L41)", async function () {

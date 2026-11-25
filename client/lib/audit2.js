@@ -13,28 +13,34 @@
 //   - the digest, the totals and the audit subject; each operator's share and each worker's
 //     allocation under the two caps; the close record when there is one.
 //
-// What is reported and not re-decided - each with a state that says which, and each listed under
-// `undecided`, apart from the differences (`findings`). A report agrees when it has no difference,
-// is complete when nothing was left undecided, and is `ok` only when it is both:
+// A report keeps three things apart. `findings` are the differences between the recomputation and
+// the ledger. `undecided` are the receipts whose work this client could not read again, and for
+// which the recorded status stands in the replay:
 //
 //   - a receipt of a module this client cannot read: its facts are not derived. Its unit and its
 //     content key are still held to the ledger's rules, because those need the log only;
 //   - a G0 receipt of a function this client does not carry: the verdict is the function's, and is
-//     taken as recorded; what follows from the verdict - the GMU, the one reason - is re-decided;
-//   - a delegated entry whose permit the audit cannot see. The receipt holds the digest of the
-//     permit, and a digest does not show a permit. Where the delegate sent its transaction to the
-//     ledger or to the module itself, the permit and its signature are that transaction's own
-//     input, and the audit reads them there. Where the call went through another contract they are
-//     not at the top of the input: then the audit looks among the permits it was given (`permits`),
-//     and without one it reports the digest alone;
+//     taken as recorded; what follows from the verdict - the GMU, the one reason - is re-decided.
+//
+// A report `agrees` when it has no finding, is `complete` when nothing is undecided - that is, the
+// work of every receipt was re-decided within what this client reads - and is `ok` only when both
+// hold. `complete` says nothing of the authorization behind the receipts: that evidence has states
+// of its own, per receipt, which say how far it reaches and are neither findings nor undecided:
+//
+//   - the permit behind a delegated entry. The receipt holds the digest of the permit, and a digest
+//     does not show a permit. Where the delegate sent its transaction to the ledger or to the
+//     module itself, the permit and its signature are that transaction's own input, and the audit
+//     reads them there and holds the whole call to the receipt. Where the call went through another
+//     contract they are not at the top of the input: then the audit looks among the permits it was
+//     given (`permits`), and without one it reports the digest alone;
 //   - the signature of a contract account: the ledger asked the account when the receipt was
 //     recorded, and the account's answer at another time is another fact;
-//   - whether an account had code when its permit was used: the ledger read that then, and the
-//     state of an earlier moment is not in the block the audit reads. The permit itself says which
-//     of the ledger's two rules it passed - a permit that names no guard passes for an account
-//     without code only, a permit that names one passes for an account with code only - and the
-//     audit holds the permit to that rule. Whether the account has code at the audit's block is
-//     reported beside it and decides nothing.
+//   - which of the ledger's two rules a permit passed. Whether the account had code when the permit
+//     was used is state of that moment, and not in the block the audit reads. The audit infers the
+//     rule from the permit and the frozen rules of the ledger: a permit that names no guard passes
+//     for an account without code only, a permit that names one passes for an account with code
+//     only, so each is held to its rule. The account's code at the audit's block is reported
+//     beside it and decides nothing.
 //
 // Nothing here holds a key or sends a transaction.
 
@@ -54,9 +60,16 @@ const NONE = ethers.ZeroHash;
 const ENTRY = { DIRECT: "direct", DELEGATED: "delegated" };
 // what the audit holds of the permit behind a delegated entry
 const PERMIT_EVIDENCE = {
-  IN_TRANSACTION: "permit-in-the-transaction", // the receipt's transaction is the delegate's own call, with the permit in its input
-  SUPPLIED: "permit-supplied",                 // one of the permits given to the audit has the receipt's digest
-  NOT_AVAILABLE: "permit-not-available",       // the digest is all there is
+  IN_TRANSACTION: "permit-in-the-transaction",         // the receipt's transaction is the delegate's own call, with the permit in its input
+  INVALID_IN_TRANSACTION: "entry-call-without-a-valid-permit", // the entry's own call, with no permit of this ledger's version in it: a finding
+  SUPPLIED: "permit-supplied",                         // one of the permits given to the audit has the receipt's digest
+  NOT_AVAILABLE: "permit-not-available",               // the call went through another contract, and no given permit matches: the digest is all there is
+};
+// what is known of the transaction that recorded a receipt
+const TRANSACTION = {
+  ENTRY: "the-entry",                         // its top-level call is the receipt's entry: the sender, the input and any permit are held to the receipt
+  TO_A_MODULE_NOT_READ: "to-a-module-not-read", // its top-level call is to the receipt's module, which this client does not read: its sender is the origin, no more is read
+  THROUGH_A_CONTRACT: "through-a-contract",   // its top-level call is to another contract: its sender is the origin, and no more is read from it
 };
 // what the audit can say of the signature under a supplied permit
 const SIGNATURE_EVIDENCE = {
@@ -86,6 +99,11 @@ function recoverAsTheLedger(digest, signature) {
   try { return ethers.recoverAddress(digest, { r, s, v }); } catch { return null; }
 }
 
+/// The log that was read does not reach back to what the audit needs: a start block too late for
+/// the deployment, or an endpoint that served an incomplete log. Nothing is reported from such a
+/// reading, because a difference it found could be the gap.
+class HistoryIncomplete extends Error {}
+
 function plainParams(p) {
   return { ...g.plainParams(p), operatorCapBps: BigInt(p.operatorCapBps) };
 }
@@ -96,10 +114,17 @@ function plainProfile(p) {
 
 // ---------------------------------------------------------------- the connection
 
-/// Connect to a deployment of ledger v2. `deployment` names the ledger and, where known, the chain,
-/// the block the ledger was deployed in and the block the tender contract was deployed in; the
-/// policy and the seed source are read from the ledger. With `pin`, every read of the connection is
-/// made at that block.
+/// Connect to a deployment of ledger v2. `deployment` names the ledger and, where known, the chain
+/// and the blocks the logs are read from; the policy and the seed source are read from the ledger.
+/// With `pin`, every read of the connection is made at that block.
+///
+/// The log starts. `deployBlock` is the block of the deployment's first contract, as the kernel's
+/// manifests have it: the policy is deployed first and its first parameters are emitted by its
+/// constructor, so the policy's log must be read from that block or earlier. A deployment may name
+/// the starts apart: `policyDeployBlock`, `ledgerDeployBlock` and `tenderDeployBlock`, each falling
+/// back to `deployBlock`, and that to 0. A start that is too late is not silently a shorter history:
+/// the audit checks that the log reaches back to what it needs and throws HistoryIncomplete when it
+/// does not.
 async function connect(deployment, runner, { tag = "finalized", logChunk, pin = null } = {}) {
   logChunk = Number(logChunk ?? deployment.logChunk ?? 0);
   const provider = runner.provider ?? runner;
@@ -125,7 +150,9 @@ async function connect(deployment, runner, { tag = "finalized", logChunk, pin = 
     seedSource: await read("the ledger's seed source", (o) => ledger.seedSource(o)),
     genesisTime: await read("the policy's genesis time", (o) => policy.genesisTime(o)),
     epochDuration: await read("the policy's epoch duration", (o) => policy.epochDuration(o)),
-    fromBlock: deployment.deployBlock ?? 0, tenderFromBlock: deployment.tenderDeployBlock ?? 0,
+    policyFromBlock: Number(deployment.policyDeployBlock ?? deployment.deployBlock ?? 0),
+    fromBlock: Number(deployment.ledgerDeployBlock ?? deployment.deployBlock ?? 0),
+    tenderFromBlock: Number(deployment.tenderDeployBlock ?? deployment.deployBlock ?? 0),
     tag, logChunk, pin,
   };
 }
@@ -138,11 +165,18 @@ async function connect(deployment, runner, { tag = "finalized", logChunk, pin = 
 /// the order of the epochs they apply from, and the last one at or before the epoch is in force.
 async function policyAt(ctx, epoch, toBlock) {
   epoch = BigInt(epoch);
-  const read = (name) => g.logs(ctx, ctx.policy, name, [], ctx.fromBlock, toBlock);
-  let params = null; let paramsVersion = 0;
+  const from = ctx.policyFromBlock ?? ctx.fromBlock;
+  const read = (name) => g.logs(ctx, ctx.policy, name, [], from, toBlock);
+  let params = null; let paramsVersion = 0; let first = null;
   for (const ev of await read("ParamsRegistered")) {
     const p = plainParams(ev.args.params);
+    if (first === null || Number(ev.args.version) < first) first = Number(ev.args.version);
     if (p.activeFromEpoch <= epoch) { params = p; paramsVersion = Number(ev.args.version); }
+  }
+  // the policy's constructor registers version 1: a log without it does not start at the policy
+  if (first !== 1 || params === null) {
+    throw new HistoryIncomplete(`the policy's log from block ${from} to ${toBlock} ${first === null ? "holds no parameters" : first !== 1
+      ? `starts at parameters version ${first}` : `holds no parameters in force for epoch ${epoch}`}: the policy's first parameters are registered when it is deployed, so the log was read from too late a block (policyDeployBlock or deployBlock), or the endpoint served an incomplete log`);
   }
 
   const versions = new Map(); // key -> [{ profile, retiredFrom }] by version
@@ -151,8 +185,10 @@ async function policyAt(ctx, epoch, toBlock) {
     const list = versions.get(ev.args.key) ?? [];
     if (ev.fragment.name === "ProfileRegistered") {
       const profile = plainProfile(ev.args.profile);
+      if (profile.version !== list.length + 1) {
+        throw new HistoryIncomplete(`the policy's log from block ${from} shows version ${profile.version} of profile ${ev.args.key} ${list.length === 0 ? "and no earlier one" : `after version ${list.length}`}: the log was read from too late a block, or the endpoint served an incomplete log`);
+      }
       list[profile.version - 1] = { profile, retiredFrom: null };
-      list.length = profile.version;
     } else {
       const entry = list.find((v) => v && v.profile.id === ev.args.id);
       if (entry) entry.retiredFrom = BigInt(ev.args.retiredFromEpoch);
@@ -191,6 +227,14 @@ async function policyAt(ctx, epoch, toBlock) {
 async function readEpochReceipts(ctx, epoch, toBlock) {
   const recorded = await g.logs(ctx, ctx.ledger, "ReceiptRecorded", [null, epoch], ctx.fromBlock, toBlock);
   if (recorded.length === 0) return [];
+  // receipts are numbered from 1 without a gap, and an epoch's are consecutive: the one before the
+  // epoch's first must be in the log too, or the log does not reach back to the epoch's start
+  const ids = recorded.map((ev) => BigInt(ev.args.id)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const gap = `the ledger's log from block ${ctx.fromBlock} to ${toBlock}`;
+  if (ids[ids.length - 1] - ids[0] + 1n !== BigInt(ids.length)) throw new HistoryIncomplete(`${gap} shows receipts ${ids[0]} to ${ids[ids.length - 1]} of epoch ${epoch} with a gap: the endpoint served an incomplete log`);
+  if (ids[0] > 1n && (await g.logs(ctx, ctx.ledger, "ReceiptRecorded", [ids[0] - 1n], ctx.fromBlock, toBlock)).length === 0) {
+    throw new HistoryIncomplete(`${gap} starts in the middle of the history: receipt ${ids[0]} is the first it shows of epoch ${epoch}, and receipt ${ids[0] - 1n} is not in it. The log was read from too late a block (ledgerDeployBlock or deployBlock), or the endpoint served an incomplete log`);
+  }
   const first = Math.min(...recorded.map((ev) => ev.blockNumber));
   const last = Math.max(...recorded.map((ev) => ev.blockNumber));
   const statuses = new Map();
@@ -257,21 +301,49 @@ async function auditSubjectFor(ctx, epoch, pin = null) {
 // ---------------------------------------------------------------- permits given to the audit
 
 /// The permits given to an audit, by the digest each has on this ledger. They serve the receipts
-/// whose transaction does not show its permit: a deployment publishes them for those. A permit is given
-/// as its message, or as the record `scripts/sign-permit.js` writes; a signature may come with it.
-/// A record made for another ledger or another chain has another digest and matches no receipt
-/// here: it is listed as foreign and used for nothing.
+/// whose transaction does not show its permit: a deployment publishes them for those. Two forms are
+/// read, under two rules:
+///
+///  - a bare message - the permit's eight fields, alone or under `message`, with an optional
+///    `signature` - is read, by agreement, as a permit for this chain and this ledger;
+///  - a record of `scripts/sign-permit.js`, or any typed data with its own `domain`, is read as
+///    what it says: its domain, its primary type, its types and its stated digest must agree with
+///    each other and with the frozen types. A record whose domain is another chain or another
+///    ledger is foreign, and a record that contradicts itself - a type that is not the frozen one,
+///    a digest that is not its own typed data's - is unusable. Neither is read in this domain
+///    instead.
+///
+/// Foreign and unusable records are listed and used for nothing.
+const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
 function permitIndex(ctx, permits = []) {
   const byDigest = new Map(); const foreign = []; const unusable = [];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   permits.forEach((given, index) => {
-    const message = given?.typedData?.message ?? given?.message ?? given;
+    const typed = given?.typedData ?? (given?.domain && given?.message ? given : null);
+    const message = typed ? typed.message : given?.message ?? given;
+    const refuse = (why) => unusable.push({ index, why });
+    if (given?.schema !== undefined && given.schema !== RECORD_SCHEMA) return refuse(`schema ${given.schema} is not ${RECORD_SCHEMA}`);
+    if (given?.kind !== undefined && given.kind !== "Permit") return refuse(`a ${given.kind}, not a Permit`);
     let st;
-    try { st = permitLib.statement("Permit", ctx.chainId, ctx.address, message ?? {}); } catch (e) { unusable.push({ index, why: e.message }); return; }
+    try { st = permitLib.statement("Permit", ctx.chainId, ctx.address, message ?? {}); } catch (e) { return refuse(e.message); }
     const digest = permitLib.digestOf(st);
-    const stated = given.digest ?? null;
-    if (stated !== null && String(stated).toLowerCase() !== digest) { foreign.push({ index, statedDigest: String(stated), digestHere: digest }); return; }
+    const stated = given?.digest !== undefined ? String(given.digest).toLowerCase() : null;
+    if (typed) {
+      // the record is read as it is: its own domain and types decide what it is, not this run's
+      if (typed.primaryType !== undefined && typed.primaryType !== "Permit") return refuse(`primary type ${typed.primaryType} is not Permit`);
+      const types = typed.types ?? {};
+      if (types.Permit !== undefined && !same(types.Permit, permitLib.TYPES.Permit)) return refuse("its Permit type is not the frozen one");
+      if (types.EIP712Domain !== undefined && !same(types.EIP712Domain, permitLib.DOMAIN_TYPE)) return refuse("its domain type is not the frozen one");
+      const d = typed.domain ?? {};
+      let own;
+      try { own = ethers.TypedDataEncoder.hash({ name: d.name, version: d.version, chainId: BigInt(d.chainId), verifyingContract: ethers.getAddress(d.verifyingContract) }, { Permit: permitLib.TYPES.Permit }, st.message); } catch (e) { return refuse(`its domain cannot be read: ${e.message}`); }
+      if (stated !== null && stated !== own) return refuse(`its stated digest ${stated} is not the digest of its own typed data ${own}`);
+      if (own !== digest) { foreign.push({ index, domain: { name: d.name, version: d.version, chainId: String(d.chainId), verifyingContract: d.verifyingContract }, digest: own }); return; }
+    } else if (stated !== null && stated !== digest) {
+      foreign.push({ index, statedDigest: stated, digestHere: digest }); return;
+    }
     if (!byDigest.has(digest)) byDigest.set(digest, { digest, statement: st, message: st.message, signature: null, usedBy: [] });
-    if (given.signature) byDigest.get(digest).signature = given.signature;
+    if (given?.signature) byDigest.get(digest).signature = given.signature;
   });
   return { byDigest, foreign, unusable };
 }
@@ -311,6 +383,9 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
   }
   if (seed !== summary.seed) note("seed (stored)", seed, summary.seed);
   const g0Subject = items.some((it) => it.receipt.pool === POOL_G0) ? (await auditSubjectFor(ctx, epoch, pin)).subject : null;
+  if (items.length === 0 && summary.receiptCount > 0n) {
+    throw new HistoryIncomplete(`the ledger's log from block ${ctx.fromBlock} to ${toBlock} shows no receipt of epoch ${epoch}, and the ledger counts ${summary.receiptCount}: the log was read from too late a block (ledgerDeployBlock or deployBlock), or the endpoint served an incomplete log`);
+  }
 
   // what the ledger's own log says beyond the receipts: the content keys taken, the permits ended,
   // the minimum nonces raised, the facts recorded. Ledger-wide, in the chain's order.
@@ -376,29 +451,39 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
     }
     return functionIds.get(module);
   };
-  // The transaction of a receipt. Its sender is the origin the ledger recorded. When its top-level
-  // call is itself the entry - of the ledger for G0, of a module this client reads for G1 - its
-  // sender is also the sender the ledger recorded, and a delegated entry's permit and signature are
-  // its input. A call that reached the entry through another contract shows neither.
+  // The transaction of a receipt. Its sender is the origin the ledger recorded. When it is sent to
+  // the ledger or to the receipt's module, its top-level call is the entry that recorded the
+  // receipt - the ledger's two G0 entries, the adapter's two confirmations - and nothing else can
+  // have: then its sender is the recorded sender, and its input is held to the receipt in full. When
+  // it is sent to another contract, the entry was reached through that contract: its sender is the
+  // origin, and no more is read from it.
   const adapterInterface = new ethers.Interface(v2.abi.adapter);
-  const ENTRIES = ["submitG0", "submitG0For", "confirm", "confirmFor"];
   const transactions = new Map();
-  const transactionOf = async (it, module) => {
+  const transactionOf = async (it, module, moduleReadable) => {
     if (transactions.has(it.txHash)) return transactions.get(it.txHash);
     let found = null;
     const tx = await ctx.provider.getTransaction(it.txHash);
     if (tx && tx.blockNumber === it.blockNumber) {
-      found = { from: tx.from, entry: null, permit: null };
-      const face = tx.to === ctx.address ? ctx.ledger.interface : tx.to === module ? adapterInterface : null;
-      let call = null;
-      try { call = face ? face.parseTransaction({ data: tx.data }) : null; } catch { call = null; }
-      if (call && ENTRIES.includes(call.name)) {
-        found.entry = call.name;
-        if (call.name.endsWith("For")) {
-          try {
-            const statement = permitLib.statement("Permit", ctx.chainId, ctx.address, call.args[0].toObject());
-            found.permit = { digest: permitLib.digestOf(statement), statement, message: statement.message, signature: call.args[1] };
-          } catch { found.permit = null; }
+      const target = tx.to === ctx.address ? "ledger" : tx.to === module ? "module" : null;
+      const kind = !target ? TRANSACTION.THROUGH_A_CONTRACT : target === "module" && !moduleReadable ? TRANSACTION.TO_A_MODULE_NOT_READ : TRANSACTION.ENTRY;
+      found = { from: tx.from, to: tx.to, target, kind, entry: null, args: null, permit: null, invalid: null };
+      if (kind === TRANSACTION.ENTRY) {
+        let call = null;
+        try { call = (target === "ledger" ? ctx.ledger.interface : adapterInterface).parseTransaction({ data: tx.data }); } catch { call = null; }
+        const entries = target === "ledger" ? ["submitG0", "submitG0For"] : ["confirm", "confirmFor"];
+        if (!call || !entries.includes(call.name)) found.invalid = `its input is not a call of ${entries.join(" or ")}${call ? ` (${call.name})` : ""}`;
+        else {
+          found.entry = call.name;
+          const a = call.args;
+          found.args = call.name.startsWith("submitG0")
+            ? (call.name === "submitG0" ? { profileKey: a[0], epoch: BigInt(a[1]), jobIndex: Number(a[2]), outputHash: a[3] } : { profileKey: a[2], epoch: BigInt(a[3]), jobIndex: Number(a[4]), outputHash: a[5] })
+            : (call.name === "confirm" ? { tokenId: BigInt(a[0]), submissionId: BigInt(a[1]) } : { tokenId: BigInt(a[2]), submissionId: BigInt(a[3]) });
+          if (call.name.endsWith("For")) {
+            try {
+              const statement = permitLib.statement("Permit", ctx.chainId, ctx.address, a[0].toObject());
+              found.permit = { digest: permitLib.digestOf(statement), statement, message: statement.message, signature: a[1] };
+            } catch (e) { found.invalid = `the permit in its input is not one of this ledger's version: ${e.message}`; }
+          }
         }
       }
     }
@@ -454,6 +539,7 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
     const operation = r.pool === POOL_G0 ? permitLib.OP.SUBMIT_G0 : permitLib.OP.CONFIRM_TENDER;
     const entry = { kind: r.authorization === NONE ? ENTRY.DIRECT : ENTRY.DELEGATED, participant, sender: r.sender, origin: it.origin, authorization: r.authorization };
     let decided = true; // whether the audit re-decided the status itself
+    let g0JobIndex = -1;
 
     if (r.pool === POOL_G0) {
       const functionId = await functionIdOf(p.module);
@@ -462,6 +548,7 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
       let jobIndex = -1;
       for (let j = 0; j < p.jobsPerEpoch; j++) if (v2.g0Instance(seed, functionId, j, r.worker) === r.workId) jobIndex = j;
       if (jobIndex < 0) note(what("instance"), "an instance of this epoch's seed for the worker", r.workId);
+      g0JobIndex = jobIndex;
       if (r.contributionId !== v2.g0ContributionId(ctx.domain, functionId, epoch, Math.max(jobIndex, 0), r.worker)) note(what("contributionId"), "the instance's", r.contributionId);
       let accepted;
       if (functionId !== g.AUDIT_V1_FUNCTION_ID) {
@@ -505,6 +592,7 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
       }
 
       const m = await moduleOf(p);
+      it.moduleReadable = m.readable;
       const c = m.readable ? m.confirmationOf(it) : undefined;
       if (!c) {
         undecided.push({ receiptId: it.id, what: "facts", module: p.module,
@@ -591,13 +679,31 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
       }
     }
 
-    // the transaction: its sender is the origin, and the sender too when its own call is the entry
-    const tx = await transactionOf(it, p.module);
+    // the transaction: its sender is the origin; when it is the entry's own call, the sender too,
+    // and its input must be the one the receipt was recorded from
+    const tx = await transactionOf(it, p.module, r.pool === POOL_G1 ? Boolean(it.moduleReadable) : true);
     if (!tx) note(what("transaction"), `the transaction ${it.txHash} in block ${it.blockNumber}`, "none served");
     else {
       if (tx.from !== it.origin) note(what("origin, in the transaction"), tx.from, it.origin);
-      if (tx.entry && tx.from !== r.sender) note(what("sender, in the transaction"), tx.from, r.sender);
+      if (tx.kind === TRANSACTION.ENTRY) {
+        if (tx.from !== r.sender) note(what("sender, in the transaction"), tx.from, r.sender);
+        const wantTarget = r.pool === POOL_G0 ? "ledger" : "module";
+        const wantEntry = r.pool === POOL_G0 ? (entry.kind === ENTRY.DIRECT ? "submitG0" : "submitG0For") : (entry.kind === ENTRY.DIRECT ? "confirm" : "confirmFor");
+        if (tx.target !== wantTarget) note(what("entry, in the transaction"), `a call of the ${wantTarget}`, `a call of the ${tx.target}`);
+        else if (tx.invalid) note(what("entry, in the transaction"), `a call of ${wantEntry}`, tx.invalid);
+        else if (tx.entry !== wantEntry) note(what("entry, in the transaction"), wantEntry, tx.entry);
+        else if (r.pool === POOL_G0) {
+          if (tx.args.profileKey !== p.key) note(what("profile, in the transaction"), p.key, tx.args.profileKey);
+          if (tx.args.epoch !== r.epoch) note(what("epoch, in the transaction"), r.epoch, tx.args.epoch);
+          if (tx.args.jobIndex !== g0JobIndex) note(what("jobIndex, in the transaction"), g0JobIndex, tx.args.jobIndex);
+          if (tx.args.outputHash !== r.outputHash) note(what("outputHash, in the transaction"), r.outputHash, tx.args.outputHash);
+        } else if (it.tender) {
+          if (tx.args.tokenId !== it.tender.tokenId) note(what("tokenId, in the transaction"), it.tender.tokenId, tx.args.tokenId);
+          if (tx.args.submissionId !== it.tender.submissionId) note(what("submissionId, in the transaction"), it.tender.submissionId, tx.args.submissionId);
+        }
+      }
     }
+    entry.transaction = tx ? tx.kind : null;
 
     // the entry: the participant itself, or a delegate under a permit
     if (entry.kind === ENTRY.DIRECT) {
@@ -613,9 +719,12 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
       const inTransaction = tx?.permit ?? null;
       // the ledger made the receipt's digest from the permit its entry was called with
       if (inTransaction && inTransaction.digest !== r.authorization) note(what("authorization"), `${inTransaction.digest}, of the permit in the transaction`, r.authorization);
-      const supplied = inTransaction ?? known.byDigest.get(r.authorization);
+      // the entry's own call, with no permit of this version in it: the ledger could not have recorded
+      // the receipt from it, and that is a finding above; nothing given to the run stands in for it
+      const entryCall = tx?.kind === TRANSACTION.ENTRY;
+      const supplied = inTransaction ?? (entryCall ? null : known.byDigest.get(r.authorization));
       if (!supplied) {
-        entry.permit = { evidence: PERMIT_EVIDENCE.NOT_AVAILABLE };
+        entry.permit = { evidence: entryCall ? PERMIT_EVIDENCE.INVALID_IN_TRANSACTION : PERMIT_EVIDENCE.NOT_AVAILABLE };
       } else {
         const m = supplied.message;
         if (!inTransaction) supplied.usedBy.push(it.id);
@@ -781,6 +890,7 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
     undeclaredAddresses: table.filter((t) => t.operator === 0).length,
     entries: {
       direct: redecided.length - delegated.length, delegated: delegated.length,
+      byTransaction: count(redecided.filter((it) => it.entry), (it) => it.entry.transaction ?? "not-served"),
       byPermitEvidence: count(delegated, (it) => it.entry.permit.evidence),
       bySignatureEvidence: count(delegated.filter((it) => it.entry.signature), (it) => it.entry.signature),
     },
@@ -804,6 +914,6 @@ async function auditEpoch(ctx, epoch, { pin = null, requireSealed = false, permi
 }
 
 module.exports = {
-  ENTRY, PERMIT_EVIDENCE, SIGNATURE_EVIDENCE, ACCOUNT_AT_USE, FACTS_EVIDENCE, plainParams, plainProfile, connect, policyAt, readEpochReceipts, replay,
+  ENTRY, PERMIT_EVIDENCE, SIGNATURE_EVIDENCE, ACCOUNT_AT_USE, FACTS_EVIDENCE, TRANSACTION, HistoryIncomplete, plainParams, plainProfile, connect, policyAt, readEpochReceipts, replay,
   auditSubjectFor, permitIndex, recoverAsTheLedger, auditEpoch,
 };

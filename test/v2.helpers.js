@@ -167,10 +167,11 @@ async function signedStatement(d, signer, kind, message) {
 }
 
 /// The call of the delegated G0 entry, not yet awaited: for tests that expect it to be refused.
+/// `options.overrides` are the transaction's (a gas limit, for one).
 async function delegatedCall(d, delegate, p, account, options = {}) {
   const o = await g0Output(d, account, options);
   return () => d.ledger.connect(delegate).submitG0For(p.tuple, options.signature ?? p.signature, key(options.profile ?? PROFILE.G0), o.epoch,
-    options.jobIndex ?? 0, o.output);
+    options.jobIndex ?? 0, o.output, options.overrides ?? {});
 }
 
 /// Submit `account`'s G0 job through `delegate` under the permit `p`.

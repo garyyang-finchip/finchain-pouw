@@ -1,6 +1,6 @@
 {
   "name": "finchain-pouw",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "description": "AI Proof of Useful Work: Genesis Mining kernel (contracts, tests, reference client) and the tooling of round R2",
   "license": "Apache-2.0",

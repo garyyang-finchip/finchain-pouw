@@ -22,13 +22,17 @@ const pair = (x) => ({ g0: x[0], g1: x[1] });
 /// over the canonical form (canonical.js) - `resultHash` over what was found, `reportHash` over the
 /// whole record. It differs where ledger v2 does:
 ///  - `agrees`, `complete` and `undecided` beside `ok` and `findings`: a receipt whose work the
-///    client could not read again is not a difference, and it is not left out either;
-///  - each receipt names how it entered (`entry`): by its participant, or by a delegate under a
-///    permit, with what the run held of that permit;
+///    client could not read again is not a difference, and it is not left out either. `complete`
+///    is the completeness of the work's re-decision within what this client reads, and nothing
+///    else: the authorization behind each receipt has states of its own under `entry`;
+///  - each receipt names its transaction and how it entered (`entry`): by its participant, or by
+///    a delegate under a permit, with where the permit came from - the entry's own call, or the
+///    permits given to the run - and what was held of it;
 ///  - `operators` gives each declared operator's share under the operator cap, and each row of
 ///    `table` the operator its address was attributed to;
-///  - `permits` lists the permits the run was given, which are part of what was found: two runs at
-///    one block agree in `resultHash` when they were given the same permits.
+///  - `permits` lists the permits the run was given, after they were read by their own domain and
+///    types and sorted into usable, foreign and unusable; they are part of what was found, so two
+///    runs at one block agree in `resultHash` when they were given the same permits.
 /// `deployment` names the deployment the way its manifest does: `name`, `environment`, `labels`.
 function auditRecord(ctx, report, { deployment = {}, rpc = "", recordedAt = new Date().toISOString() } = {}) {
   const labels = deployment.labels ?? [];
@@ -108,9 +112,9 @@ function auditRecord(ctx, report, { deployment = {}, rpc = "", recordedAt = new 
       report.mode === "controlled-self-test"
         ? "This epoch subsidized declared-related parties: it is a controlled self-test and no evidence of external demand."
         : "A settled tender is evidence of a settlement confirmed by its owner or under its owner's permit, not of independent demand.",
-      "A receipt entered through a delegate names the digest of a permit. Where the permit was given to this run the record holds the permit against the receipt; where it was not, the record holds the digest and nothing about the permit.",
-      "The ledger asked a contract account for its signature when the receipt was recorded; this run did not ask again. Whether an account had code at that moment is not in the block that was read: the record says which of the ledger's two rules the permit passed, and whether the account has code at the snapshot.",
-      "A receipt listed under undecided was not re-decided: its work is of a function or a module this client does not read. Its recorded status is in the totals as recorded, and complete is false.",
+      "A receipt entered through a delegate names the digest of a permit. Where the delegate's own transaction is the entry's call, the permit is read from that call and the whole call is held to the receipt; where the call went through another contract and the permit was given to this run, the record holds the given permit against the receipt; otherwise the record holds the digest and nothing about the permit.",
+      "The ledger asked a contract account for its signature when the receipt was recorded; this run did not ask again. Whether an account had code at that moment is not in the block that was read: which of the ledger's two rules a permit passed is inferred from the permit and the frozen rules - a permit without a guard passes for an account without code only, one with a guard for an account with code only - and the account's code at the snapshot is reported beside it and decides nothing.",
+      "A receipt listed under undecided was not re-decided: its work is of a function or a module this client does not read. Its recorded status is in the totals as recorded, and complete is false. complete says that the work of every receipt was re-decided within what this client reads; it does not say that the authorization behind each receipt was shown, which each receipt's entry says for itself.",
       "The ledger reads a tender as it stands when it is confirmed; observations list what the tender's log shows about the moment it settled.",
       "The tender's log shows the authority that was registered before an acceptance. It does not establish who carried out a verification; where the authority changed in the acceptance's own transaction the record says evidence-insufficient and concludes nothing about a party.",
       "A work fact is what anyone had the module read from a settled tender; it is no receipt, and it counts nothing.",

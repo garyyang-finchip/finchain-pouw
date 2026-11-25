@@ -6,7 +6,7 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.7 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.1.8 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
 builds are committed with their record, the client audits an epoch of it as a library, and it
 is not deployed.**
@@ -49,6 +49,16 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.8, with design revision v0.1.15 (2026-11-26), is the small correction that the
+advisor's functional review of 0.1.7 asked for (`docs/decisions.md` 18): the audit reads the
+policy's log from the deployment's first block and refuses a log that does not reach back to
+what it needs instead of auditing a shorter history; a transaction that is the entry's own call
+is held to its receipt in full, and an invalid permit in it is a difference, not a missing one;
+a signing record given to the run is read by its own domain and types, and one for another
+chain or ledger, or one that contradicts itself, is listed and not used. The mutation runner
+reads its verdicts from the test summary alone. Three tests are added and one bounds the gas of
+its refused transactions. No contract, no compiled interface and no build changed.
 
 Release 0.1.7, with design revision v0.1.14 (2026-11-25), is the first part of the client for a
 v2 deployment (`docs/decisions.md` A86, section 17): the audit of an epoch of ledger v2, as a

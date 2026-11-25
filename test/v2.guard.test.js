@@ -152,15 +152,21 @@ describe("Ledger v2: the guard of a contract account", () => {
     // says no; reverts; answers with the number two; never returns; answers with nothing
     for (const mode of [1, 2, 3, 4, 5]) {
       await (await guard.setMode(mode)).wait();
-      // within a fixed gas limit the outcome is the ledger's refusal, not an exhausted call
+      // within a fixed gas limit the outcome is the ledger's refusal, not an exhausted call - for the
+      // call and for the transaction alike, so that a ledger which gave the guard everything is shown
+      // by a refusal that is not the ledger's within that limit, and not by a guard looping on the
+      // network's whole block gas
       expect(await t.refuses(check(p, { gasLimit: 1_500_000n }), "GuardRefused")).to.deep.equal([guard.target]);
-      await t.refuses((await t.delegatedCall(d, delegate, p, account.target, echo(0)))(), "GuardRefused");
+      await t.refuses((await t.delegatedCall(d, delegate, p, account.target, { ...echo(0), overrides: { gasLimit: 1_500_000n } }))(), "GuardRefused");
     }
     expect(await d.ledger.GUARD_GAS()).to.equal(500_000n);
-    // a guard that never returns is given that much gas and no more, whatever the transaction brought
+    // a guard that never returns is given that much gas and no more, whatever the transaction brought.
+    // The transaction brings 1,000,000: enough to show a guard given all of it (it would use nearly
+    // all), and bounded, so that a ledger that did give all of it is decided by this assertion and
+    // not by the in-process network running out of memory on a longer loop
     await (await guard.setMode(4)).wait();
     const o = await t.g0Output(d, account.target, echo(0));
-    const used = await t.gasOfRefused(() => d.ledger.connect(delegate).submitG0For(p.tuple, p.signature, key(PROFILE.ECHO), o.epoch, 0, o.output, { gasLimit: 5_000_000n }));
+    const used = await t.gasOfRefused(() => d.ledger.connect(delegate).submitG0For(p.tuple, p.signature, key(PROFILE.ECHO), o.epoch, 0, o.output, { gasLimit: 1_000_000n }));
     expect(used > 500_000n && used < 700_000n, `a refused guard check used ${used} gas`).to.equal(true);
     await (await guard.setMode(0)).wait();
     expect(await check(p)).to.equal(p.digest);
