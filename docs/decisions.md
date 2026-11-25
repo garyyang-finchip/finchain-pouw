@@ -12,16 +12,27 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.10, with software release 0.1.4. It records the owner's rulings of
+Design revision v0.1.11, with software release 0.1.5. It records the owner's rulings of
+2026-11-25 on the advisor's review of the local implementation of ledger v2 (A80 to A86;
+section 15). The interfaces of ledger v2 are frozen (Q30). The ledger is to be built through
+the compiler's IR pipeline, behind a compile boundary and with a compiler of its own for v2;
+that build is not made yet (Q31). The proposals P61 to P66 are adopted within stated
+boundaries. Release 0.1.5 corrects three tools that the review found at fault - the signing
+script could overwrite its own key file, the canonical form mishandled an array with an empty
+slot, and the second program for the hashes accepted a member named twice - and the wording on
+statements and on facts. No contract and no compiled interface changes; the kernel's builds
+are unchanged, byte for byte; nothing is deployed and nothing is signed.
+
+Design revision v0.1.10 came with software release 0.1.4. It recorded the owner's rulings of
 2026-11-25 on Q13 to Q16 and on the content of the next version of the ledger (A73 to A79;
-section 14), and what was built on them. The software changes for the first time since release
+section 14), and what was built on them. The software changed for the first time since release
 0.1.3. The reference client reads one block for an audit and for a check of a deployment,
 writes records with a canonical form and two hashes, reports the authority at a settlement as
 far as a tender's log settles it, and does not send again what is recorded. The contracts of
-ledger v2 are added in `contracts/v2/`, with their tests. The contracts of the kernel and their
-committed builds are unchanged, byte for byte: the deployment of round R2a is checked against
-the same builds as before. Nothing of v2 is deployed, no build of it is committed, and its
-interfaces are not frozen (`ledger-v2.md`).
+ledger v2 were added in `contracts/v2/`, with their tests. The contracts of the kernel and
+their committed builds stayed unchanged, byte for byte: the deployment of round R2a is checked
+against the same builds as before. Nothing of v2 was deployed and no build of it was
+committed; its interfaces were frozen with the revision after it (`ledger-v2.md` 11.8).
 
 Design revision v0.1.9 was a revision of the documents that recorded the run of round R2a on
 Finchain Sepolia, its evidence and the review of that run (A72), and where the consolidated
@@ -40,7 +51,9 @@ holds the questions put to the owner - those still open, those adopted, each wit
 advisor's recommendation as it was adopted, and those ruled on 2026-11-25; section 13 the
 illustrative figures; section 14 the rulings of 2026-11-25 on the next version of the ledger,
 who wrote and who adopted each, how each is applied, what was built and verified, and the
-proposals this repository made with the implementation.
+proposals this repository made with the implementation; section 15 the advisor's review of
+that implementation, the owner's rulings on it, the three faults in tools and their
+correction, and what the compiler question means for v2 and for the kernel's builds.
 
 ## 1. Approved rulings and review records
 
@@ -126,6 +139,13 @@ and authorized follow-up that keep their existing A71/A72 identifiers.
 | A77 | The six choices on the open points of the design of ledger v2, and the six corrections of its first revision (14.2). O1: for both delegated operations the guard for FOGA cells requires a satisfied safety verdict and, where an AID registry exists, an ACTIVE anchor, together with the completeness of the presented bindings or an equivalent proof for a fixed registry. O2: the steward binds a guard and the permit confirms it as well, with a binding version that only rises, so that a rebinding from A to B and back to A does not restore an old permit. O3: a new condition of the early G1 subsidy - worker and demander both have a declared operator; work that does not meet it keeps its rightful measured record and has no subsidized GMU; the condition is not widened into a rule of admission or a proof of independence, and no condition on the judge is added with it. O4: the origin may be recorded in an event, as the top-level sender of the transaction only; nobody is thereby held to have borne the fee. O5: the audit at one pinned finalized block is built at once, as already required, without a silent fallback to the latest block. O6: the names stand in principle; the interfaces and the typed statements are fixed with the revised fields and meanings. The corrections, to be completed before the interfaces are frozen: (1) no general promise that a rotation of the owner ends an old permit at once - a check at each use shows only that the account accepts the signature now - with a test of the counter-example in which the former owner stays a signing operator, and the procedure of revocation, minimum nonce and rotation stated; (2) revocation in the namespace of an account, the typed `Revoke` and `RaiseNonce` statements written out with their domain, and a test of revocation under suspension that names the path it uses: that the ledger asks no guard is not that FOGA's `execute` can be called; (3) the G1 adapter verifies the delegate against its own real caller and the permit's account against the tender's owner; no caller states a sender, and the origin takes no part in authorization; (4) the `duplicateOf` field and the zero pointer of `not-a-task-unit`; one occupancy of a controlled content key per ledger, across profiles, specifications and epochs, taken by the first rightful measured receipt even when it draws no subsidy, and never by an invalid fixture, a wrong demander, a fragment of a task or a public fact; (5) a narrower statement of what the audit of a past authority shows - the registered authority that the events make visible apart from the actual executor of a verification - with `unknown` or `evidence-insufficient` recorded where it cannot be determined, the complete proof of history before any subsidy of value staying in its stage; (6) the zero denominators, the relation of the cap parameters, the meaning of a zero in the query of the operator history, the precedence of the reasons, the key of a G0 instance and the encoding of the report hash. | owner, 2026-11-25: the choices and corrections, drafted by the advisor in its walk-through of revision 1 and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
 | A78 | The five closing corrections, and the baseline of the implementation. Revision 2 of the design is the baseline of the local implementation. The main directions are not opened again; code and tests proceed; the complete interfaces are fixed when the closing items are done, and no round of text alone comes first. (1) Ending an old permit is told from taking away an old key's signing authority. A former owner that is still a signing operator can sign a new permit that meets a raised minimum nonce. Where the aim is that the old key leaves PoUW authorization, its signing right is first taken away with the account's own management functions; then the old permits are dealt with, and it is verified that the old key cannot sign a usable new permit. Both cases are in the tests: raising the nonce alone still allows a new permit, and after the signing right is taken away a new permit is refused. (2) The wording on `execute` under a suspension is narrowed: FOGA has a de-risk path that passes when its conditions hold, and the local check showed a refusal for one test configuration and one target call, not for every target. The signed revocation, the signed raising of the nonce and the delegate's renouncing stay as designed, with the note that a signed path depends on the account accepting the signature at that time. A local reproduction of the on-chain configuration is not recorded as a transfer of ownership of a deployed cell. (3) Before the interfaces are frozen: `FactData`, `G1Extra`, `Receipt`, `Status` and `Profile` in full, the necessary events and errors, the guard's binding in force and pending, the exact encoding of the ledger's and the facts' domains; the complete typed statements `Permit`, `Revoke` and `RaiseNonce`, the compiled interfaces, and fixed test vectors on which the contract and the off-line signing agree. A binding version is not reused when a binding is changed again for the same epoch that has not begun. (4) The complete canonical encoding of a report is fixed, RFC 8785 being advised, with large integers kept exact from the read on, by schema. Row L35 compares one report body recomputed by two implementations; two runs with different times of observation have different hashes of the whole report, and that is as it should be. (5) The audit of a past authority judges a change by the same source, the same token and the acceptance's transaction; it keeps the registered address that the events show apart from the state of the evidence for the actual verifier, and records `evidence-insufficient` where that cannot be shown. The next delivery, on the base of commit `16d8bb6`: the local implementation, the complete interfaces with their encodings, the actual results of the 35 rows of the test matrix, the client's audit at one pinned block and a reviewable difference; the account check and the ledger's tests, which have not run, are recorded apart and neither stands in for the other. How an adoption is recorded: on the owner's explicit statement, with its actual source, the date of sending and the scope of the adoption; never on the ground that the owner did not object. | owner, explicit statement of 2026-11-25 (14.1); the five corrections drafted by the advisor in its review of revision 2 |
 | A79 | Work that proceeds in parallel and is no precondition of the ledger. (a) The independent components of the first production increment start without a further confirmation, Q17 to Q29 being adopted: the structured-extraction specification, its instruction, output schema, canonicalization rule and fixture set; the format, grounding and reference checks, reported apart; the metering interface, the evidence envelope and the off-line recount; local copies of the schemas of the pinned ERC-8506 revision, with the validation of concrete records; the operating report and the reconciliation of prepaid service credit. The model, the tokenizer, the template and the serving configuration are pinned when they are actually chosen; what is not pinned yet is an interface and a statement of candidates, and no count or execution evidence is invented. Fixed GMU, qualified service units, model usage, the customer's payment and the actual cost stay apart. (b) Two discussion drafts are started: a plan for the replication of nodes and for the first operators, and a framework for platform Tokenomics with its points for ruling. Both are design and simulation; the ruling on token parameters, the implementation, the deployment and any issuance stay steps of their own. The figures of their scenarios remain assumptions and are no approved places, prices, configurations or rights; historical test points stay unredeemable, and no promise of a later exchange is added. Replication creates new identities and copies neither a chain-administration or sequencer right nor an existing cell's key. Neither draft is a precondition of the ledger's implementation. (c) Finchain, FOGA and this repository stay separate; the three repositories stay public; credentials, personal configuration and customers' private data stay apart. | owner, 2026-11-25: the execution instruction, drafted by the advisor and sent by the owner; his ruling by his explicit statement of the same day (14.1) |
+| A80 | The review of the local implementation of ledger v2 (release 0.1.4, commit `b3e07df`). Its main technical review is passed, with three corrections of tools still to be closed (A84). The advisor ran the 131 tests and the rehearsal of 41 checks again on its own, and found the five new compiled interfaces equal to a fresh compilation (15.2). `main` is at `b3e07df` and its whole tree is the delivery; the next delivery has that commit as its base, and the package of 52 files is not uploaded again. The main directions of the design are not opened again. The tests that pass are evidence of a local implementation and are not recorded as an acceptance of round R2b. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A81 | Q30: the interfaces of ledger v2 are frozen - the interfaces of the contracts, the complete types, the encodings of the three signed statements and the fixed vectors, as they stand at commit `b3e07df`. The freezing of the interfaces and the finalizing of the deployable bytecode are recorded apart: the first is done by this ruling, the second waits for A82. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A82 | Q31 and P66: the v2 ledger is built through the compiler's IR pipeline. The results of the tests and of the size with solc 0.8.24 are kept, and that build is not taken as the final build of a deployment. The v2 contracts get a compile boundary of their own. solc 0.8.39 is verified first and then locked; the check of the official list of known bugs, the compiler's complete version and its settings are recorded; the existing v2 tests, the fixed vectors and the size gate are run again, and then the build is made. The kernel's compile boundary and its six committed builds are not touched, the compiler is not replaced for the whole repository, and no release of Finchain or of FOGA is required. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A83 | P61 to P65. P61 is adopted as the interface for task units; the module that actually shows membership and the issuer is delivered in its later scope. P62 is adopted as the rule of bounded checks of the local implementation; the behaviour of real cells and the gas margin are measured in the step already set for it. P63 is adopted with its semantics corrected: a statement can be submitted once it is signed, and the state of the ledger changes when the transaction succeeds; a signed entry verifies the present authority every time, and a repeat is idempotent only after that check has passed. P64 is adopted once the two corrections of input handling of A84 are made. P65 is adopted for the recovery of a transaction that is already recorded. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A84 | Three corrections of tools, delivered first and as a small delta. (1) `scripts/sign-permit.js`: `--out` creates its file exclusively and refuses to overwrite a file that exists. Regressions cover the same path, an output that exists, a symbolic link and a hard-link alias, and show that the bytes of the input key are unchanged after the refusal; a new output path succeeds as before. (2) `client/lib/canonical.js` refuses an array with an empty slot explicitly; `scripts/report-hash.py` refuses a JSON key given twice, nested objects included; a regression for each. (3) The wording of P63 is made exact (A83), and leftovers of wording are corrected with it, among them that a public fact is not made automatically. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A85 | The hosted run of the existing workflow, started by hand once the small delta is uploaded and checked: manifest `deployments/finchain-sepolia-r2.json`, epochs `0 1`. It is recorded as the new client's verification of the existing deployment, on a public endpoint and with an audit at a pinned block. The commit, the link of the run, the exit results and the reports are kept. Each report records its own snapshot as it was. Round R2a is not reopened and its original evidence is not changed. The run does not wait for the build of v2. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
+| A86 | The next delivery, and what stays. Its main line is the reproducible build of v2 with the deployment tooling, the client for v2 with its audit, and the run record. The production module and the two discussion drafts proceed in parallel. A signature with a real key, a deployment and an operation on a chain continue to follow their own operation packages. Finchain, FOGA and this repository stay independent. | owner, explicit statement of 2026-11-25, 04:22 UTC+8 (15.1); the points drafted by the advisor in its review of the implementation |
 
 ### 1.1 Review and authorized follow-up records
 
@@ -804,15 +824,15 @@ the ruling on it and with where it is applied. On Q17 to Q29 the advisor gave re
 in the reviews of v0.1.4, of v0.1.5 and of v0.1.6. Each was recorded as it was given - advisor
 recommendation recorded; owner adoption pending - and none was an approval (A66). The owner
 adopted all thirteen on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as
-adopted. What is adopted there is design, and nothing of the production line is built. Open now
-are the two questions of 12.1, which the implementation of ledger v2 raises.
+adopted. What is adopted there is design, and nothing of the production line is built. Q30 and
+Q31, which the implementation of ledger v2 raised, were ruled on 2026-11-25 (A81, A82) and are
+listed in 12.4. Open now is the one question of 12.1.
 
 ### 12.1 Open for the owner's ruling
 
 | Id | Question | This repository's suggestion | Recorded advice and current status |
 | --- | --- | --- | --- |
-| Q30 | Whether the interfaces of ledger v2 are frozen as `ledger-v2.md` 11 has them, with this repository's choices P61 to P65 (14.5) | Freeze them after the review of the implementation. The committed builds, the deployment tooling and the client for a v2 deployment follow the freeze | None recorded |
-| Q31 | The build of the v2 ledger (P66): through the compiler's IR pipeline, at 21,674 bytes, or a smaller ledger under the kernel's settings, which leave it 34 bytes under a chain's limit | The IR pipeline, with a test that holds the code 1,024 bytes under the limit. A smaller ledger would, for one, store a commitment to a fact in place of its content | None recorded |
+| Q32 | Whether the kernel's six committed builds of release 0.1.3, from which the deployment of round R2a was made, are checked against the compiler bug that A82 answers for v2 (P67; 15.5) | No rebuild and no change of round R2a: its deployment carries test points only, and A82 keeps the kernel's builds as they are. A check, if one is wanted, by a method the compiler's maintainers describe, recorded as a check and as nothing more | None recorded |
 
 ### 12.2 Adopted by the owner on 2026-11-24 (A70)
 
@@ -846,6 +866,16 @@ The third column is kept for the record: it is what this repository had suggeste
 | Q14 | Whether round R2b is run on the present kernel | No. R2a on the present kernel; R2b on the next ledger version | A75: round R2b uses the next version of the ledger; the deployment of round R2a and its evidence are kept and linked by a versioned manifest | `ledger-v2.md` 1; `roadmap.md` 5. The v2 deployment, its manifest and the round's package are not built |
 | Q15 | The independent machine of R2: a hosted CI runner (P38) | Keep the in-force R2a route; decide its application to R2b in that round's scope | A76: round R2b keeps the hosted runner without a participant key; further endpoints or implementations are separate enhancements; the client reads one finalized block. A77 (O5): at once, without a fallback | `ledger-v2.md` 13; the client of release 0.1.4. The audit of a v2 deployment follows the freeze of the interfaces |
 | Q16 | The content of the next ledger version, before R3: the declared-operator cap (A35, P41), work facts apart from receipts (P60, adopted), the delegation (P35), and settlement-time authority (A38, P36) | One version with the first three; the fourth together with the verification work, before any subsidy of value | A75: one minimal, complete version with the operator cap, the attribution fixed at accrual, the declared-operator condition of the early subsidy, facts apart from receipts with an atomic confirmation, and the adopted fields; the authority at settlement stays within the disclosed limit of A38 for rounds R2b and R3 and is completed before any subsidy of value. A77 (O3, O4, and the corrections) | `ledger-v2.md` 7 to 10; `contracts/v2/`. Built and tested locally |
+
+### 12.4 Ruled by the owner on 2026-11-25, on the review of the implementation (A81, A82)
+
+The third column is what this repository had suggested; the fourth is the advisor's
+recommendation in its review of the implementation, which the owner adopted (15.1).
+
+| Id | Question | This repository's suggestion | The advisor's recommendation | The ruling | Applied in |
+| --- | --- | --- | --- | --- | --- |
+| Q30 | Whether the interfaces of ledger v2 are frozen as `ledger-v2.md` 11 has them, with this repository's choices P61 to P65 (14.5) | Freeze them after the review of the implementation. The committed builds, the deployment tooling and the client for a v2 deployment follow the freeze | Freeze. The five compiled interfaces equal a fresh compilation, and no finding of the review needs a change of an interface. The reference is, together: the complete Solidity types and interface sources, the five compiled interfaces, the typed statements with the domain's encoding and the fixed vectors, and the version or commit. The interfaces can be final now; the deployable bytecode waits for the compiler | A81: frozen as they stand at commit `b3e07df`; the interfaces and the deployable bytecode are recorded apart | `ledger-v2.md` 11.8; `contracts/v2/interfaces.frozen.json`; `test/v2.frozen.test.js` |
+| Q31 | The build of the v2 ledger (P66): through the compiler's IR pipeline, at 21,674 bytes, or a smaller ledger under the kernel's settings, which leave it 34 bytes under a chain's limit | The IR pipeline, with a test that holds the code 1,024 bytes under the limit. A smaller ledger would, for one, store a commitment to a fact in place of its content | The IR pipeline; 34 bytes of room are too few to maintain a contract in, and no adopted function of the ledger is cut for the sake of the old settings. Not the present build as the deployment build: solc 0.8.24 is inside the range of a known bug of the optimizer, fixed in 0.8.38. A compiler of its own for v2, 0.8.39 verified first; the kernel's boundary and its six builds kept | A82 | 15.5; `ledger-v2.md` 1. The compile boundary and the build are not made: they are the first item of the next delivery |
 
 ## 13. Illustrative (figures used to explain, not parameters)
 
@@ -902,7 +932,7 @@ it as revision 3, with the implementation.
 | Point | Revision 1 | Revision 2 |
 | --- | --- | --- |
 | Owner rotation | "a permit signed by the former owner stops verifying" | no such promise: the account's signature rule decides; the counter-example and a rotation procedure are stated |
-| Revocation | one global mark per digest | per account; `Revoke` and `RaiseNonce` are typed statements of their own |
+| Revocation | a mark per digest, in a namespace the draft did not define: it did not say whose mark a revocation is. Nothing was built on it | per account; `Revoke` and `RaiseNonce` are typed statements of their own |
 | Sender of a G1 confirmation | not said | the adapter reads its own caller and checks the permit's account against the tender's owner |
 | Suspended accounts | "revoke, renounce and raise the nonce all succeed" | the signed paths and the renouncing do; a direct call through a gated account is not assumed to |
 | Duplicates | named in prose only | `duplicateOf` in the status; reasons 14 and 15 defined apart; one occupancy per ledger; what can and cannot take a key |
@@ -987,17 +1017,17 @@ Three findings came out of the work:
 
 ### 14.5 This repository's proposals made with the implementation
 
-On this repository's own judgment, where the rulings left a choice to the implementation. Each
-is in force only after a ruling (Q30, Q31).
+On this repository's own judgment, where the rulings left a choice to the implementation. The
+owner ruled on all six on 2026-11-25 (A82, A83): each row begins with how it was adopted.
 
 | Id | Choice | Why | Where |
 | --- | --- | --- | --- |
-| P61 | A profile version says that it counts task units with `countsUnits` and two commitments, to its task units and to the demanders it names; the profile's module shows membership and states the result; the receipt records it as `unit` | A78 asks how the task-unit rule is represented. The kernel stays without knowledge of any set of tasks, and an audit can read from a receipt why it was no task unit | `ledger-v2.md` 7 |
-| P62 | The account's signature check is given 200,000 gas and the guard 500,000; one word of either answer is read; an ECDSA signature has one accepted form; an address with code at the time of use is a contract account, an externally owned account with a code delegation included | A check that fails, or never returns, must not take the call with it, and a refusal must cost a bounded amount | `ledger-v2.md` 4, 5 |
-| P63 | A `Revoke` or `RaiseNonce` statement has no expiry and no nonce of its own; doing any ending of a permit again changes nothing and does not fail; the zero address unbinds a guard and takes a version number like any binding | They only take authority away, and a relayer must be able to send one twice without harm | `ledger-v2.md` 3, 6, 11.6 |
-| P64 | A record has two hashes: `resultHash` over what was found, and `reportHash` over the whole record. Records carry schema 2; the client's exit status 4 is "no state at the block"; `--require-sealed` makes a missing close record a difference | A78 says that two runs rightly differ in the hash of the whole report; the result hash is the one value by which two runs at one block are compared | `ledger-v2.md` 13 |
-| P65 | `pouw work` and `pouw bridge` look for the receipt by its contribution id before they send; for a confirmation, only when the caller is the tender's owner | The recovery that row L33 asks for, without hiding the adapter's refusal from anybody else | `ledger-v2.md` 13 |
-| P66 | The v2 ledger is compiled through the compiler's IR pipeline, with the kernel's optimizer runs | Its size (14.4, finding 2). The alternative is a smaller ledger under the kernel's settings | `ledger-v2.md` 1 |
+| P61 | Adopted as the interface for task units (A83); the module that shows membership and the issuer is delivered in its own scope. A profile version says that it counts task units with `countsUnits` and two commitments, to its task units and to the demanders it names; the profile's module shows membership and states the result; the receipt records it as `unit` | A78 asks how the task-unit rule is represented. The kernel stays without knowledge of any set of tasks, and an audit can read from a receipt why it was no task unit | `ledger-v2.md` 7 |
+| P62 | Adopted as the rule of bounded checks of the local implementation (A83); the behaviour of real cells and the gas margin are measured before round R2b. The account's signature check is given 200,000 gas and the guard 500,000; one word of either answer is read; an ECDSA signature has one accepted form; an address with code at the time of use is a contract account, an externally owned account with a code delegation included | A check that fails, or never returns, must not take the call with it, and a refusal must cost a bounded amount | `ledger-v2.md` 4, 5 |
+| P63 | Adopted with its semantics corrected (A83). A `Revoke` or `RaiseNonce` statement has no expiry and no nonce of its own, and can be submitted once it is signed; the state of the ledger changes when the transaction succeeds. A signed entry verifies the account's signature every time it is called, and once that check has passed an ending done again changes nothing. The zero address unbinds a guard and takes a version number like any binding. As proposed, this row said that doing any ending again "changes nothing and does not fail": that left the check out, and a statement sent again is rightly refused when the account no longer accepts its signature | They only take authority away, and a relayer can send one twice without harm while the account accepts the signature | `ledger-v2.md` 3, 6, 11.6 |
+| P64 | Adopted with the two corrections of input handling (A83, A84), which release 0.1.5 makes. A record has two hashes: `resultHash` over what was found, and `reportHash` over the whole record. Records carry schema 2; the client's exit status 4 is "no state at the block"; `--require-sealed` makes a missing close record a difference | A78 says that two runs rightly differ in the hash of the whole report; the result hash is the one value by which two runs at one block are compared | `ledger-v2.md` 13 |
+| P65 | Adopted for the recovery of a transaction that is already recorded (A83). `pouw work` and `pouw bridge` look for the receipt by its contribution id before they send; for a confirmation, only when the caller is the tender's owner | The recovery that row L33 asks for, without hiding the adapter's refusal from anybody else | `ledger-v2.md` 13 |
+| P66 | Adopted with Q31 (A82): the IR pipeline, behind a compile boundary and with a compiler of its own for v2; the build with solc 0.8.24 is evidence of the local tests and no deployment build. The v2 ledger is compiled through the compiler's IR pipeline, with the kernel's optimizer runs | Its size (14.4, finding 2). The alternative is a smaller ledger under the kernel's settings | `ledger-v2.md` 1 |
 
 ### 14.6 What is not built, and what comes next
 
@@ -1007,8 +1037,183 @@ record, the module of the first production profile, the configuration and the ru
 round with the operation package of the one signature, and a measurement against the deployed
 cells. None of it is started by this revision, and nothing is deployed or signed by it.
 
-A first use of the client of 0.1.4 on a public endpoint needs no key and changes nothing: the
+A first use of the new client on a public endpoint needs no key and changes nothing: the
 hosted workflow, started by hand with the manifest of round R2a, checks that deployment and
-audits its two epochs at one finalized block. It would show whether the endpoint serves that
-block, and that the new client agrees with the ledger there as the old one did. It is proposed
-and has not been run; it reopens nothing of round R2a, whose records stay as made.
+audits its two epochs, each command at a finalized block of its own. It would show whether the
+endpoint serves such a block, and whether the new client agrees with the ledger there as the
+old one did. The owner agreed to it on 2026-11-25 (A85; 15.6). It is run once release 0.1.5 is
+uploaded and checked and has not been run; it reopens nothing of round R2a, whose records stay
+as made.
+
+## 15. The review of the local implementation of ledger v2, and the rulings on it
+
+### 15.1 Who wrote what, and on what the record rests
+
+The times are those of Singapore (UTC+8); all are of 2026-11-25. The owner writes in Chinese:
+what is given here of his words is a translation.
+
+| When | What | Drafted by | Sent by | Standing in this record |
+| --- | --- | --- | --- | --- |
+| 04:07 | The upload of release 0.1.4, delivered as 52 files against commit `16d8bb6`: one commit, `b3e07df`, made by the owner through the web interface | the executor (the files) | the owner (the commit) | evidence of the implementation (14.4). The executor compared `main` with its own copy, file by file, and found them equal |
+| 04:22 | The advisor's review of that delivery: what it checked on its own, three faults in tools, its opinion on Q30 and on Q31, a recommendation on each of P61 to P66, and an order for the next work | the advisor | the owner, as an attachment | the advisor's review (15.2). It is adopted as far as the owner's statement in the same message names its points, and no further |
+| 04:22 | "I adopt the following opinions of the advisor in this round; record it by the actual date of sending of this message and by the scope of the adoption" - with seven numbered points | not stated in the message; the points follow the advisor's review | the owner, as his own message | the owner's explicit adoption: the ground on which A80 to A86 are rulings |
+
+As in section 14, three things are kept apart: what the advisor advised and checked (15.2),
+what the owner adopted (15.3), and what the executor reproduced, corrected and verified (15.4
+to 15.7). The first two are the sources of the rulings; the third is evidence and rules on
+nothing. The advisor's review of the discussion draft on platform Tokenomics keeps its
+standing of 14.1: advisor recommendation recorded; owner adoption pending.
+
+### 15.2 What the advisor's review checked on its own, and what it did not
+
+As the review states it. The executor did not witness these checks and repeats none of them as
+its own.
+
+| Check | The advisor's result |
+| --- | --- |
+| The package and its checksum list | the package's hash and all 52 file hashes as stated |
+| Against commit `16d8bb6` | 33 files new, 19 replaced, none deleted; a whole tree of 138 files |
+| GitHub | the tree at `b3e07df` equal to the delivery, file by file |
+| The kernel | its contracts unchanged; the six files under `build/` byte for byte |
+| `npm test` | 131 pass, none fails |
+| The rows L1 to L35 | all 35 ids appear in the advisor's own test output and pass; the main assertions were read against the implementation |
+| `npm run local-run` | 41 of 41 checks |
+| The five new compiled interfaces | each equal to a fresh compilation |
+| The runtime size of the v2 ledger | recomputed: 24,542 bytes through the legacy pipeline, 21,674 through the IR pipeline |
+| The rehearsal record that came with the delivery | its 75 source hashes equal the delivered files; the two hashes of each of its four records recomputed - eight comparisons, all equal |
+
+The advisor's environment was Node 24.22.3 with Hardhat 2.29.2, solc 0.8.24 and ethers 6.17.0.
+The executor's Node is 22.23.5: the advisor's run is a reproduction in another environment and
+not a copy of the executor's output. The advisor read the script and the results of the 29
+changes that should break the tests and did not run them; that part stays the executor's
+evidence and is not recorded as checked independently.
+
+### 15.3 The rulings, point by point
+
+| The owner's point | Ruling | Where it is applied |
+| --- | --- | --- |
+| 1. The review passes in the main; three corrections of tools stay to be closed; the next delivery has `b3e07df` as its base | A80 | this section; the delta of release 0.1.5 has that base |
+| 2. Q30: the interfaces are frozen; the interfaces and the deployable bytecode are recorded apart | A81 | `ledger-v2.md` 11.8; `contracts/v2/interfaces.frozen.json`; `test/v2.frozen.test.js` |
+| 3. A small delta first, with three corrections | A84 | 15.4; release 0.1.5 |
+| 4. Q31 and P66: the IR pipeline, a compile boundary and a locked compiler for v2, the kernel's boundary untouched | A82 | 15.5; `ledger-v2.md` 1. Not built in this revision |
+| 5. P61 to P65, each with its boundary | A83 | 14.5; `ledger-v2.md` 3, 6, 11.7, 13 |
+| 6. The hosted run, once the small delta is uploaded and checked | A85 | 15.6. Not run |
+| 7. The next delivery and what stays | A86 | 15.7 |
+
+The owner's statement adopts P61 to P65 in the short form of A83. The advisor's review words
+some of their boundaries more finely, and those wordings are recorded here with the proposals
+they belong to. Where one only narrows a claim that a document made, the document is narrowed
+accordingly, on this repository's judgment; none of them is recorded as a ruling.
+
+| Proposal | The advisor's boundary, as its review words it | Applied |
+| --- | --- | --- |
+| P61 | What is adopted is the interface: `countsUnits`, the two commitments, the module that classifies, the ledger that applies. The module that proves membership and the issuer is not delivered | `ledger-v2.md` 7, 16, which say so |
+| P62 | 200,000 and 500,000 gas are not said to suit every account. The behaviour and the margin of real FOGA cells are measured before the operation package of round R2b. The strict form of a signature of an externally owned account does not restrict the formats that an account's own ERC-1271 check accepts | `ledger-v2.md` 11.7 |
+| P63 | "In force when signed" becomes "can be submitted once signed; the mark or the minimum changes after the transaction has succeeded". "A repeat does not fail" becomes "after the present authority has been verified, a repeat changes no state": when the old key has lost its signing right, `BadSignature` for the old signature sent again is the right behaviour, and the check is not passed over to let a repeated call succeed | `ledger-v2.md` 3, 6; a test in `v2.guard`; no change of a contract, which verified first already |
+| P64 | The empty slots of arrays and the repeated keys are corrected. Exit status 4 says that this read of state at the pinned block failed; it does not by itself show that an endpoint never serves past state | `client/lib/canonical.js`, `scripts/report-hash.py`; `ledger-v2.md` 13 |
+| P65 | It covers the recovery after an answer was lost for work that is recorded. The deduplication by contribution id and the check of the owner stay as they are; it is not widened into a promise that several processes never send at once | `ledger-v2.md` 13, unchanged |
+| P66 | As Q31; the results with solc 0.8.24 stay evidence of the local tests | `ledger-v2.md` 1 |
+
+Two leftovers of wording that the review named are corrected with them. Work that its demander
+does not confirm can have a public fact - one exists when somebody recorded it - and does not
+have one automatically (`ledger-v2.md` 9, `genesis-mining-mvp.md` 13.7, `acceptance-matrix.md`
+row D21). And the fault of the first revision's revocation was a namespace left undefined; the
+table of 14.2 had it as "one global mark per digest", which read as if a global revocation had
+once been delivered. None was.
+
+### 15.4 The three faults in tools: as reported, as reproduced, as corrected
+
+Each was reproduced by the executor on the tree of `b3e07df` before anything was changed.
+
+| Tool | The fault, as the review reported it | Reproduced | Correction | Tests |
+| --- | --- | --- | --- | --- |
+| `scripts/sign-permit.js` | `--out` replaced whatever its path named. Given the path of the key file, a symbolic link to it or a second hard link of it, the script read the key, signed, wrote the record over the key file and ended with status 0 | all three cases, with the public test key in a temporary directory: status 0, and the key file held the record | the output path is looked at before the key file is opened - the link itself, not what it points to - and anything that has the name is a refusal; the write then creates the file exclusively, so that the guarantee does not rest on the look. Paths are not compared as text | `v2.permit`: seven taken paths - the key file, the same file spelled another way, a symbolic link to it, a second hard link, a link to nothing, another file, a directory - each refused, nothing printed, the key file's bytes and mode unchanged; the refusal precedes the reading of the key file; a new path is written and holds the printed record; the same path again is refused; the exclusive write tested on its own |
+| `client/lib/canonical.js` | an array was serialized with `map`, which passes over an empty slot: `new Array(1)` gave `[]`, and `[1, , 2]` gave text that is not JSON | both | an array is walked by index, and a slot without a value is refused with its position | `snapshot`: five such arrays, through `canonicalize`, `sealed` and `resultHash`; complete arrays as before |
+| `scripts/report-hash.py` | a member named twice in one object was read as its last value: a file could state one figure and be hashed with another | at the top and nested: status 0, hashes printed | every object is read member by member, and a name given twice is refused at any depth; no hash is printed | `snapshot`, in the second test of row L35: four files, one of them an audit's record with a member repeated; the same name in different objects is accepted |
+
+What the first fault was and was not: a wrong argument could destroy a key file. It gave
+nobody an authority on a chain, and the script had been run with test keys only - the step
+that would use a live key is not prepared (`ledger-v2.md` 12). It is closed before that step
+exists. None of the three corrections changes a contract, a compiled interface or the form of
+a signature. The records of release 0.1.4 hold complete arrays and no repeated member; they
+are not made again.
+
+Each new test was run against the fault put back in, and each then failed (15.7).
+
+One thing is named and not changed. The same way of writing a record - replacing whatever the
+path names - is in the client's `--out` for `pouw audit` and `pouw verify`, in
+`scripts/identity-check.js`, and in the record writers of the deployment and round scripts.
+None of those commands opens a key file, and a round that is run again writes to the paths of
+its first run by design (`acceptance-matrix.md` rows R1 and R3). A path typed wrongly can
+still replace a file that matters there, a key file included.
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P68 | From the client for a v2 deployment on, the client's `--out` creates its file and refuses a path that exists. The scripts that write into a directory of their own keep replacing their own records. Release 0.1.5 leaves both as they are | The fault of this section was the replacing, and it is as easy to mistype a path there. Changing it now would change commands that the runbook of round R2a and the hosted workflow use as they are, and the owner asked for three corrections | Proposed; to be ruled with the next delivery |
+
+### 15.5 The compiler, and the kernel's builds
+
+The review stated that solc 0.8.24 is inside the range of a known bug of the compiler's
+optimizer - `SOL-2026-7`, fixed in 0.8.38 - that the official description includes optimized
+code generated through the IR pipeline, with no inline assembly of a project's own needed, and
+that the official list by version named no known bug for 0.8.39 when the advisor read it. The
+review observed no miscompilation of this project and said that passing tests cannot exclude
+one. A82 rules on that.
+
+The executor read the compiler maintainers' note on the bug, dated 2026-10-22, on 2026-11-25,
+and found the range and the fix as the review has them: versions 0.8.19 to 0.8.37, fixed in
+0.8.38. By that note the bug needs the Yul optimizer enabled; with the IR pipeline any code can
+be concerned; the maintainers rate its severity low and an occurrence very unlikely. The
+executor has not read the list by version for 0.8.39. That check, with its date and with the
+compiler's complete version, belongs to the build record that A82 asks for.
+
+One thing follows that the review did not raise. It is stated because it is true of what is
+deployed. The kernel of release 0.1.3 - the six committed builds from which the deployment of
+round R2a was made - was compiled with solc 0.8.24 as well, with the optimizer enabled and
+without the IR pipeline. That is inside the same range of versions. For builds made without
+the IR pipeline the maintainers' note narrows what can be concerned: to helper functions that
+the compiler itself generates as Yul, and to inline assembly that refers to no Solidity
+variable. The kernel has no inline assembly. No fault of the kernel was observed in the tests,
+in the rehearsals or in round R2a, whose two epochs an independent run recomputed from the
+chain. A82 keeps the kernel's compiler and its builds as they are, and nothing here changes
+them.
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P67 | The kernel's builds and the deployment of round R2a stay as they are and are not rebuilt; the fact above is recorded with them. No deployment that carries value is made from the kernel's sources with a compiler inside the range of the bug. Whether the six builds are checked by a method the maintainers describe is the owner's choice | The deployment of round R2a carries test points that cannot be redeemed, and round R2b runs on ledger v2 (A75). A check is possible without touching a build; it shows less than a build with a fixed compiler would, and such a build would be another deployment | Proposed; Q32 |
+
+### 15.6 The hosted run of the new client (A85)
+
+Not run. It is started by hand once release 0.1.5 is on `main` and compared with the delivery:
+the existing workflow, with the manifest `deployments/finchain-sepolia-r2.json` and the epochs
+`0 1`. It needs no key and sends no transaction.
+
+It is recorded as the new client's verification of the existing deployment of round R2a on a
+public endpoint, with an audit at a pinned block. Kept: the commit, the link of the run, the
+exit status of each command and the three reports - the check of the deployment and the audits
+of the two epochs. Each of the three commands takes a block of its own, so each report names
+its own block, hash and time; that the whole run read one block is said only if the three
+reports show it. The workflow also runs the tests and the rehearsal on the hosted machine.
+
+The run reopens nothing of round R2a. Its acceptance (6.11) and its records stay as they are,
+and no file under `evidence/r2a/` is changed. It does not wait for the build of v2.
+
+### 15.7 What the executor verified, and what comes next
+
+Everything here is on a local network, as in 14.4. No key of a participant was used.
+
+| What | Result |
+| --- | --- |
+| The tests | 137 pass, none fails (Node 22.23.5, Hardhat 2.29.2, solc 0.8.24): the 131 of release 0.1.4 and six new ones - the signing script's output path, a statement verified at each submission, an array with an empty slot, and three that hold the frozen interfaces. The refusal of a repeated member is added to an existing test |
+| The contracts, the compiled interfaces, the vectors and the kernel's builds | unchanged from `b3e07df`, byte for byte; the test of the freeze holds the first three to their hashes at that commit |
+| The rehearsal | 41 checks, all passed, with release 0.1.5 from a clean copy; its record is under `evidence/` |
+| The tests against changes that should break them | 38 changes: the 29 of 14.4 and nine new - the three faults put back, in five forms; a statement sent again and not verified, for a revocation and for a raising of the nonce; and two changes of a frozen code. Every one made at least one test fail |
+
+The next delivery (A86), in this order: the compile boundary of v2 with its locked compiler and
+its build record, then the reproducible builds, the deployment tooling and a manifest that
+names what it supersedes; the client for a v2 deployment, with work and confirmation through a
+delegate, its audit and its run record. Beside it and no precondition of it: the module that
+shows task units and their issuer, with the other components of the first production
+increment, and the two discussion drafts, which stay drafts. A signature with a live key, a
+deployment and any operation on a chain are steps of their own operation packages; none is
+part of this revision or follows from it without one.

@@ -1,8 +1,9 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.10, with software release 0.1.4, after the reviews of v0.1.4 to v0.1.7,
+Design revision v0.1.11, with software release 0.1.5, after the reviews of v0.1.4 to v0.1.7,
 the owner's adoption of the recommendations on Q17 to Q29, the run of round R2a with its review,
-and the owner's rulings of 2026-11-25 (`decisions.md` A55-A79).
+the owner's rulings of 2026-11-25 and the review of the local implementation of ledger v2
+(`decisions.md` A55-A86).
 Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
 added for the next version of the ledger (D18 to D21, A64), which pass on a local network from
 release 0.1.4, and with the rows of the client's audit at one block (N9, D22, R11 to R14).
@@ -95,7 +96,7 @@ on 2026-11-24, with success; the run, its commit and its record are in `decision
 | D18 | A third party records a settled submission before its demander confirms it (the next version of the ledger) | the third party's record is a work fact: it enters no total and does not take the contribution id. The demander's later confirmation makes the receipt, its eligibility decided as for any confirmation, in the epoch in which it is recorded. No earlier epoch changes and no recorded status changes | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (`ledger-v2.md` 14, rows L26 and L30). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
 | D19 | The same settlement recorded as a work fact twice, by one party or by two | one fact, with one stable id of its own; the second call returns it and adds nothing | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (row L26). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
 | D20 | A work fact for a delivery under a production profile | it takes neither the contribution id nor the content key, and uses up no cap and no counter. The confirmation that follows takes the counting as if no fact existed | passes on a local network at the level of the ledger, for ledger v2, which is not deployed: `v2.ledger` (`ledger-v2.md` 14, row L29), with a module that states what a test tells it. The module of the production profile, which shows membership, is not built |
-| D21 | A confirmation with no fact before it; a fact recorded after the receipt; a demander that never confirms | all three are valid, and the fact and the receipt of one work are found by its source. In the third the work has a public fact and no receipt: it is in no epoch's GMU, measured or subsidized, and no report presents it as a contribution that was counted | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (row L26). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
+| D21 | A confirmation with no fact before it; a fact recorded after the receipt; a demander that never confirms | all three are valid, and the fact and the receipt of one work are found by its source. In the third the work has no receipt and whatever public fact somebody recorded for it - none is made automatically: it is in no epoch's GMU, measured or subsidized, and no report presents it as a contribution that was counted | passes on a local network, for ledger v2, which is not deployed: `v2.ledger` (row L26). The design is adopted (A64; `decisions.md` P60, Q26, A70) and ruled into the next version (A75) |
 | D22 | A verifier hands the right to judge on inside its own verification: the tender's log then shows the successor as the last authority before the acceptance | the audit keeps the registered address as what the log holds, marks the evidence `evidence-insufficient`, and draws no observation about a party from it - it does not say that the worker judged its own delivery when the successor is the worker. Without the handing on, the registered authority is visible and is the verifier | passes: `snapshot` (`ledger-v2.md` 10 and 14, row L32). Derived from the reference contract's source and reproduced locally with a verifier written for the test; not observed on a public chain |
 
 ## 4. Disconnection, restart, lateness and recovery
@@ -434,7 +435,11 @@ No increment and no acceptance shows, and none will claim:
 The next version of the ledger (`ledger-v2.md`) has a test matrix of its own, of 35 rows, in
 section 14 of that document, with the result of each row and the limits of what a pass covers.
 On 2026-11-25 every row had at least one test that carried its id and passed, on the in-process
-network; the whole suite was 131 tests, of which 83 are the kernel's.
+network; the whole suite was 131 tests with release 0.1.4, of which 83 are the kernel's, and is
+137 with release 0.1.5. The six that 0.1.5 adds carry no row: three hold the frozen interfaces,
+and three are regressions on the signing script's output path, on a statement verified at each
+submission and on an array with an empty slot (`decisions.md` 15.4, 15.7). The advisor ran the
+131 tests again on its own and found all 35 ids in its output (`decisions.md` 15.2).
 
 The ids L1 to L35 are those of that document. They are not row L1 of section 11 here, the
 linked chain of evidence: where both could be meant, the document is named.
@@ -447,6 +452,7 @@ linked chain of evidence: where both could be meant, the document is named.
 | L21 to L24 | the cap on a declared operator's aggregate, the rounding, the zero cases and the attribution fixed at recording; also as properties of scenarios drawn at random | `v2.allocation` |
 | L31 (the audit's part), L32 to L35 | the client of release 0.1.4, against the kernel of 0.1.3: the authority at a settlement, no second sending, one block for an audit, the hashes of a record | `audit`, `snapshot` |
 
-None of these rows is an acceptance of round R2b or of round R3: nothing of ledger v2 is
-deployed, its interfaces are not frozen (`decisions.md` Q30), and the client for a v2 deployment
-is not built. The rows marked "Sepolia, round R2b" in sections 1 to 7 stay as they are.
+None of these rows is an acceptance of round R2b or of round R3 (`decisions.md` A80): nothing
+of ledger v2 is deployed, no deployable build of it exists, and the client for a v2 deployment
+is not built. Its interfaces are frozen (`decisions.md` A81). The rows marked "Sepolia, round
+R2b" in sections 1 to 7 stay as they are.

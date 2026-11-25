@@ -121,6 +121,107 @@ describe("Ledger v2: the three signed statements", () => {
       expect(/process\.env/.test(source), `${file} reads the environment`).to.equal(false);
     }
   });
+
+  it("are written by that script to a new file only: an output path that is the key file, a link to it, a second name of it or any file that exists is refused, and the key file stays byte for byte", function () {
+    if (process.platform === "win32") { this.skip(); return; } // links and modes as on the hosts the script is meant for
+    const script = path.join(root, "scripts", "sign-permit.js");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pouw-out-"));
+    const run = (args) => {
+      try {
+        return { status: 0, stdout: execFileSync(process.execPath, [script, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }), stderr: "" };
+      } catch (e) {
+        return { status: e.status, stdout: String(e.stdout), stderr: String(e.stderr) };
+      }
+    };
+    const first = vectors.vectors[0];
+    const m = first.message;
+    const statement = ["permit", "--account", m.account, "--delegate", m.delegate, "--scope", m.scope, "--not-before-epoch", m.notBeforeEpoch,
+      "--not-after-epoch", m.notAfterEpoch, "--nonce", m.nonce, ...(m.guard === ZERO ? [] : ["--guard", m.guard, "--guard-binding-version", m.guardBindingVersion]),
+      "--chain-id", first.chainId, "--ledger", first.ledger];
+    try {
+      const keyFile = path.join(dir, "test.key");
+      const keyBytes = Buffer.from(`${ONE}\n`);
+      fs.writeFileSync(keyFile, keyBytes, { mode: 0o600 });
+      const untouched = (why) => {
+        expect(fs.readFileSync(keyFile).equals(keyBytes), `${why}: the bytes of the key file`).to.equal(true);
+        expect(fs.statSync(keyFile).mode & 0o777, `${why}: the mode of the key file`).to.equal(0o600);
+      };
+      const symlink = path.join(dir, "link-to-key");
+      const hardLink = path.join(dir, "second-name-of-key");
+      const dangling = path.join(dir, "link-to-nothing");
+      const nothing = path.join(dir, "not-there");
+      const earlier = path.join(dir, "earlier-record.json");
+      fs.symlinkSync(keyFile, symlink);
+      fs.linkSync(keyFile, hardLink);
+      fs.symlinkSync(nothing, dangling);
+      fs.writeFileSync(earlier, "an earlier record\n");
+      const others = () => {
+        expect(fs.lstatSync(symlink).isSymbolicLink() && fs.readlinkSync(symlink) === keyFile, "the link is the link it was").to.equal(true);
+        expect(fs.statSync(hardLink).ino === fs.statSync(keyFile).ino && fs.readFileSync(hardLink).equals(keyBytes), "the second name is the key file still").to.equal(true);
+        expect(fs.lstatSync(dangling).isSymbolicLink() && !fs.existsSync(nothing), "nothing was created through the link").to.equal(true);
+        expect(fs.readFileSync(earlier, "utf8")).to.equal("an earlier record\n");
+      };
+
+      // every name that something has is refused; two spellings of one path are not told apart as text
+      const taken = [
+        ["the key file itself", keyFile],
+        ["the key file, spelled another way", `${dir}${path.sep}.${path.sep}test.key`],
+        ["a symbolic link to the key file", symlink],
+        ["a second hard link of the key file", hardLink],
+        ["a symbolic link to nothing", dangling],
+        ["a file that exists", earlier],
+        ["a directory", dir],
+      ];
+      for (const [why, out] of taken) {
+        const r = run([...statement, "--key-file", keyFile, "--out", out]);
+        expect(r.status, why).to.equal(1);
+        expect(r.stderr, why).to.contain("exists already");
+        expect(r.stdout, `${why}: nothing is printed, a signature least of all`).to.equal("");
+        untouched(why);
+      }
+      others();
+
+      // the refusal comes before the key file is opened: with a key file the script would refuse to
+      // read, the reason it gives is still the output path
+      fs.chmodSync(keyFile, 0o644);
+      const before = run([...statement, "--key-file", keyFile, "--out", earlier]);
+      expect(before.stderr).to.contain("exists already");
+      expect(before.stderr).to.not.contain("can be read by others");
+      fs.chmodSync(keyFile, 0o600);
+      // an unsigned statement is not written over anything either
+      expect(run([...statement, "--out", earlier]).stderr).to.contain("exists already");
+      others();
+
+      // a new path: the record is written there, it is the record that is printed, and the key file is as it was
+      const fresh = path.join(dir, "record.json");
+      const ok = run([...statement, "--key-file", keyFile, "--out", fresh, "--json"]);
+      expect(ok.status, ok.stderr).to.equal(0);
+      const written = fs.readFileSync(fresh, "utf8");
+      expect(JSON.parse(written)).to.deep.equal(JSON.parse(ok.stdout));
+      expect([JSON.parse(written).digest, JSON.parse(written).signature, JSON.parse(written).signer]).to.deep.equal([first.digest, first.signature, vectors.signer]);
+      expect(written.includes(ONE.slice(2))).to.equal(false);
+      untouched("a new output path");
+      // the same path a second time is a path that exists: the first record stays
+      const again = run([...statement, "--key-file", keyFile, "--out", fresh]);
+      expect([again.status, again.stdout]).to.deep.equal([1, ""]);
+      expect(fs.readFileSync(fresh, "utf8")).to.equal(written);
+
+      // the write itself creates and never replaces, whatever a check a moment earlier saw
+      const { writeNew, refuseExisting } = require(script);
+      for (const [why, out] of taken) {
+        expect(() => writeNew(out, "not a record"), why).to.throw(why === "a directory" ? /EISDIR|exists already/ : "exists already");
+        expect(() => refuseExisting(out), why).to.throw("exists already");
+      }
+      untouched("the exclusive creation");
+      others();
+      const second = path.join(dir, "second.json");
+      refuseExisting(second);
+      writeNew(second, "a record\n");
+      expect(fs.readFileSync(second, "utf8")).to.equal("a record\n");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("Ledger v2: a permit is checked at each use", () => {

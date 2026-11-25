@@ -27,7 +27,9 @@ revision v0.1.10 comes with software release 0.1.4 (`decisions.md` A73 to A79). 
 of the kernel are unchanged. The reference client changed: section 12 describes how it reads the
 chain from 0.1.4 on, what a record holds and how it reports the authority at a settlement. And
 the designs kept in 13.4, 13.7 and 13.9 are built as ledger v2, a second set of contracts
-beside the kernel, which `ledger-v2.md` specifies.
+beside the kernel, which `ledger-v2.md` specifies. Design revision v0.1.11, with release 0.1.5,
+records the rulings on the review of that implementation (A80 to A86): the interfaces of
+ledger v2 are frozen. Here it changes one sentence of 13.7, on work that has no confirmation.
 
 Sections 1-12 describe the existing contracts under `contracts/`, reference client under
 `client/`, and tests under `test/`, with explicit pointers to the future production design.
@@ -709,8 +711,9 @@ the review of v0.1.5 asked to have written down before anything is built:
    repeated call of either returns what exists. A receipt counts in the epoch in which the
    confirmation is recorded. No recorded status changes and no epoch that is frozen is rewritten.
 
-What this gives up is said plainly. When the demander never confirms, the work has a public fact
-and no receipt, and it is in no epoch's GMU, measured or subsidized. A work fact is never
+What this gives up is said plainly. When the demander never confirms, the work has no receipt
+and is in no epoch's GMU, measured or subsidized. It can have a public fact: one exists when
+somebody recorded it, and none is made automatically. A work fact is never
 reported as a contribution that was counted or as an eligibility that was confirmed. The adoption
 rules on what was left open here (A70): such a trace is how the reservation of A33 is met, in the
 first of the two ways that A64 allows, and settled work without its demander does not enter the

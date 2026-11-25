@@ -1,21 +1,26 @@
 # Ledger v2: bounded delegation, operator aggregation, work facts and receipts
 
-Status: **revision 3. Implemented and tested on a local network. Not deployed, nothing signed,
-and the interfaces are not frozen: section 11 is the proposal to freeze after review.**
+Status: **revision 4. Implemented and tested on a local network; the interfaces are frozen
+(section 11.8). Not deployed and nothing signed. No deployable build exists: the build follows
+the compiler work of section 1.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
 The client's part of this document - an audit that reads one block, records with a canonical
 form, the authority at a settlement - is built in release 0.1.4 against the kernel of 0.1.3
-(section 13). What is not built is listed in section 16.
+(section 13); release 0.1.5 corrects three of its tools. What is not built is listed in
+section 16.
 
 Where this comes from, in order: revision 1 was this repository's draft for the rulings on Q13,
 Q14 and Q16; revision 2 applied the advisor's walk-through of it and the six choices the owner
 made; revision 3 is the implementation, with the five corrections the owner adopted on
 2026-11-25 (section 15). The rulings are A73 to A79 of `decisions.md`, which also says who
-drafted and who adopted each (`decisions.md` 14.1). This repository's own choices in the
-implementation are proposals P61 to P66 (`decisions.md` 14.5) and wait for a ruling, with the
-two open questions Q30 and Q31.
+drafted and who adopted each (`decisions.md` 14.1). Revision 4 records the rulings the owner
+made on the same day on the advisor's review of the implementation (A80 to A86; `decisions.md`
+15): the interfaces are frozen (Q30), the ledger is built through the compiler's IR pipeline
+with a compiler of its own for v2 (Q31), and this repository's choices in the implementation,
+P61 to P66, are adopted within the boundaries stated there. With it come the corrections of
+three tools and of the wording on statements and on facts.
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -41,12 +46,22 @@ view, with no balance, claim, transfer or right to any future asset.
   `auditSubject`, which v2 keeps with the same signatures.
 
 **The build.** With the kernel's compiler settings the v2 ledger comes to 24,542 bytes of code,
-34 under the limit a chain puts on a contract (EIP-170: 24,576). It is therefore compiled through
-the compiler's IR pipeline, with the same optimizer runs, and comes to 21,674 bytes; a test
-holds it at least 1,024 bytes under the limit. The other contracts are compiled as the kernel
-is. This is a build decision to be reviewed with the interfaces; the alternative is to make the
-ledger smaller - for one, by storing a commitment to a fact and emitting its content, where it
-now stores the content. Sizes and gas: section 11.7.
+34 under the limit a chain puts on a contract (EIP-170: 24,576). Through the compiler's IR
+pipeline, with the same optimizer runs, it comes to 21,674 bytes; a test holds it at least
+1,024 bytes under the limit. The other contracts are compiled here as the kernel is.
+
+The owner ruled for the IR pipeline (A82, on Q31), on a condition. What is compiled here with
+solc 0.8.24 stays evidence of the local tests; it is not the build a deployment is made from.
+solc 0.8.24 lies inside the range of a known bug of the compiler's Yul optimizer - versions
+0.8.19 to 0.8.37, fixed in 0.8.38 - which with the IR pipeline can concern any code, with or
+without inline assembly. No miscompilation was observed here, and tests that pass do not rule
+one out. So the v2 contracts get a compile boundary of their own, with a compiler in which that
+bug is fixed: 0.8.39 is verified first. The build record holds the compiler's full version, its
+settings and the date on which the official list of known bugs was read; the v2 tests, the
+fixed vectors and the size gate are run again on that compiler before a build is committed.
+The kernel keeps its compiler, its settings and its six committed builds, and the compiler is
+not replaced for the whole repository. None of this is done in this revision (section 16).
+Sizes and gas, as measured with 0.8.24: section 11.7.
 
 ## 2. Participant, sender and origin
 
@@ -97,8 +112,11 @@ exact types and the encoding are in section 11.4.
 
 `Revoke{address account, bytes32 permitDigest}` and `RaiseNonce{address account, uint64
 minNonce}` are the two statements by which an account ends permits without sending a
-transaction (section 6). Neither carries an expiry or a nonce of its own: a signed statement is
-to be treated as in force from the moment it is signed. Both only take authority away.
+transaction (section 6). Neither carries an expiry or a nonce of its own. Once signed, a
+statement can be submitted by anyone who holds it, at any time: whoever signs one treats it as
+out of his hands. The ledger changes when a transaction that carries the statement succeeds
+and not before - until then the permit is not revoked and the minimum is not raised. Both
+statements only take authority away.
 
 What a permit cannot do, whatever its fields say: make the account call anything, move or
 approve an asset, spend the account's balance, authorize a further delegate, or act for another
@@ -218,8 +236,15 @@ call writes only the caller's own entries; a signed statement writes the entries
 whose signature verified; a renouncing writes the entry of `permit.account` and is accepted only
 from `permit.delegate`. Nobody can mark another account's permit. A revoked digest is a
 permanent mark and there is no registration to repeat, so a revoked permit cannot be restored by
-presenting it again. Doing any of them a second time changes nothing, and a minimum nonce only
-rises: a value at or below it is ignored.
+presenting it again. A minimum nonce only rises: a value at or below it changes nothing.
+
+What a repeat does depends on the entry. The account's own call and the delegate's renouncing,
+done again, change nothing and do not fail. A statement is verified against the account each
+time it is submitted. Sent again while the account still accepts the signature, it is accepted
+and changes nothing. Sent again after the account has stopped accepting that signature - the
+key's signing right was taken away - it is refused with `BadSignature`, although the mark it
+asks for is there already. That refusal is right: the ledger does not pass over the check of a
+signature in order to let a repeated call succeed. A test holds each of these cases.
 
 | Event | Effect on a permit | How |
 | --- | --- | --- |
@@ -399,7 +424,8 @@ part of what was ruled for the operator cap.
 - The same source confirmed again returns the receipt that exists and changes nothing. Another
   source with a content key that is taken is recorded with reason 14, names the receipt that
   took the key in `duplicateOf`, and adds no GMU of either kind.
-- Work whose demander never confirms has a public fact and is in no epoch's GMU.
+- Work whose demander never confirms is in no epoch's GMU. It can have a public fact: one
+  exists when somebody recorded it, and none is made automatically.
 
 ## 10. The authority as it was at settlement
 
@@ -436,9 +462,10 @@ settlement layer of its own. v2 does not put a later verification that withdraws
 a receipt that cannot change or into an epoch that is frozen. A customer's bounty and a PoUW
 subsidy stay separate and neither is a precondition of the other.
 
-## 11. Interfaces (proposal to freeze after review)
+## 11. Interfaces (frozen on 2026-11-25)
 
-The compiled interfaces are in `client/abi/`: `GenesisLedgerV2.json`, `GenesisPolicyV2.json`,
+Frozen by the owner's ruling on Q30 (A81); 11.8 says what the freeze holds and what it leaves
+open. The compiled interfaces are in `client/abi/`: `GenesisLedgerV2.json`, `GenesisPolicyV2.json`,
 `TenderAdapter8414V2.json`, `IParticipantGuard.json`, `FogaCellGuard.json`. A test fails when
 they are not what the sources compile to. The sources: `contracts/v2/TypesV2.sol` (types and
 codes), `interfaces/` (the three interfaces), `GenesisLedgerV2.sol`, `GenesisPolicyV2.sol`,
@@ -712,7 +739,33 @@ A v2 receipt costs about 90,000 gas more than one of 0.1.3, for the fields and t
 it adds. A fact stores its content, thirteen words of storage. The signature check and the
 guard of a real FOGA cell are not in this table: the cell guard was measured against a mock
 only. Before round R2b both are measured against the deployed cells by a read-only call, and
-compared with the 200,000 and 500,000 gas the ledger gives them.
+compared with the 200,000 and 500,000 gas the ledger gives them. The two bounds are the rule of
+this implementation and are not said to suit every account (A83).
+
+### 11.8 The freeze
+
+The owner froze the interfaces on 2026-11-25 (A81, on Q30), as they stand at commit
+`b3e07df81301ce351a0b966db0741e0a6ab091da`. The reference is all of the following together:
+
+| What | Where | Held by |
+| --- | --- | --- |
+| The compiled interfaces | the five files of `client/abi/` named at the head of this section | the SHA-256 of each file |
+| The types and the three interfaces, as written | `contracts/v2/TypesV2.sol` and the three files of `contracts/v2/interfaces/` | the SHA-256 of each file at the commit, and of each file without its pragma line |
+| The three statements, their domain and their type hashes | 11.4 | the type strings, the domain's name and version, the four hashes |
+| The tags of the two domains, and every code: pools, operations, the known scope, the reasons and their order, roles, units, paths | 11.1, 11.5 | their values |
+| The fixed vectors | `test/vectors/permit-v2.json` | the SHA-256 of the file |
+
+The record is `contracts/v2/interfaces.frozen.json`. `test/v2.frozen.test.js` fails when the
+tree is not what the record holds, and `test/boundaries.test.js` fails when a compiled
+interface is not what its source compiles to. A change of any of it is from now on a change of
+that record as well: made on purpose, with a ruling to cite, and as a new version wherever a
+deployment exists.
+
+Two things are recorded apart, as the ruling asks. The **interfaces** are final. The
+**deployable bytecode** is not: no build of v2 is committed, and none is made before the
+compiler work of section 1. That work changes the compiler pragma of the v2 sources, and the
+freeze allows a frozen source file that one line; it does not allow a change of a compiled
+interface, a type, a code or a vector.
 
 ## 12. The one signature, and when it may be made
 
@@ -728,6 +781,12 @@ of round R2b that is the cell's own key. The script is built; the step is not ru
   file is named - the signer's address and the signature; all of that is public material. The
   same script signs `Revoke` and `RaiseNonce` statements. A test holds that neither the script
   nor the encoding library can reach a network or reads the environment.
+- With `--out` it writes the record to a new file, and to nothing that exists. A path that is
+  taken - by a file, by a symbolic link, by a second name of the key file itself - is refused
+  before the key file is opened, and the write creates the file or fails. Up to release 0.1.4
+  the script replaced whatever the path named: with the key file's own path, or a link to it,
+  the key file was overwritten with the record and the run ended as a success. The advisor's
+  review found it; a test now holds every such path and the bytes of the key file.
 - Without a key file it stops after the digest. That is the form in which a statement goes into
   an operation package: the readable statement and its digest, reviewed before a key is named.
 - It is run on the host where the key already is, from a checkout at a named commit, with the
@@ -759,20 +818,26 @@ Built in release 0.1.4, against the kernel of 0.1.3; none of it depends on the v
   holds that no read is made at another block. This replaces the rule of 0.1.3 that an audit
   never asks for a state other than the latest (P27), and it has a consequence for operation:
   the endpoint must keep the state of the block it calls finalized. A node that keeps recent
-  state only may not, when its finalized block lies further back than what it keeps.
+  state only may not, when its finalized block lies further back than what it keeps. Exit
+  status 4 says that this run could not read state at its block. It does not by itself show
+  that an endpoint never serves past state: another run, or another block, is another
+  observation.
 - **The byte form of a record.** RFC 8785 (JSON Canonicalization Scheme): object members in the
   order of their names' UTF-16 code units, no white space, strings and numbers as ECMAScript
   serializes them, UTF-8. With one restriction, that of `production-service.md` 4.2: a number
   is an integer a double holds exactly, and every integer read from a chain that can be larger
   is a decimal string from the moment it is read. A record that holds anything else is refused,
-  not rounded.
+  not rounded. An array with an empty slot is refused as well - it has no JSON form; up to
+  release 0.1.4 such an array was written with fewer elements, or as text that is not JSON.
 - **Two hashes** over that form, both SHA-256. `resultHash` is over what was found: the record
   without the members that describe the run (the two hashes, `observedAt`, `recordedAt`,
   `snapshotTag`, `snapshotFinality`, `endpointHost`, `client`). Two runs that read the same
   block and agree have the same result hash. `reportHash` is over the whole record, its own
   member left out: two runs have two report hashes, because each observed its block at its own
   time. `scripts/report-hash.py` computes both again from a record's file, in another language
-  and with the standard library only. `tableHash` stays as it is, beside them.
+  and with the standard library only. It refuses a file in which an object names a member
+  twice, at any depth: a parser that keeps the last of the two would hash a record that is not
+  the one in the file. `tableHash` stays as it is, beside them.
 - For G1 receipts the audit reports the authority at settlement as section 10 says.
 - `pouw work` and `pouw bridge` look for the receipt by its contribution id before they send: a
   submission whose answer was lost, or a process that stopped after sending, is found after a
@@ -783,11 +848,16 @@ Built in release 0.1.4, against the kernel of 0.1.3; none of it depends on the v
 
 ## 14. The test matrix, as run
 
-Run on 2026-11-25 on the in-process network (Node 22.23.5, Hardhat 2.29.2, solc 0.8.24): 131
-tests pass and none fails - the 83 of the kernel of 0.1.3, of which three were adapted to the
-client's new behaviour, and 48 new ones. Every row below has at least one test that carries its
-id in its title; the last column names the file. A row is "passed" when every test that carries
-its id passed. The limits of what a pass covers follow the table.
+Run on 2026-11-25 on the in-process network (Node 22.23.5, Hardhat 2.29.2, solc 0.8.24). With
+release 0.1.5, 137 tests pass and none fails: the 83 of the kernel of 0.1.3, of which three
+were adapted to the client's new behaviour; the 48 that release 0.1.4 added; and six that
+release 0.1.5 adds, which have no row below. Every row below has at least one test that carries
+its id in its title; the last column names the file. A row is "passed" when every test that
+carries its id passed. The limits of what a pass covers follow the table.
+
+The advisor ran the 131 tests of release 0.1.4 and the rehearsal again on its own, under
+another version of Node, and found all 35 ids in its output (`decisions.md` 15.2). That run is
+the advisor's evidence; it is not repeated here as this repository's.
 
 The ids L1 to L35 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
 linked chain of business evidence; where both could be meant, the document is named.
@@ -851,17 +921,40 @@ What a pass covers, and what it does not:
   and not the audit.
 - **L35's second program** is run by the test when the machine has `python3`; where it has not,
   that part is skipped and the second implementation inside the test stands. It ran here.
-- **The tests were checked against changes that should break them.** Each of 29 changes that
-  break one rule of the contracts or of the client - a missing revocation check, a guard
-  compared by address only, an allocation that reads the present declaration, a read at the
-  latest block, and so on - made at least one test fail. The first run of that check found one
-  test that did not notice a rule being broken: the bound on the gas given to a signature
-  check. The test now measures the gas a refused transaction used. The list and its results are
-  review records outside this repository.
+- **Six tests of release 0.1.5 carry no row.** Three are regressions: every taken output path
+  of the signing script is refused and the key file's bytes stay (section 12); a statement is
+  verified at each submission, and a repeat is refused once the account no longer accepts the
+  signature (section 6); an array with an empty slot is refused (section 13). Three hold the
+  frozen interfaces (11.8). The refusal of a member named twice is part of L35's second test.
+- **The tests were checked against changes that should break them.** Each of 38 changes that
+  break one rule of the contracts, of the client or of a tool - a missing revocation check, a
+  guard compared by address only, an allocation that reads the present declaration, a read at
+  the latest block, an output written over a file that exists, a statement not verified when
+  it is sent again, and so on - made at least one test fail. The first run of that check, with
+  release 0.1.4, found one test that did not notice a rule being broken: the bound on the gas
+  given to a signature check. The test now measures the gas a refused transaction used. The
+  list and its results are review records outside this repository. The advisor read them and
+  did not run them: they are this repository's evidence only.
 
 ## 15. What changed
 
-Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 3 against revision 2:
+Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 4 against revision 3,
+on the owner's rulings of 2026-11-25 on the review of the implementation (`decisions.md` 15):
+
+| Point | Revision 3 | Revision 4 |
+| --- | --- | --- |
+| Interfaces | proposed for freezing | frozen, with a record and a test that holds it; the deployable bytecode recorded apart, and not final (11.8) |
+| Build | the IR pipeline, proposed | the IR pipeline, ruled; the build with solc 0.8.24 is evidence of the local tests and no deployment build; a compile boundary of its own for v2, with a compiler in which the known optimizer bug is fixed (section 1) |
+| When a statement counts | "to be treated as in force from the moment it is signed" | it can be submitted once it is signed; the ledger changes when the transaction succeeds (section 3) |
+| A repeat | "doing any of them a second time changes nothing" | a statement is verified each time it is submitted; a repeat changes nothing after that check has passed, and is refused when the account no longer accepts the signature (section 6) |
+| Work without a confirmation | "has a public fact" | can have one: a fact exists when somebody recorded it (section 9) |
+| The signing script's `--out` | replaced what the path named, the key file included | creates a new file or fails; a taken path is refused before the key file is opened (section 12) |
+| The canonical form | an array with an empty slot lost elements, or gave text that is not JSON | refused (section 13) |
+| The second program for the hashes | kept the last of two members of one name | refuses the file (section 13) |
+| Exit status 4 | "the endpoint cannot serve state at that block" | this run could not read state at its block; it shows nothing lasting about an endpoint (section 13) |
+| The two gas bounds | stated | the rule of this implementation; measured against the deployed cells before round R2b, and not said to suit every account (11.7) |
+
+Revision 3 against revision 2:
 
 | Point | Revision 2 | Revision 3 |
 | --- | --- | --- |
@@ -882,16 +975,18 @@ Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 3 aga
 
 Built and tested locally: the three contracts of v2 and their types; the guard interface and
 the optional guard for FOGA cells; the signing script; the fixed vectors; the encodings and the
-allocation off chain (`client/lib/ledger2.js`, `client/lib/permit.js`); and, in the client of
-0.1.4 against the kernel of 0.1.3, the audit at one block, the canonical records with their two
-hashes, the authority evidence and the lookup before sending.
+allocation off chain (`client/lib/ledger2.js`, `client/lib/permit.js`); the record of the
+frozen interfaces with its test; and, in the client from 0.1.4 on against the kernel of 0.1.3,
+the audit at one block, the canonical records with their two hashes, the authority evidence
+and the lookup before sending.
 
 Not built, and needed before round R2b:
 
 | What | Why it is not in this version |
 | --- | --- |
-| The builds of the v2 contracts under `build/`, and the deployment from them with a manifest that has `supersedes` and the guards' code hashes | they follow the freezing of the interfaces |
-| The client for a v2 deployment: `status`, `verify`, `work` and `bridge` through a delegate, and the audit that re-decides v2 receipts | they follow the freezing of the interfaces |
+| The compile boundary of v2 with its own compiler, and the build record (section 1) | ruled on 2026-11-25 (A82); the first item of the next delivery |
+| The builds of the v2 contracts under `build/`, and the deployment from them with a manifest that has `supersedes` and the guards' code hashes | they follow the compile boundary. The interfaces they have are frozen (11.8) |
+| The client for a v2 deployment: `status`, `verify`, `work` and `bridge` through a delegate, and the audit that re-decides v2 receipts | the interfaces are frozen; it is part of the next delivery |
 | The run record of the client, with the label `delegated-by-owner-permit` | with the v2 client |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment |
 | The configuration of round R2b, its runbook and the operation package of the one signature | a round's own package, reviewed as such |

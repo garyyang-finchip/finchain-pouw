@@ -1,0 +1,128 @@
+{
+  "schema": "finchain-pouw.interface-freeze/1",
+  "what": "The interfaces of ledger v2 as frozen by the owner's ruling of 2026-11-25 (docs/decisions.md A81, on Q30): the compiled interfaces, the types and the interfaces' sources, the three signed statements with their domain, the encodings' tags, every code, and the fixed vectors. A test fails when the tree is not this. The deployable bytecode is not part of the freeze and is not final (A82).",
+  "frozenOn": "2026-11-25",
+  "commit": "b3e07df81301ce351a0b966db0741e0a6ab091da",
+  "abi": {
+    "client/abi/FogaCellGuard.json": "9a01e34cfc1524efc7b2c1cdedf36055627756ab008a56b92d8d748998324f6e",
+    "client/abi/GenesisLedgerV2.json": "800e0c173016a4e93fc5e5bea1efb5ed9ca7eceeb0c1b021730930e0ab81eb9c",
+    "client/abi/GenesisPolicyV2.json": "4bcb2831a214752ef1b5d1857b484461441d59d144b37790dd0b041cede3535f",
+    "client/abi/IParticipantGuard.json": "929909563e4205d1550d32dac95c8133497be26aeaa3c2159cc81c08c8942e62",
+    "client/abi/TenderAdapter8414V2.json": "6c036d171d2e21d54405dc7479b7a2961ec3f5c7ba5f2741baac41e753d15434"
+  },
+  "vectors": {
+    "test/vectors/permit-v2.json": "f4f6ce3c11b101b09f5ee8f2cdf8ec4957eeea51fe922f79f7bfbf4f8a73b88e"
+  },
+  "sources": {
+    "contracts/v2/TypesV2.sol": {
+      "sha256": "e0d89d59c09233a4d8799bd6d38890abe5ffe4ab6aa038a085432e56929087ba",
+      "sha256WithoutPragma": "4c3727a6461a8cceb4deaf3ede6bdd2e5da6189283558da228bd1d90c26ba53b"
+    },
+    "contracts/v2/interfaces/IGenesisLedgerV2.sol": {
+      "sha256": "ea671e6ae43459761f3f2b71b66fad9206e408d9e655765d01b9c6f5191287df",
+      "sha256WithoutPragma": "df925a86bfdf054e99f943003cc104fbe1b31cd7b684c27ffb6011e5d7106659"
+    },
+    "contracts/v2/interfaces/IGenesisPolicyV2.sol": {
+      "sha256": "8604a6514b3f3ed14437cf66c65fcb2ae1d849ab09574101863bdd7127ff1e34",
+      "sha256WithoutPragma": "c2e7faba7363d5d404d35c7128cd971323656d36b6412d0d1e8c2606b2ba2e2f"
+    },
+    "contracts/v2/interfaces/IParticipantGuard.sol": {
+      "sha256": "f2e7c454f3573eb6e712de1cf4968ab87b4f7bd37c5b5f04de3533139bb3e31a",
+      "sha256WithoutPragma": "efad930871d2ac91cac06690636efa52489dbf7609bcd4426f700a2e7fc1bb33"
+    }
+  },
+  "statements": {
+    "domain": {
+      "name": "PoUW Genesis Ledger",
+      "version": "2"
+    },
+    "types": {
+      "EIP712Domain": "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
+      "Permit": "Permit(address account,address delegate,uint32 scope,uint64 notBeforeEpoch,uint64 notAfterEpoch,uint64 nonce,address guard,uint64 guardBindingVersion)",
+      "Revoke": "Revoke(address account,bytes32 permitDigest)",
+      "RaiseNonce": "RaiseNonce(address account,uint64 minNonce)"
+    },
+    "typeHashes": {
+      "EIP712Domain": "0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f",
+      "Permit": "0xa8e87842580eebe099f1284d04489b3f8cb1c4eed6afe3ae32f8ae079204d9bd",
+      "Revoke": "0xcedb6f88a78b45a9cc4b0e6291a27a44473908ae72a5e6ab7429bdcc35933495",
+      "RaiseNonce": "0x0cb885398daea16a95b032e17d16239e0f7106483d4841e32dc3e2125d11b7e7"
+    }
+  },
+  "encodings": {
+    "ledgerDomainTag": "finchain-pouw.genesis-ledger.v2",
+    "factDomainTag": "finchain-pouw.work-fact.v2"
+  },
+  "codes": {
+    "pools": {
+      "G0": 0,
+      "G1": 1
+    },
+    "operations": {
+      "SUBMIT_G0": 1,
+      "CONFIRM_TENDER": 2
+    },
+    "knownScope": 3,
+    "ineligible": {
+      "NONE": 0,
+      "REJECTED": 1,
+      "NOT_ADMITTED": 2,
+      "SELF_DEALING": 3,
+      "BEFORE_GENESIS": 4,
+      "RELATION": 5,
+      "ASSET": 6,
+      "BOUNTY": 7,
+      "DEMANDER_CAP": 8,
+      "PAIR_CAP": 9,
+      "WORKER_CAP": 10,
+      "DEMANDER_NOT_ADMITTED": 11,
+      "OPERATOR_NOT_DECLARED": 12,
+      "DEMANDER_OPERATOR_NOT_DECLARED": 13,
+      "DUPLICATE_CONTRIBUTION": 14,
+      "NOT_A_TASK_UNIT": 15
+    },
+    "reasonOrder": {
+      "g0": [
+        1,
+        2,
+        12,
+        10
+      ],
+      "g1": [
+        15,
+        14,
+        3,
+        4,
+        2,
+        11,
+        12,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    "role": {
+      "UNCLASSIFIED": 0,
+      "INTELLIGENCE_PRODUCTION": 1,
+      "AGENT_FULFILLMENT": 2,
+      "VERIFICATION": 3,
+      "PUBLIC_SERVICE": 4
+    },
+    "unit": {
+      "NONE": 0,
+      "WHOLE": 1,
+      "NOT_MEMBER": 2,
+      "PART": 3,
+      "WRONG_ISSUER": 4
+    },
+    "path": {
+      "ACCOUNT": 1,
+      "STATEMENT": 2,
+      "DELEGATE": 3
+    }
+  }
+}

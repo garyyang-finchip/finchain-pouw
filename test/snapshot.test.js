@@ -357,6 +357,27 @@ describe("The reference client: a record has one byte form and two hashes", () =
     expect(canonical.canonicalize(g.jsonable({ v: big, safe: 2 ** 53 - 1 }))).to.equal(`{"safe":9007199254740991,"v":"${big}"}`);
   });
 
+  it("refuses an array with an empty slot, where it used to write fewer elements or text that is not JSON", () => {
+    /* eslint-disable no-sparse-arrays */
+    const holes = [new Array(1), [1, , 2], [, 1], [1, 2, , ], Object.assign([1, 2], { length: 3 })];
+    /* eslint-enable no-sparse-arrays */
+    for (const bad of holes) {
+      expect(() => canonical.canonicalize({ x: bad }), JSON.stringify(bad)).to.throw("an array with an empty slot");
+      // no hash is made of such a record
+      expect(() => canonical.sealed({ rows: bad })).to.throw("not a canonical record");
+      expect(() => canonical.resultHash({ deep: [{ inner: bad }] })).to.throw("an array with an empty slot");
+    }
+    // the refusal names the slot
+    expect(() => canonical.canonicalize({ x: [[0], [1, , 2]] })).to.throw(".x[1][1]"); // eslint-disable-line no-sparse-arrays
+    // a slot that holds no value is refused as well, and is told apart
+    expect(() => canonical.canonicalize({ x: [1, undefined] })).to.throw("no value (undefined)");
+    // complete arrays are written as before: empty, nested, with null
+    expect(canonical.canonicalize({ x: [], y: [[1], [null, []]], z: new Array(2).fill(0) })).to.equal("{\"x\":[],\"y\":[[1],[null,[]]],\"z\":[0,0]}");
+    // and every text this function writes is JSON that reads back to the same value
+    const value = { a: [1, [2, [3, null]], "x"], b: [] };
+    expect(JSON.parse(canonical.canonicalize(value))).to.deep.equal(value);
+  });
+
   it("computes the hashes of an audit's record the same twice, in a second implementation and in a second program (L35)", async function () {
     const { d, block } = await endedEpoch();
     const at = async () => g.auditEpoch(await g.connect(d.manifest, ethers.provider, { tag: block.number }), 0);
@@ -416,6 +437,21 @@ describe("The reference client: a record has one byte form and two hashes", () =
       expect(run([sample]).out).to.contain(sha(canonical.canonicalize(JSON.parse(fs.readFileSync(sample, "utf8")))));
       fs.writeFileSync(sample, "{\"v\":0.5}");
       expect(run([sample]).status).to.equal(1);
+      // a member named twice in one object, at the top or at any depth: the file is refused and no
+      // hash is computed from it. A parser that keeps the last of the two would hash another record
+      for (const twice of ["{\"allocated\":\"999\",\"allocated\":\"1\"}", "{\"a\":{\"b\":1,\"b\":2}}", "{\"rows\":[{\"k\":1},{\"k\":1,\"k\":1}]}",
+        JSON.stringify(record).replace("{", "{\"ok\":false,")]) {
+        fs.writeFileSync(sample, twice);
+        const refusedTwice = run([sample]);
+        expect(refusedTwice.status, twice.slice(0, 60)).to.equal(1);
+        expect(refusedTwice.out).to.contain("given twice");
+        expect(/reportHash|resultHash/.test(refusedTwice.out), "a hash was printed").to.equal(false);
+      }
+      // the same name in two objects is not a name given twice
+      fs.writeFileSync(sample, "{\"a\":{\"k\":1},\"b\":{\"k\":1},\"rows\":[{\"k\":1},{\"k\":1}]}");
+      expect(run([sample]).status).to.equal(0);
+      // and the record of this test, as its file has it, is still read as before
+      expect(run([file]).status).to.equal(0);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

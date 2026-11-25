@@ -6,8 +6,9 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.4 - round R1 passed with conditions; round R2a passed advisor technical
-acceptance; ledger v2 is built and tested on a local network and is not deployed.**
+Status: **v0.1.5 - round R1 passed with conditions; round R2a passed advisor technical
+acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, and it
+is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -35,8 +36,18 @@ section 14). Two things are in it:
 - **Ledger v2** (`contracts/v2/`, `docs/ledger-v2.md`): a second set of contracts beside the
   kernel, with a bounded delegation that an account signs, a cap on a declared operator's
   aggregate, work facts apart from receipts and the receipt fields of the production line. It is
-  written and tested on a local network. It is not deployed, no build of it is committed, its
-  interfaces are not frozen, and nothing was signed.
+  written and tested on a local network. It is not deployed, no build of it is committed, and
+  nothing was signed.
+
+Release 0.1.5, with design revision v0.1.11 (2026-11-25), follows the advisor's review of that
+implementation and the owner's rulings on it (`docs/decisions.md` A80 to A86, section 15). The
+interfaces of ledger v2 are frozen: `contracts/v2/interfaces.frozen.json` is the record, and a
+test fails when the tree differs from it. The deployable build is a separate matter and is not
+made: it waits for a compile boundary of v2 with a compiler of its own. Three tools are
+corrected. The signing script could overwrite its own key file when `--out` named it, directly
+or through a link, and now writes to a new file only. The canonical form of a record refuses
+an array with an empty slot. The second program for a record's hashes refuses a member named
+twice. No contract and no compiled interface changed.
 
 The contracts of the kernel and their committed builds are unchanged, byte for byte. Round R2a
 ran from software 0.1.3, and its records stay as made.
@@ -100,7 +111,8 @@ contracts/             the kernel
   interfaces/            the kernel's interfaces and the part of ERC-8414 it reads
   testing/               contracts used by the tests and the rehearsal only
   vendor/erc8414/        the ERC-8414 reference contracts, pinned byte for byte, as test fixtures
-  v2/                    ledger v2, beside the kernel: local, not deployed, interfaces not frozen
+  v2/                    ledger v2, beside the kernel: local, not deployed; interfaces frozen
+    interfaces.frozen.json   the record of the frozen interfaces, held by a test
     GenesisPolicyV2.sol      the policy with the operator cap, the task-unit rule and guard bindings
     GenesisLedgerV2.sol      permits checked at each use, operator aggregation, facts and receipts
     TenderAdapter8414V2.sol  a fact by anyone; a confirmation by the owner or its delegate
@@ -112,7 +124,8 @@ client/                the reference client: pouw.js, lib/, abi/
   lib/ledger2.js         the encodings and the allocation of ledger v2, off chain
 test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
-  sign-permit.js         one statement of ledger v2, signed off line from a key file; no network
+  sign-permit.js         one statement of ledger v2, signed off line from a key file; no network;
+                         its record goes to a new file and overwrites nothing
   report-hash.py         the two hashes of a record, computed again from its file
   keys.js                key files for a deployment's parties, made on the host that uses them
   deploy.js              a deployment from a configuration file and build/, with a read-back
@@ -216,7 +229,7 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 | `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the reviews of design revisions v0.1.4, v0.1.5 and v0.1.6, and how each is applied; the owner's adoption of the advisor's recommendations on Q17 to Q29; this repository's proposals, each open to a veto; the questions put to the owner, open and adopted; illustrative figures |
 | `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
 | `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
-| `docs/ledger-v2.md` | Ledger v2 as built on a local network: participant, sender and origin; the permit and the two statements that end one; the check at each use; guards; ending permits and taking a key's signing right away; the receipt and the order of the reasons; the operator cap; work facts and confirmations; the authority at settlement; the interfaces proposed for freezing, with every encoding; the client's audit at one block; the test matrix with its results; what is not built |
+| `docs/ledger-v2.md` | Ledger v2 as built on a local network: participant, sender and origin; the permit and the two statements that end one; the check at each use; guards; ending permits and taking a key's signing right away; the receipt and the order of the reasons; the operator cap; work facts and confirmations; the authority at settlement; the frozen interfaces, with every encoding, and what the freeze leaves open; the client's audit at one block; the test matrix with its results; what is not built |
 | `docs/production-service.md` | Plan, adopted as design (A70) and not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work with the task description behind the content key, and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
 | `docs/supply-and-payment.md` | Plan, adopted as design (A70) and not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - with the attempts under a purchase, and what settlement means per channel; the budget book of an agent's purchases and the recovery after a crash; failure and recovery; the customer's payment; the operating report; the later adaptations |
 | `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the first production increment, the staged acceptances after it and the linked chain of evidence that closes the first production milestone; the later increments and the order |

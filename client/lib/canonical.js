@@ -30,13 +30,23 @@ function canonicalize(value, path = "") {
     if (!Number.isSafeInteger(value)) fail(path, `the number ${value} is not an integer a double holds exactly: carry it as a decimal string`);
     return String(value === 0 ? 0 : value); // minus zero is zero
   }
-  if (Array.isArray(value)) return `[${value.map((v, i) => canonicalize(v, `${path}[${i}]`)).join(",")}]`;
+  if (Array.isArray(value)) {
+    // by index, not with map(): map() passes over an empty slot, and the text that came out had
+    // fewer elements than the array, or was not JSON at all. A slot without a value is refused.
+    const items = [];
+    for (let i = 0; i < value.length; i++) {
+      if (!(i in value)) fail(`${path}[${i}]`, "an array with an empty slot");
+      items.push(canonicalize(value[i], `${path}[${i}]`));
+    }
+    return `[${items.join(",")}]`;
+  }
   if (typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
     // the default sort of strings is by UTF-16 code units, which is the order RFC 8785 asks for
     // a member without a value is not a member, as in JSON
     const keys = Object.keys(value).filter((k) => value[k] !== undefined).sort();
     return `{${keys.map((k) => `${canonicalize(k, path)}:${canonicalize(value[k], `${path}.${k}`)}`).join(",")}}`;
   }
+  if (value === undefined) return fail(path, "no value (undefined)");
   return fail(path, `a ${typeof value === "object" ? "value that is not a plain object" : typeof value}`);
 }
 

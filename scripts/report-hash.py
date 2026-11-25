@@ -14,6 +14,10 @@ names; there is no white space; strings are escaped as ECMAScript escapes them; 
 UTF-8. The report hash is the SHA-256 of the record without its `reportHash` member; the result
 hash is the SHA-256 of the record without the members that describe the run.
 
+A file is refused, and nothing is computed from it, when an object in it - at any depth - names
+a member twice: a parser that keeps the last of the two would hash a record that is not the one
+in the file.
+
 Standard library only.
 """
 import hashlib
@@ -66,6 +70,16 @@ def canonical(value, path=""):
     raise NotCanonical("%s: a %s" % (path or "the root", type(value).__name__))
 
 
+def refuse_duplicates(pairs):
+    """An object as the file gives it, member by member: a name given twice is refused."""
+    out = {}
+    for name, value in pairs:
+        if name in out:
+            raise NotCanonical("the member %s is given twice in one object" % json.dumps(name))
+        out[name] = value
+    return out
+
+
 def refuse_float(literal):
     raise NotCanonical("the number %s is not an integer: carry it as a decimal string" % literal)
 
@@ -82,7 +96,7 @@ def main(paths):
     differs = False
     for path in paths:
         with open(path, encoding="utf-8") as f:
-            record = json.load(f, parse_float=refuse_float, parse_constant=refuse_float)
+            record = json.load(f, parse_float=refuse_float, parse_constant=refuse_float, object_pairs_hook=refuse_duplicates)
         if not isinstance(record, dict):
             raise NotCanonical("%s: a record is an object" % path)
         computed = {"reportHash": sha256(record, ("reportHash",)), "resultHash": sha256(record, RUN_MEMBERS)}

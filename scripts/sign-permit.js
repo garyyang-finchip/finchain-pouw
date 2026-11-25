@@ -8,6 +8,8 @@
 // and reads no nonce of any account. It never takes a key from an argument or from the
 // environment, and it writes the key nowhere. What it prints - the typed data, the digest, the
 // signer's address and the signature - is public material.
+// It overwrites nothing: --out creates a new file, and a path that exists already - a file, a
+// link to one, another name of the key file itself - is refused before the key file is opened.
 //
 // Without --key-file it stops after the digest: that is the form in which a statement is put
 // into an operation package and reviewed before anything is signed.
@@ -27,7 +29,8 @@ const USAGE = `sign-permit - one statement of ledger v2, signed off line
 
   --key-file <path>   the file that holds the signing key. It is read where it is and must be its owner's alone
                       (mode 600). Without it the statement and its digest are printed and nothing is signed
-  --out <path>        also write the record as JSON
+  --out <path>        also write the record as JSON, to a new file. A path that exists is refused: nothing is
+                      overwritten, and nothing is signed
   --json              print the record as JSON instead of text
 
 Every field is an argument; nothing is read from a chain, a manifest or the environment. Check the
@@ -60,6 +63,27 @@ function parse(argv) {
   return opts;
 }
 
+/// The record goes to a new file or nowhere. Two paths are not compared as text: a symbolic link
+/// and a second hard link are other names of one file, and a comparison of names would let both
+/// through. What is asked is whether anything has that name, the link itself included.
+function refuseExisting(file) {
+  let there = true;
+  try { fs.lstatSync(file); } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    there = false;
+  }
+  if (there) throw new Error(`--out ${file} exists already: the record is written to a new file only and nothing is overwritten. Nothing was signed`);
+}
+
+/// Creation that fails if the name is taken, whatever was true a moment before: the check above
+/// gives the early refusal, this gives the guarantee.
+function writeNew(file, text) {
+  try { fs.writeFileSync(file, text, { flag: "wx" }); } catch (e) {
+    if (e.code === "EEXIST") throw new Error(`--out ${file} exists already: nothing is overwritten, and the record was not written or printed`);
+    throw e;
+  }
+}
+
 /// A key file holds one private key and is its owner's alone: a file that others can read is refused.
 function readKeyFile(file) {
   const mode = fs.statSync(file).mode & 0o777;
@@ -83,6 +107,8 @@ async function main() {
     throw new Error("--guard and --guard-binding-version are given together: a permit is signed for one binding of the account's guard");
   }
 
+  if (opts.out !== undefined) refuseExisting(opts.out); // before the key file is opened
+
   const message = Object.fromEntries(Object.entries(FIELDS[kind]).filter(([flag]) => opts[flag] !== undefined).map(([flag, field]) => [field, opts[flag]]));
   const st = permit.statement(kind, opts["chain-id"], opts.ledger, message);
   const record = {
@@ -102,7 +128,7 @@ async function main() {
     if (recovered !== wallet.address) throw new Error("the signature does not recover to the signing key: nothing is printed");
   }
 
-  if (opts.out) fs.writeFileSync(opts.out, JSON.stringify(record, null, 2) + "\n");
+  if (opts.out !== undefined) writeNew(opts.out, JSON.stringify(record, null, 2) + "\n");
   if (opts.json) {
     console.log(JSON.stringify(record, null, 2));
   } else {
@@ -124,4 +150,9 @@ async function main() {
   return 0;
 }
 
-main().then((code) => { process.exitCode = code; }, (e) => { console.error(`sign-permit: ${e.message}`); process.exitCode = 1; });
+if (require.main === module) {
+  main().then((code) => { process.exitCode = code; }, (e) => { console.error(`sign-permit: ${e.message}`); process.exitCode = 1; });
+}
+
+// for the tests of the two rules on the output path; the script itself is run, not required
+module.exports = { refuseExisting, writeNew };

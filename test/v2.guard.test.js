@@ -86,6 +86,49 @@ describe("Ledger v2: what a change of an account's keys does to a permit", () =>
     expect((await t.submitDelegated(d, delegate, fresh, account.target, echo(0))).receipt.authorization).to.equal(fresh.digest);
   });
 
+  it("verifies a statement that ends a permit each time it is sent: signing alone changes nothing, a repeat changes nothing while the account accepts the signature, and is refused once it does not", async () => {
+    const [, a, b, delegate, relayer] = await ethers.getSigners();
+    const { d, account, bound } = await withAccount(async () => {
+      const acc = await deployed("OperatorSlotAccount", a.address, a.address);
+      await (await acc.connect(a).setOperatorMaySign(true)).wait();
+      return acc;
+    });
+    const p = await t.signed(d, a, account.target, { delegate: delegate.address, nonce: 1, ...bound });
+    const revoke = await t.signedStatement(d, a, "Revoke", { account: account.target, permitDigest: p.digest });
+    const raise = await t.signedStatement(d, a, "RaiseNonce", { account: account.target, minNonce: 5 });
+    const state = async () => [await d.ledger.isRevoked(account.target, p.digest), await d.ledger.minNonce(account.target)];
+    const sendRevoke = () => d.ledger.connect(relayer).revokePermitBySig(account.target, p.digest, revoke.signature);
+    const sendRaise = () => d.ledger.connect(relayer).raiseMinNonceBySig(account.target, 5, raise.signature);
+    const events = async (tx, name) => h.eventsOf(await (await tx).wait(), d.ledger, name).length;
+
+    // signed and not sent: the ledger holds nothing of either statement, and the permit is used
+    expect(await state()).to.deep.equal([false, 0n]);
+    await t.submitDelegated(d, delegate, p, account.target, echo(0));
+
+    // sent: the mark and the minimum change with the transaction that carries the statement
+    expect(await events(sendRevoke(), "PermitEnded")).to.equal(1);
+    expect(await events(sendRaise(), "MinNonceRaised")).to.equal(1);
+    expect(await state()).to.deep.equal([true, 5n]);
+
+    // sent again while the account still accepts the signature: verified, and nothing changes
+    expect(await events(sendRevoke(), "PermitEnded")).to.equal(0);
+    expect(await events(sendRaise(), "MinNonceRaised")).to.equal(0);
+    expect(await state()).to.deep.equal([true, 5n]);
+
+    // the signing right is taken away in the account. The same two statements are refused now:
+    // the ledger does not pass over the check because the mark is there already
+    await (await account.connect(a).transferOwnership(b.address)).wait();
+    await (await account.connect(b).setOperatorMaySign(false)).wait();
+    await t.refuses(sendRevoke(), "BadSignature");
+    await t.refuses(sendRaise(), "BadSignature");
+    // what was done stays done
+    expect(await state()).to.deep.equal([true, 5n]);
+    // a statement of the key the account accepts now, at a minimum already passed: verified, and nothing changes
+    const lower = await t.signedStatement(d, b, "RaiseNonce", { account: account.target, minNonce: 3 });
+    expect(await events(d.ledger.connect(relayer).raiseMinNonceBySig(account.target, 3, lower.signature), "MinNonceRaised")).to.equal(0);
+    expect(await state()).to.deep.equal([true, 5n]);
+  });
+
   it("ends the former owner's permit at once in the configuration with operator signing off (L10, the other configuration)", async () => {
     const [, a, b, delegate] = await ethers.getSigners();
     // one key in both roles, operator signing off: the configuration read on chain for both cells
