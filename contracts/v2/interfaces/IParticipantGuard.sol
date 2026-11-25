@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 /// @notice What the ledger asks before it records anything in a contract account's name on the
 ///         word of a delegate. A valid signature of the account is not a safety check: an account

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {Profile, ProfileSpec, Params, GuardBinding} from "../TypesV2.sol";
 

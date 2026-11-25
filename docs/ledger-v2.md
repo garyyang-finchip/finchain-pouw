@@ -1,8 +1,8 @@
 # Ledger v2: bounded delegation, operator aggregation, work facts and receipts
 
-Status: **revision 4. Implemented and tested on a local network; the interfaces are frozen
-(section 11.8). Not deployed and nothing signed. No deployable build exists: the build follows
-the compiler work of section 1.**
+Status: **revision 5. Implemented and tested on a local network; the interfaces are frozen
+(section 11.8); the v2 contracts are compiled behind a boundary of their own, and their builds
+are committed with a build record (section 1). Not deployed and nothing signed.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
@@ -20,7 +20,9 @@ made on the same day on the advisor's review of the implementation (A80 to A86; 
 15): the interfaces are frozen (Q30), the ledger is built through the compiler's IR pipeline
 with a compiler of its own for v2 (Q31), and this repository's choices in the implementation,
 P61 to P66, are adopted within the boundaries stated there. With it come the corrections of
-three tools and of the wording on statements and on facts.
+three tools and of the wording on statements and on facts. Revision 5, with release 0.1.6,
+applies A82: the compile boundary of v2, its compiler, its builds and the record of how they
+were made (`decisions.md` 16).
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -50,18 +52,65 @@ view, with no balance, claim, transfer or right to any future asset.
 pipeline, with the same optimizer runs, it comes to 21,674 bytes; a test holds it at least
 1,024 bytes under the limit. The other contracts are compiled here as the kernel is.
 
-The owner ruled for the IR pipeline (A82, on Q31), on a condition. What is compiled here with
-solc 0.8.24 stays evidence of the local tests; it is not the build a deployment is made from.
-solc 0.8.24 lies inside the range of a known bug of the compiler's Yul optimizer - versions
-0.8.19 to 0.8.37, fixed in 0.8.38 - which with the IR pipeline can concern any code, with or
-without inline assembly. No miscompilation was observed here, and tests that pass do not rule
-one out. So the v2 contracts get a compile boundary of their own, with a compiler in which that
-bug is fixed: 0.8.39 is verified first. The build record holds the compiler's full version, its
-settings and the date on which the official list of known bugs was read; the v2 tests, the
-fixed vectors and the size gate are run again on that compiler before a build is committed.
-The kernel keeps its compiler, its settings and its six committed builds, and the compiler is
-not replaced for the whole repository. None of this is done in this revision (section 16).
-Sizes and gas, as measured with 0.8.24: section 11.7.
+The owner ruled for the IR pipeline (A82, on Q31), on a condition. What was compiled with
+solc 0.8.24 up to release 0.1.5 stays evidence of the local tests of those releases; it is not
+the build a deployment is made from. solc 0.8.24 lies inside the range of a known bug of the
+compiler's Yul optimizer - versions 0.8.19 to 0.8.37, fixed in 0.8.38 - which with the IR
+pipeline can concern any code, with or without inline assembly. No miscompilation was observed,
+and tests that pass do not rule one out. So the v2 contracts have a compile boundary of their
+own and a compiler in which that bug is fixed. The kernel keeps its compiler, its settings and
+its six committed builds, and the compiler is not replaced for the whole repository.
+
+**The compile boundary, from release 0.1.6.** The boundary is the directory `contracts/v2`.
+
+- Every file under `contracts/v2` states `pragma solidity 0.8.39;` and imports files under
+  `contracts/v2` only. Every file of the kernel states `0.8.24` as before. A file of one side
+  that imported a file of the other would not compile, and a test holds both rules and reads
+  from the compiler's own records that no compilation held files of both sides.
+- The v2 contracts call three interfaces of the kernel: the seed source, the G0 function and
+  the tender. v2 has its own copies of them in `contracts/v2/external/`, with the same names
+  and the same declarations. What the two sides share is the ABI of those interfaces; a test
+  holds each copy to the ABI and to the text of the kernel's declaration. The names are kept
+  because a compiled interface records them, and the compiled interfaces are frozen.
+- The four test fixtures that import v2 - the ERC-1271 accounts, the switchable guard, the mock
+  cell and the test module - moved to `contracts/v2/testing/`. Nothing there is ever deployed.
+- The ERC-8414 reference contracts under `contracts/vendor` state `^0.8.24`. They are pinned to
+  the kernel's compiler by name, as they were compiled before.
+
+**The compiler.** solc 0.8.39, as the package `solc@0.8.39` that `package-lock.json` pins by its
+integrity hash; `npm ci` installs it and no compiler is downloaded at build time. Its own full
+version is `0.8.39+commit.ce47f2c8.Emscripten.clang`. The settings are the kernel's: optimizer
+enabled with 200 runs, EVM version `cancun`. The ledger alone goes through the IR pipeline; the
+policy, the adapter and the cell guard go through the legacy pipeline, as P66 had it. Through
+the legacy pipeline of 0.8.39 the ledger comes to 24,705 bytes, 129 over the limit: with this
+compiler the IR pipeline is not a matter of room but the only way the ledger can be deployed.
+Through the IR pipeline it comes to 21,855 bytes, 2,721 under the limit.
+
+Why 0.8.39 and not 0.8.38: read on 2026-11-25, the compiler's own list of known bugs has none
+for 0.8.39, which was released on 2026-11-19, and one for 0.8.38, in two entries - a storage
+corruption on a copy between overlapping recursive structs, fixed in 0.8.39. An empty entry
+says that no bug was known on the day of the reading, and nothing more: a bug found later is
+added to the list for every version it concerns. The reading - its date, where the list was
+read, the hashes of the two files, and what they held for 0.8.39, 0.8.38 and 0.8.24 - is
+`build/v2/known-bugs-check.json`. A test fails when the v2 compiler changes and that record is
+not made again. Hardhat 2.29.2 prints a notice that solc 0.8.39 is "not fully supported yet";
+the notice names features of Hardhat itself, such as its stack traces, and not what the
+compiler produces.
+
+**The builds.** `build/v2/` holds one file for each contract a v2 deployment is made of - the
+policy, the ledger, the adapter and the cell guard - in the form of the kernel's builds, with
+two things added: the pipeline, and every source file the contract is made of with the hash the
+compiler itself wrote into the contract's metadata. `build/v2/build-record.json` says how they
+were made: the compiler's package, the integrity hash of the lock file, the compiler's full
+version, the hash of the compiler's own file, the settings of each contract, and the size and
+the hashes of what came out. `npm ci && npm run export-abi` on another machine writes the same
+bytes, and `test/v2.build.test.js` fails when a committed build or the record is not what the
+sources compile to. The five compiled interfaces came out byte for byte as they were frozen.
+
+A build changes whenever a v2 source changes, a comment included, because the compiler puts a
+hash of the sources into the code. So these builds are the candidates for a deployment and no
+more than that until a deployment's operation package names one of them by commit and by the
+hashes of its record. Sizes and gas: section 11.7.
 
 ## 2. Participant, sender and origin
 
@@ -726,14 +775,18 @@ of a call - a job's output among it - is not the same bytes each time. The table
 
 | What | Figure |
 | --- | --- |
-| Code: ledger, policy, adapter, cell guard | 21,674; 12,313; 5,028; 2,384 bytes |
-| `submitG0`, direct (0.1.3: 389,839) | 481,051 gas |
-| `submitG0For`, an account without code | 516,275 gas |
-| `submitG0For`, a contract account with an owner-only signature rule and a trivial guard | 533,602 gas |
-| `confirm`, direct (0.1.3 `bridge`: 540,146) | 630,876 gas |
-| `confirmFor`, an account without code | 582,199 gas |
-| `recordFact` | 400,581 gas |
-| `revokePermit`; `revokePermitBySig`; `raiseMinNonce` | 46,869; 55,722; 46,203 gas |
+| Code: ledger, policy, adapter, cell guard | 21,855; 12,360; 5,050; 2,424 bytes |
+| `submitG0`, direct (0.1.3: 389,839) | 481,451 gas |
+| `submitG0For`, an account without code | 517,414 gas |
+| `submitG0For`, a contract account with an owner-only signature rule and a trivial guard | 534,981 gas |
+| `confirm`, direct (0.1.3 `bridge`: 540,146) | 632,636 gas |
+| `confirmFor`, an account without code | 584,603 gas |
+| `recordFact` | 400,921 gas |
+| `revokePermit`; `revokePermitBySig`; `raiseMinNonce` | 46,870; 55,794; 46,356 gas |
+
+These are the builds of solc 0.8.39 (section 1). With solc 0.8.24, up to release 0.1.5, the
+code was 21,674, 12,313, 5,028 and 2,384 bytes, and each gas figure lay within 2,500 of the one
+above.
 
 A v2 receipt costs about 90,000 gas more than one of 0.1.3, for the fields and the attribution
 it adds. A fact stores its content, thirteen words of storage. The signature check and the
@@ -762,10 +815,11 @@ that record as well: made on purpose, with a ruling to cite, and as a new versio
 deployment exists.
 
 Two things are recorded apart, as the ruling asks. The **interfaces** are final. The
-**deployable bytecode** is not: no build of v2 is committed, and none is made before the
-compiler work of section 1. That work changes the compiler pragma of the v2 sources, and the
-freeze allows a frozen source file that one line; it does not allow a change of a compiled
-interface, a type, a code or a vector.
+**deployable bytecode** has its own record, `build/v2/build-record.json` (section 1), and is
+final for a deployment only when that deployment's operation package names it. The compiler
+work of section 1 changed the compiler pragma of the v2 sources, and the freeze allows a frozen
+source file that one line: the four frozen sources differ from the commit of the freeze in
+that line alone, and the five compiled interfaces and the vectors did not change by a byte.
 
 ## 12. The one signature, and when it may be made
 
@@ -848,12 +902,15 @@ Built in release 0.1.4, against the kernel of 0.1.3; none of it depends on the v
 
 ## 14. The test matrix, as run
 
-Run on 2026-11-25 on the in-process network (Node 22.23.5, Hardhat 2.29.2, solc 0.8.24). With
-release 0.1.5, 137 tests pass and none fails: the 83 of the kernel of 0.1.3, of which three
-were adapted to the client's new behaviour; the 48 that release 0.1.4 added; and six that
-release 0.1.5 adds, which have no row below. Every row below has at least one test that carries
-its id in its title; the last column names the file. A row is "passed" when every test that
-carries its id passed. The limits of what a pass covers follow the table.
+Run on 2026-11-25 on the in-process network (Node 22.23.5, Hardhat 2.29.2; the kernel compiled
+by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.1.6, 143 tests pass and none fails:
+the 83 of the kernel of 0.1.3, of which three were adapted to the client's new behaviour; the
+48 that release 0.1.4 added; six that release 0.1.5 added; and six that release 0.1.6 adds, on
+the compile boundary and the builds. The twelve of the last two releases have no row below.
+Every row below has at least one test that carries its id in its title; the last column names
+the file. A row is "passed" when every test that carries its id passed. The limits of what a
+pass covers follow the table. From release 0.1.6 on, every row is run on the builds of the v2
+compiler - the builds a deployment would be made from - and no longer on those of solc 0.8.24.
 
 The advisor ran the 131 tests of release 0.1.4 and the rehearsal again on its own, under
 another version of Node, and found all 35 ids in its output (`decisions.md` 15.2). That run is
@@ -921,6 +978,11 @@ What a pass covers, and what it does not:
   and not the audit.
 - **L35's second program** is run by the test when the machine has `python3`; where it has not,
   that part is skipped and the second implementation inside the test stands. It ran here.
+- **Six tests of release 0.1.6 carry no row.** They hold the compile boundary and the builds
+  (section 1): the pragmas and the imports of both sides; the compilations as the compiler
+  recorded them; the three copied interfaces against the kernel's; the four builds and the
+  build record against a fresh compilation; the reading of the list of known bugs against the
+  compiler in use.
 - **Six tests of release 0.1.5 carry no row.** Three are regressions: every taken output path
   of the signing script is refused and the key file's bytes stay (section 12); a statement is
   verified at each submission, and a repeat is refused once the account no longer accepts the
@@ -938,8 +1000,21 @@ What a pass covers, and what it does not:
 
 ## 15. What changed
 
-Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 4 against revision 3,
-on the owner's rulings of 2026-11-25 on the review of the implementation (`decisions.md` 15):
+Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 5 against revision 4
+applies A82 and changes no rule of the ledger (`decisions.md` 16):
+
+| Point | Revision 4 | Revision 5 |
+| --- | --- | --- |
+| Compiler of v2 | solc 0.8.24, the kernel's, in one compilation with the kernel | solc 0.8.39 behind a boundary of its own; the kernel's compiler, settings and six builds untouched |
+| What v2 imports | three interfaces of the kernel, by file | nothing outside `contracts/v2`; its own copies of those three interfaces, held to the kernel's ABI |
+| Fixtures that import v2 | `contracts/testing/` | `contracts/v2/testing/` |
+| Builds of v2 | none | `build/v2/`, with a build record and a reading of the compiler's known bugs |
+| Size of the ledger | 21,674 bytes (0.8.24, IR pipeline) | 21,855 bytes (0.8.39, IR pipeline); through the legacy pipeline of 0.8.39 it is over the limit |
+| Compiled interfaces, types, codes, vectors | frozen | unchanged, byte for byte; the frozen sources differ in their pragma line only |
+| The tests | on the builds of solc 0.8.24 | on the builds of solc 0.8.39 |
+
+Revision 4 against revision 3, on the owner's rulings of 2026-11-25 on the review of the
+implementation (`decisions.md` 15):
 
 | Point | Revision 3 | Revision 4 |
 | --- | --- | --- |
@@ -976,7 +1051,8 @@ Revision 3 against revision 2:
 Built and tested locally: the three contracts of v2 and their types; the guard interface and
 the optional guard for FOGA cells; the signing script; the fixed vectors; the encodings and the
 allocation off chain (`client/lib/ledger2.js`, `client/lib/permit.js`); the record of the
-frozen interfaces with its test; and, in the client from 0.1.4 on against the kernel of 0.1.3,
+frozen interfaces with its test; the compile boundary of v2, its builds and their record
+(section 1); and, in the client from 0.1.4 on against the kernel of 0.1.3,
 the audit at one block, the canonical records with their two hashes, the authority evidence
 and the lookup before sending.
 
@@ -984,8 +1060,7 @@ Not built, and needed before round R2b:
 
 | What | Why it is not in this version |
 | --- | --- |
-| The compile boundary of v2 with its own compiler, and the build record (section 1) | ruled on 2026-11-25 (A82); the first item of the next delivery |
-| The builds of the v2 contracts under `build/`, and the deployment from them with a manifest that has `supersedes` and the guards' code hashes | they follow the compile boundary. The interfaces they have are frozen (11.8) |
+| The deployment of v2 from the builds of `build/v2`, with a manifest that has `supersedes` and the guards' code hashes | the next item. One thing is open in it: a v2 deployment also needs a G0 function and a seed source, which are contracts of the kernel and compiled by its compiler (`decisions.md` Q33) |
 | The client for a v2 deployment: `status`, `verify`, `work` and `bridge` through a delegate, and the audit that re-decides v2 receipts | the interfaces are frozen; it is part of the next delivery |
 | The run record of the client, with the label `delegated-by-owner-permit` | with the v2 client |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment |

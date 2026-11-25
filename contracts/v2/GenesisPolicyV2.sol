@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {IGenesisPolicyV2} from "./interfaces/IGenesisPolicyV2.sol";
 import {Profile, ProfileSpec, Params, GuardBinding, POOL_G0, POOL_G1, ROLE_PUBLIC_SERVICE} from "./TypesV2.sol";

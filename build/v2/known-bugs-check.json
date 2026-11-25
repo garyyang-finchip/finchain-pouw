@@ -1,0 +1,117 @@
+{
+  "schema": "finchain-pouw.known-bugs-check/1",
+  "what": "A reading of the Solidity compiler's own list of known bugs, for the compiler that makes the builds of ledger v2 and for the compiler of the kernel. It records what the list said when it was read. The list changes: a bug found later is added to it for every version it concerns, so an empty entry means that none was known on that day and nothing more. A new compiler for v2 needs a new reading.",
+  "readOn": "2026-11-25",
+  "readBy": "the executor, by fetching the two files below",
+  "source": {
+    "repository": "https://github.com/argotorg/solidity",
+    "branch": "develop",
+    "headOfBranchWhenRead": "096eb79bf8c06634965637247e3c7ddb505fad1a",
+    "files": {
+      "docs/bugs_by_version.json": {
+        "sha256": "e131b93baa16786dcdff0490dca8dc69fef56116b58db47b16de5d47a9935d86"
+      },
+      "docs/bugs.json": {
+        "sha256": "0da30cec4b9678f4b884e506540b88fa7e6885eb8de4c5c7485e3d83de5f8406"
+      }
+    }
+  },
+  "newestVersionListed": "0.8.39",
+  "v2Compiler": {
+    "version": "0.8.39",
+    "released": "2026-11-19",
+    "knownBugs": []
+  },
+  "considered": {
+    "0.8.38": {
+      "released": "2026-10-22",
+      "knownBugs": [
+        {
+          "uid": "SOL-2026-8",
+          "name": "OverlappingRecursiveStorageStructCopyCorruption",
+          "severity": "medium",
+          "fixedIn": "0.8.39",
+          "conditions": {
+            "viaIR": false
+          }
+        },
+        {
+          "uid": "SOL-2026-8",
+          "name": "OverlappingRecursiveStorageStructCopyCorruptionViaIR",
+          "severity": "medium",
+          "fixedIn": "0.8.39",
+          "conditions": {
+            "viaIR": true
+          }
+        }
+      ]
+    }
+  },
+  "kernelCompiler": {
+    "version": "0.8.24",
+    "released": "2024-01-25",
+    "knownBugs": [
+      {
+        "uid": "SOL-2026-8",
+        "name": "OverlappingRecursiveStorageStructCopyCorruption",
+        "severity": "medium",
+        "fixedIn": "0.8.39",
+        "conditions": {
+          "viaIR": false
+        }
+      },
+      {
+        "uid": "SOL-2026-8",
+        "name": "OverlappingRecursiveStorageStructCopyCorruptionViaIR",
+        "severity": "medium",
+        "fixedIn": "0.8.39",
+        "conditions": {
+          "viaIR": true
+        }
+      },
+      {
+        "uid": "SOL-2026-7",
+        "name": "YulOptimizerKnowledgeBaseStaleBookkeeping",
+        "severity": "low",
+        "fixedIn": "0.8.38",
+        "conditions": {
+          "yulOptimizer": true
+        }
+      },
+      {
+        "uid": "SOL-2026-5",
+        "name": "MemoryByteArrayElementDeleteClearsWholeWord",
+        "severity": "low/medium",
+        "fixedIn": "0.8.37",
+        "conditions": {
+          "viaIR": false
+        }
+      },
+      {
+        "uid": "SOL-2026-4",
+        "name": "SpillSlotCollisionAcrossMutualRecursion",
+        "severity": "low/medium",
+        "fixedIn": "0.8.37",
+        "conditions": {
+          "viaIR": true
+        }
+      },
+      {
+        "uid": "SOL-2026-2",
+        "name": "UnsoundSpillInMutualRecursion",
+        "severity": "medium",
+        "fixedIn": "0.8.36",
+        "conditions": {
+          "viaIR": true
+        }
+      },
+      {
+        "uid": "SOL-2025-1",
+        "name": "LostStorageArrayWriteOnSlotOverflow",
+        "severity": "low",
+        "fixedIn": "0.8.32",
+        "conditions": {}
+      }
+    ]
+  }
+}

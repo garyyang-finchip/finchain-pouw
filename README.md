@@ -6,9 +6,9 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.5 - round R1 passed with conditions; round R2a passed advisor technical
-acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, and it
-is not deployed.**
+Status: **v0.1.6 - round R1 passed with conditions; round R2a passed advisor technical
+acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
+builds are committed with their record, and it is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -48,6 +48,16 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.6, with design revision v0.1.12 (2026-11-25), gives ledger v2 a compiler of its own
+(`docs/decisions.md` A82, section 16). Everything under `contracts/v2` is compiled by solc
+0.8.39 and imports nothing from outside that directory; the kernel is compiled by solc 0.8.24
+as before, and its six builds under `build/` are unchanged, byte for byte. Both compilers are
+packages that the lock file pins, so `npm ci` installs them and nothing is downloaded at build
+time. The builds of v2 are under `build/v2/`, with a record of how they were made and a record
+of what the compiler's own list of known bugs held for that compiler on the day it was read.
+`npm ci && npm run export-abi` writes the same bytes again. No rule of the ledger and no
+compiled interface changed.
 
 The contracts of the kernel and their committed builds are unchanged, byte for byte. Round R2a
 ran from software 0.1.3, and its records stay as made.
@@ -111,13 +121,18 @@ contracts/             the kernel
   interfaces/            the kernel's interfaces and the part of ERC-8414 it reads
   testing/               contracts used by the tests and the rehearsal only
   vendor/erc8414/        the ERC-8414 reference contracts, pinned byte for byte, as test fixtures
-  v2/                    ledger v2, beside the kernel: local, not deployed; interfaces frozen
+  v2/                    ledger v2, beside the kernel: local, not deployed; interfaces frozen;
+                         compiled apart from everything else, by solc 0.8.39
     interfaces.frozen.json   the record of the frozen interfaces, held by a test
     GenesisPolicyV2.sol      the policy with the operator cap, the task-unit rule and guard bindings
     GenesisLedgerV2.sol      permits checked at each use, operator aggregation, facts and receipts
     TenderAdapter8414V2.sol  a fact by anyone; a confirmation by the owner or its delegate
     guards/FogaCellGuard.sol an optional guard for FOGA cells; nothing of the kernel names it
+    external/                v2's own copies of the three kernel interfaces it calls
+    testing/                 fixtures of the v2 tests; never deployed
 build/                 the deployable contracts of the kernel as compiled: what a deployment is made from
+  v2/                    the same for ledger v2, by its own compiler, with build-record.json and
+                         known-bugs-check.json
 client/                the reference client: pouw.js, lib/, abi/
   lib/canonical.js       the one byte form of a record, and its two hashes
   lib/permit.js          the three signed statements of ledger v2 as typed data
@@ -132,7 +147,7 @@ scripts/               the tooling of a deployment and a round
   round.js               an operator's round: test tenders, confirmations, audit jobs, close records
   identity-check.js      who is who on a chain whose agents are contract accounts (read-only)
   local-run.js           the rehearsal of round R2 on a development network
-  export-abi.js          client/abi and build/ from the compiler's output
+  export-abi.js          client/abi, build/ and build/v2/ from the compilers' output
 deployments/           the manifest format; the configuration and the manifest of round R2a
 evidence/              records, as in finchain: local-run-<time>.json, and r2a/, the records of
                        round R2a on Finchain Sepolia
@@ -145,8 +160,9 @@ docs/                  decisions, architecture, the MVP specification with the p
 
 ## Run it
 
-Node.js 20 or later, and nothing else: the Solidity compiler is the solc-js build pinned in
-`package.json`, so nothing is downloaded when the tests run.
+Node.js 20 or later, and nothing else: the two Solidity compilers - solc 0.8.24 for the kernel,
+solc 0.8.39 for ledger v2 - are the solc-js builds pinned in `package.json` and in the lock
+file, so nothing is downloaded when the tests run.
 
 ```
 npm ci

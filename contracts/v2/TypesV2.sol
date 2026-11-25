@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 // Shared types and codes of ledger v2 (docs/ledger-v2.md). The kernel of release 0.1.3 keeps its
 // own types in GenesisTypes.sol and is not changed: v2 is a second set of contracts beside it.

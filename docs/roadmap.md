@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-Design revision v0.1.11, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
+Design revision v0.1.12, after the reviews of v0.1.4 to v0.1.7, the owner's adoption of the
 recommendations on Q17 to Q29, the run of round R2a with its review, the owner's rulings of
 2026-11-25 on Q13 to Q16, and the review of the local implementation of ledger v2 with the
 rulings on it (`decisions.md` A55-A86).
@@ -42,8 +42,10 @@ Q16 (A73 to A79; `decisions.md` 12.3, 14). Release 0.1.4 carries what was built 
 rulings: the client's audit at one block, and the contracts of ledger v2 with their tests.
 The advisor reviewed that implementation, and on the same day the owner ruled on the review
 (A80 to A86; `decisions.md` 15): the interfaces of v2 are frozen, and its ledger is built
-through the compiler's IR pipeline with a compiler of its own for v2. Release 0.1.5 corrects
-three tools the review found at fault. The build of v2 is not made yet.
+through the compiler's IR pipeline with a compiler of its own for v2. Release 0.1.5 corrected
+three tools the review found at fault. Release 0.1.6 applies the ruling on the build: the v2
+contracts are compiled behind a boundary of their own by solc 0.8.39, and their builds are
+committed with a build record (`decisions.md` 16). Nothing of v2 is deployed.
 
 ## 1. Reused as they are (A6)
 
@@ -75,7 +77,7 @@ three tools the review found at fault. The build of v2 is not made yet.
 | The R2a configuration and runbook | R2a | built; `deployments/finchain-sepolia-r2.config.json`, `docs/r2-runbook.md` |
 | The independent audit job | R2 | built; `.github/workflows/ci.yml` |
 | The Finchain Sepolia manifest; evidence records of the deployment, the rounds and the audits | R2a | in the repository: `deployments/finchain-sepolia-r2.json`, and `evidence/r2a/` with its index. Advisor technical acceptance passed on 2026-11-24 (`decisions.md` 6.11) |
-| The next version of the ledger: a cap per declared operator, work facts apart from receipts, a bounded delegation signed by an account with a guard on the consumer's side, the production fields of a receipt | R2b, R3 | built and tested on a local network (release 0.1.4): `contracts/v2/`, `test/v2.*.test.js`, `docs/ledger-v2.md`, on the rulings A74, A75, A77 and A78. The interfaces are frozen (A81; `contracts/v2/interfaces.frozen.json`). Not deployed. Not built: the compile boundary of v2 with its locked compiler (A82), the committed builds and the deployment from them, the client for a v2 deployment with its audit, the round's configuration and runbook (`ledger-v2.md` 16) |
+| The next version of the ledger: a cap per declared operator, work facts apart from receipts, a bounded delegation signed by an account with a guard on the consumer's side, the production fields of a receipt | R2b, R3 | built and tested on a local network (release 0.1.4): `contracts/v2/`, `test/v2.*.test.js`, `docs/ledger-v2.md`, on the rulings A74, A75, A77 and A78. The interfaces are frozen (A81; `contracts/v2/interfaces.frozen.json`). The contracts are compiled behind a boundary of their own by solc 0.8.39, and their builds are committed with a build record (A82; `build/v2/`). Not deployed. Not built: the deployment from those builds, the client for a v2 deployment with its audit, the round's configuration and runbook (`ledger-v2.md` 16) |
 | The signing of a permit off line, with fixed vectors of the three typed statements | R2b | built, not used: `scripts/sign-permit.js`, `test/vectors/permit-v2.json`. From release 0.1.5 its record goes to a new file only and nothing is overwritten (A84). A live key signs only under a reviewed operation package (A74) |
 | The client's audit at one finalized block; records with a canonical form and two hashes; the authority at a settlement as far as a tender's log settles it; no second sending of what is recorded | R2b, R3 | built in release 0.1.4 against the kernel of 0.1.3 (A76): `client/lib/`, `scripts/report-hash.py`, `test/snapshot.test.js`. Its first run on a public endpoint, against the deployment of round R2a, is agreed and not yet made (A85). The audit of a v2 deployment is part of the next delivery (A86) |
 | `g0.ver`, `g0.cal`, the authority at settlement, a freshness window | after rulings | designs kept (`genesis-mining-mvp.md` 13) |
@@ -185,10 +187,12 @@ Where it stands (`ledger-v2.md`): the contracts are written and tested on a loca
 the 35 rows of the design's test matrix each have a test that passed - and the kernel of release
 0.1.3 is unchanged beside them. Nothing is deployed and nothing is signed. The interfaces are
 frozen (A81). The ledger is built through the compiler's IR pipeline, behind a compile boundary
-of its own and with a compiler in which a known bug of the optimizer is fixed (A82); that
-build is not made, and what is compiled today with solc 0.8.24 is evidence of the local tests
-only. What round R2b still needs is listed in `ledger-v2.md` 16: that compile boundary, the
-committed builds and the deployment from them, the client for a v2 deployment with its audit,
+of its own and with a compiler in which a known bug of the optimizer is fixed (A82): from
+release 0.1.6 the builds of v2 are those of solc 0.8.39 and are committed under `build/v2`.
+They are candidates for a deployment until an operation package names one. What round R2b
+still needs is listed in `ledger-v2.md` 16: the deployment from those builds, which waits for
+an answer on the function and the seed source a v2 deployment takes (`decisions.md` Q33), the
+client for a v2 deployment with its audit,
 the module of the first production profile where that profile is to take part, the round's
 configuration and runbook with the operation package of the one signature, and a measurement
 against the deployed cells.
@@ -314,10 +318,11 @@ The order (Q23; adopted, A70):
 2. The owner's rulings. The recommendations on Q17 to Q29 are adopted (A70), Q13 to Q16 are
    ruled (A74 to A77), and so are the freeze of the next ledger's interfaces and its build
    (Q30, Q31: A81, A82).
-3. The next version of the ledger: built and tested locally, its interfaces frozen. Next, in
-   this order (A86): its compile boundary and reproducible builds with the deployment tooling,
-   then its client with the audit and the run record. R3 uses it as required by A35, and R2b
-   runs on it (A75), each round with a configuration and an operation package of its own.
+3. The next version of the ledger: built and tested locally, its interfaces frozen, its builds
+   committed with their record. Next, in this order (A86): the deployment tooling and its
+   manifest, then the client with the audit and the run record. R3 uses it as required by A35,
+   and R2b runs on it (A75), each round with a configuration and an operation package of its
+   own.
 4. The first production increment, beside R2b and R3: the mechanism. It needs no third party and
    no cell. The three further acceptances follow as their parties are there, in no fixed order.
 5. The second and third increments, each opened by a ruling of its own.

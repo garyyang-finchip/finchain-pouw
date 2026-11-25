@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {IGenesisLedgerV2} from "./interfaces/IGenesisLedgerV2.sol";
-import {ITaskTender8414} from "../interfaces/ITaskTender8414.sol";
+import {ITaskTender8414} from "./external/ITaskTender8414.sol";
 import {G1Facts, G1Extra, Entry, Permit, FactData, OP_CONFIRM_TENDER} from "./TypesV2.sol";
 
 /// @title  G1 module of ledger v2 for ERC-8414 tenders: records a settlement as a fact, and turns

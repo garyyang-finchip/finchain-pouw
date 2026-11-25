@@ -12,16 +12,22 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.11, with software release 0.1.5. It records the owner's rulings of
+Design revision v0.1.12, with software release 0.1.6. It applies A82 and records no new
+ruling (section 16). The contracts of ledger v2 are compiled behind a boundary of their own, by
+solc 0.8.39, and their builds are committed under `build/v2` with a record of how they were
+made and a reading of the compiler's own list of known bugs. No rule of the ledger and no
+compiled interface changes; the kernel's compiler, its settings and its six builds are
+unchanged, byte for byte; nothing is deployed and nothing is signed. Two questions are put to
+the owner with it (Q32 as it now stands, and Q33).
+
+Design revision v0.1.11 came with software release 0.1.5. It recorded the owner's rulings of
 2026-11-25 on the advisor's review of the local implementation of ledger v2 (A80 to A86;
-section 15). The interfaces of ledger v2 are frozen (Q30). The ledger is to be built through
-the compiler's IR pipeline, behind a compile boundary and with a compiler of its own for v2;
-that build is not made yet (Q31). The proposals P61 to P66 are adopted within stated
-boundaries. Release 0.1.5 corrects three tools that the review found at fault - the signing
-script could overwrite its own key file, the canonical form mishandled an array with an empty
-slot, and the second program for the hashes accepted a member named twice - and the wording on
-statements and on facts. No contract and no compiled interface changes; the kernel's builds
-are unchanged, byte for byte; nothing is deployed and nothing is signed.
+section 15). The interfaces of ledger v2 are frozen (Q30). The ledger is built through the
+compiler's IR pipeline, behind a compile boundary and with a compiler of its own for v2 (Q31).
+The proposals P61 to P66 are adopted within stated boundaries. Release 0.1.5 corrected three
+tools that the review found at fault - the signing script could overwrite its own key file,
+the canonical form mishandled an array with an empty slot, and the second program for the
+hashes accepted a member named twice - and the wording on statements and on facts.
 
 Design revision v0.1.10 came with software release 0.1.4. It recorded the owner's rulings of
 2026-11-25 on Q13 to Q16 and on the content of the next version of the ledger (A73 to A79;
@@ -53,7 +59,9 @@ illustrative figures; section 14 the rulings of 2026-11-25 on the next version o
 who wrote and who adopted each, how each is applied, what was built and verified, and the
 proposals this repository made with the implementation; section 15 the advisor's review of
 that implementation, the owner's rulings on it, the three faults in tools and their
-correction, and what the compiler question means for v2 and for the kernel's builds.
+correction, and what the compiler question means for v2 and for the kernel's builds; section
+16 the compile boundary of v2, its compiler, its builds, and the reading of the compiler's
+known bugs for both compilers.
 
 ## 1. Approved rulings and review records
 
@@ -826,13 +834,14 @@ recommendation recorded; owner adoption pending - and none was an approval (A66)
 adopted all thirteen on 2026-11-24, in a statement of his own (A70); they are listed in 12.2 as
 adopted. What is adopted there is design, and nothing of the production line is built. Q30 and
 Q31, which the implementation of ledger v2 raised, were ruled on 2026-11-25 (A81, A82) and are
-listed in 12.4. Open now is the one question of 12.1.
+listed in 12.4. Open now are the two questions of 12.1.
 
 ### 12.1 Open for the owner's ruling
 
 | Id | Question | This repository's suggestion | Recorded advice and current status |
 | --- | --- | --- | --- |
-| Q32 | Whether the kernel's six committed builds of release 0.1.3, from which the deployment of round R2a was made, are checked against the compiler bug that A82 answers for v2 (P67; 15.5) | No rebuild and no change of round R2a: its deployment carries test points only, and A82 keeps the kernel's builds as they are. A check, if one is wanted, by a method the compiler's maintainers describe, recorded as a check and as nothing more | None recorded |
+| Q32 | Whether the kernel's six committed builds of release 0.1.3, from which the deployment of round R2a was made, are checked against the known bugs of their compiler, solc 0.8.24 (P67; 15.5, 16.3) | No rebuild and no change of round R2a: its deployment carries test points only, and A82 keeps the kernel's builds as they are. The compiler's list has seven entries for 0.8.24. Three need the IR pipeline, which the kernel does not use; three need a construct that the kernel's sources do not have or cannot reach; one - the bug of the Yul optimizer that A82 answers for v2 - cannot be excluded by reading the sources. A check of that one, if it is wanted, by a method the compiler's maintainers describe, recorded as a check and as nothing more | None recorded |
+| Q33 | What a deployment of ledger v2 takes for its G0 function and its seed source (P70; 16.4). Both are contracts of the kernel - `AuditV1`, and `L1BlockSeedSource` or `PrevBlockSeedSource` - and their builds are those of solc 0.8.24 | Give v2 its own copies of the two sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and one build record. The kernel's files and builds stay as they are. The alternative is to deploy v2 with the kernel's builds of these two contracts, on the record; for round R2b, which carries test points only, either is defensible | None recorded |
 
 ### 12.2 Adopted by the owner on 2026-11-24 (A70)
 
@@ -1217,3 +1226,113 @@ shows task units and their issuer, with the other components of the first produc
 increment, and the two discussion drafts, which stay drafts. A signature with a live key, a
 deployment and any operation on a chain are steps of their own operation packages; none is
 part of this revision or follows from it without one.
+
+## 16. The compile boundary and the builds of ledger v2
+
+### 16.1 What this revision is
+
+It applies A82 and holds no new ruling. Release 0.1.5 was uploaded on 2026-11-25 at 11:33
+(UTC+8) as one commit, `d8363aba0d427d0e377692ab241641721308779c`, made by the owner through
+the web interface; the executor compared `main` with its own copy file by file and found them
+equal. This revision has that commit as its base. The hosted run of A85 is the owner's to
+start on that commit; its record is not part of this revision.
+
+### 16.2 What was done
+
+| Part | What it is now | Held by |
+| --- | --- | --- |
+| The boundary | the directory `contracts/v2`. Every file in it states `pragma solidity 0.8.39;` and imports files of that directory only; every file of the kernel states `0.8.24` as before and imports nothing of v2 | the compiler itself, which refuses a file whose imports state another version; `test/v2.build.test.js`, which also reads from the compiler's records that no compilation held files of both sides |
+| The three interfaces v2 calls | `ISeedSource`, `IG0Function` and `ITaskTender8414` have copies in `contracts/v2/external/`, under the same names and with the same declarations. The two sides share them as ABIs and as nothing else | a test: the ABI of each copy equals the kernel's, and the text of each copy is the kernel's text with another pragma and a note that it is a copy |
+| Fixtures | the four that import v2 - the ERC-1271 accounts, the switchable guard, the mock cell, the test module - moved from `contracts/testing/` to `contracts/v2/testing/` | the same test: nothing under a `testing` directory is among the sources of a build |
+| The reference contracts of ERC-8414 | they state `^0.8.24`, so each is pinned by name to the kernel's compiler and compiled as before | the same test |
+| The compiler of v2 | solc 0.8.39 as the package `solc@0.8.39`, installed beside the kernel's `solc@0.8.24` and pinned by the lock file's integrity hash; full version `0.8.39+commit.ce47f2c8.Emscripten.clang` | `build/v2/build-record.json`, and a test that asks the installed compiler for its version and hashes its file |
+| Settings | the kernel's: optimizer enabled, 200 runs, EVM version `cancun`. The ledger through the IR pipeline; the policy, the adapter and the cell guard through the legacy pipeline | the build record; a test on the configuration and on each build |
+| Builds | `build/v2/`: the policy, the ledger, the adapter and the cell guard, each with its pipeline and with the hash of every source file it is made of, as the compiler wrote them into the contract's metadata | a test: each committed build is what a fresh compilation gives |
+| Build record | `build/v2/build-record.json`: the compiler as installed, each contract's settings, sizes and hashes | the same test |
+| The reading of known bugs | `build/v2/known-bugs-check.json` (16.3) | a test fails when the v2 compiler is no longer the compiler the reading is about |
+
+Not changed: a rule of the ledger, a compiled interface, a type, a code, a vector; the kernel's
+sources, compiler, settings and six builds; the client. The four frozen source files differ
+from the commit of the freeze in their pragma line alone, which the freeze allows.
+
+### 16.3 The compiler's own list of known bugs, as read on 2026-11-25
+
+Read by the executor from the compiler's repository, `https://github.com/argotorg/solidity`,
+branch `develop`, whose head was `096eb79bf8c06634965637247e3c7ddb505fad1a`: the files
+`docs/bugs_by_version.json` and `docs/bugs.json`. Their hashes, and what they held for the
+three versions below, are in `build/v2/known-bugs-check.json`.
+
+| Compiler | Released | Entries in the list |
+| --- | --- | --- |
+| 0.8.39, for v2 | 2026-11-19 | none |
+| 0.8.38, considered | 2026-10-22 | two, of one bug: `SOL-2026-8` |
+| 0.8.24, the kernel's | 2024-01-25 | seven |
+
+So 0.8.39 is the first version with an empty entry, as the advisor's review had read it, and
+0.8.38 is not. An empty entry says that no bug was known on the day of the reading. A bug found
+later is added for every version it concerns; the compiler was six days old on that day.
+
+The seven entries for 0.8.24, set against the kernel's builds - legacy pipeline, optimizer
+enabled. Section 15.5 named one of them, from the maintainers' note on it, before the list
+itself was read. This is the whole list.
+
+| Id | Entry | What it needs | The kernel's sources and builds |
+| --- | --- | --- | --- |
+| `SOL-2026-8` | a copy between overlapping recursive structs in storage corrupts data (legacy pipeline) | a struct that holds a dynamic array of its own type, and a copy in storage whose target contains its source | no struct of the kernel refers to its own type |
+| `SOL-2026-8` | the same, through the IR pipeline | the IR pipeline | not used |
+| `SOL-2026-7` | the Yul optimizer keeps stale knowledge of a memory or storage location | the Yul optimizer. Without the IR pipeline, by the maintainers' note: helper functions that the compiler generates as Yul, or inline assembly that refers to no Solidity variable | the optimizer is enabled and the kernel has no inline assembly; generated helpers are part of every build. Reading the sources does not exclude it |
+| `SOL-2026-5` | `delete` of one element of a `bytes` array in memory clears a whole word | that `delete`, in the legacy pipeline | the kernel has no `delete` |
+| `SOL-2026-4` | two functions in mutual recursion are given one spill slot | the IR pipeline | not used |
+| `SOL-2026-2` | a variable of a function in mutual recursion is moved to a fixed memory offset | the IR pipeline | not used |
+| `SOL-2025-1` | a write is lost on an array that wraps past the last slot of storage | an array whose slots straddle the end of storage | the kernel lays out no storage by hand; the data of its three arrays lies where a hash puts it |
+
+What this shows and what it does not: for six of the seven the kernel either does not use the
+pipeline or does not have the construct, by a reading of its sources. For the seventh nothing
+was observed and nothing can be excluded by reading. No build was changed or checked beyond
+this reading; P67 and Q32 stand as they were, with this fuller ground.
+
+### 16.4 Findings, and this repository's choices
+
+1. **With solc 0.8.39 the ledger does not fit through the legacy pipeline.** It comes to 24,705
+   bytes there, 129 over a chain's limit, and to 21,855 through the IR pipeline. Under solc
+   0.8.24 the legacy pipeline left 34 bytes of room. The IR pipeline that A82 rules is, with
+   this compiler, the only way the ledger as adopted can be deployed.
+2. **The compiled interfaces came out unchanged.** The five files of `client/abi/` for v2 are
+   byte for byte the frozen ones under the new compiler, and all 137 tests of release 0.1.5
+   pass on the new builds with no change to a test.
+3. **Hardhat 2.29.2 prints a notice for solc 0.8.39**: "not fully supported yet". The notice
+   names features of Hardhat itself, such as stack traces. The tests do not rely on them.
+4. **A deployment of v2 is not made of v2 contracts alone.** It needs a G0 function and a seed
+   source, and those are contracts of the kernel, built by solc 0.8.24 (Q33).
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P69 | The shape of the boundary as 16.2 has it: the directory as the boundary; v2's own copies of three interfaces under the kernel's names; the fixtures that import v2 inside the boundary; the reference contracts pinned to the kernel's compiler; each compiler a package pinned by the lock file; the ledger alone through the IR pipeline; the kernel's optimizer runs and EVM version for v2 | A82 asks for a boundary of its own and leaves its shape open. The names are kept because a compiled interface records them and the compiled interfaces are frozen. The settings are kept so that the compiler is the one thing that changes between the builds that were tested before and the builds that are tested now | Implemented in release 0.1.6; to be confirmed or changed with the review of this delivery |
+| P70 | v2 gets its own copies of `AuditV1` and of the seed sources inside `contracts/v2`, compiled by the v2 compiler, so that every contract of a v2 deployment comes from one boundary and has one build record. The kernel's files and builds stay as they are | Otherwise a deployment of v2 holds two contracts built by a compiler that A82 moved v2 away from. They are small and without storage of their own to corrupt, and round R2b carries test points only, so deploying the kernel's builds of them is defensible as well | Proposed; not built; Q33 |
+
+### 16.5 What was verified
+
+On a local network, as before. No key of a participant was used and nothing was sent to a
+public chain.
+
+| What | Result |
+| --- | --- |
+| The tests | 143 pass, none fails (Node 22.23.5, Hardhat 2.29.2; the kernel by solc 0.8.24, v2 by solc 0.8.39): the 137 of release 0.1.5, unchanged and now on the builds of the v2 compiler, and six new ones on the boundary and the builds |
+| The rows L1 to L35 | every row has a passing test that carries its id, on the new builds |
+| The fixed vectors and the frozen interfaces | unchanged, byte for byte; their tests pass |
+| The size gate | the ledger's build is 21,855 bytes, 2,721 under the limit; the test asks for 1,024 |
+| The kernel | its six builds and its five compiled interfaces are byte for byte those of `d8363ab` |
+| A second build | `npm ci` and `npm run export-abi` in a clean copy wrote the four builds and the build record byte for byte as committed |
+| The rehearsal | 41 checks, all passed, with release 0.1.6 from a clean copy; its record is under `evidence/` |
+| The tests against changes that should break them | 40 changes: the 38 of 15.7 on the new builds, and two new - a copied interface that no longer declares what the kernel's declares, and a build left stale after a source changed. Every one made at least one test fail |
+| Gas | each figure of `ledger-v2.md` 11.7 measured again on the new builds: within 2,500 gas of the figure under solc 0.8.24 |
+
+### 16.6 What comes next
+
+In the order of A86: the deployment of v2 from the builds of `build/v2`, with a manifest that
+names what it supersedes and holds the code hashes of the guards - which needs the answer to
+Q33 first; then the client for a v2 deployment with work and confirmation through a delegate,
+its audit and its run record. Beside it: the module that shows task units and their issuer,
+and the two discussion drafts. The builds of this revision are candidates for a deployment.
+One of them becomes the build of a deployment when that deployment's operation package names
+it by commit and by the hashes of its record, and not before.

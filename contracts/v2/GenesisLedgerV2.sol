@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {IGenesisLedgerV2} from "./interfaces/IGenesisLedgerV2.sol";
 import {IGenesisPolicyV2} from "./interfaces/IGenesisPolicyV2.sol";
 import {IParticipantGuard} from "./interfaces/IParticipantGuard.sol";
-import {ISeedSource} from "../interfaces/ISeedSource.sol";
-import {IG0Function} from "../interfaces/IG0Function.sol";
+import {ISeedSource} from "./external/ISeedSource.sol";
+import {IG0Function} from "./external/IG0Function.sol";
 import "./TypesV2.sol";
 
 /// @title  Genesis Mining ledger, version 2: work receipts, the GMU of verified work per epoch,

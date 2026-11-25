@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {Receipt, Status, G1Facts, G1Extra, Entry, Permit, FactData, Fact, EpochSummary} from "../TypesV2.sol";
 

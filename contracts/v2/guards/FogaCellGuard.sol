@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity 0.8.39;
 
 import {IParticipantGuard} from "../interfaces/IParticipantGuard.sol";
 import {OP_SUBMIT_G0, OP_CONFIRM_TENDER} from "../TypesV2.sol";

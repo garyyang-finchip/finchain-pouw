@@ -1,0 +1,122 @@
+{
+  "schema": "finchain-pouw.build-record/1",
+  "what": "The builds of ledger v2 (docs/ledger-v2.md 1; docs/decisions.md A82): made from contracts/v2 alone, by a compiler of their own. The kernel's six builds under build/ are not part of this record and are not made again.",
+  "boundary": "contracts/v2",
+  "compiler": {
+    "package": "solc@0.8.39",
+    "installedAs": "solc-0.8.39",
+    "resolved": "https://registry.npmjs.org/solc/-/solc-0.8.39.tgz",
+    "integrity": "sha512-DZgQzDMLd0U+DhaIi9o+W1Kb1GxySJgQRVRHMhbSzfQ5sp6a8sA8ePiAc9ZbgzUxGclUJtjFGcuiGF5X0pt4YA==",
+    "version": "0.8.39",
+    "fullVersion": "0.8.39+commit.ce47f2c8.Emscripten.clang",
+    "soljsonSha256": "90e9187293b8beac835a1e4809dd1d0b4d504965f3a6a84402d71ca7aed2b8c3"
+  },
+  "codeSizeLimit": 24576,
+  "contracts": {
+    "GenesisPolicyV2": {
+      "sourceName": "contracts/v2/GenesisPolicyV2.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/GenesisPolicyV2.sol",
+        "contracts/v2/TypesV2.sol",
+        "contracts/v2/interfaces/IGenesisPolicyV2.sol"
+      ],
+      "creationCodeBytes": 13958,
+      "runtimeCodeBytes": 12360,
+      "underTheCodeSizeLimitBy": 12216,
+      "immutableValues": 11,
+      "creationCodeSha256": "615c78e3fb9a6ac30207966674ab9dc889210a0e399a5505f2803d7a084b65fd",
+      "runtimeCodeSha256": "dfd264e65cd073f65719f882bae86e4c7bef30bacc31ae314adeb819852e8475",
+      "buildFile": "build/v2/GenesisPolicyV2.json",
+      "buildFileSha256": "b9d4ba68079f177c8c18117fdb33c3f8f6b5a7ea5f84374b408478e4c0d85710"
+    },
+    "GenesisLedgerV2": {
+      "sourceName": "contracts/v2/GenesisLedgerV2.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": true
+      },
+      "sources": [
+        "contracts/v2/GenesisLedgerV2.sol",
+        "contracts/v2/TypesV2.sol",
+        "contracts/v2/external/IG0Function.sol",
+        "contracts/v2/external/ISeedSource.sol",
+        "contracts/v2/interfaces/IGenesisLedgerV2.sol",
+        "contracts/v2/interfaces/IGenesisPolicyV2.sol",
+        "contracts/v2/interfaces/IParticipantGuard.sol"
+      ],
+      "creationCodeBytes": 22388,
+      "runtimeCodeBytes": 21855,
+      "underTheCodeSizeLimitBy": 2721,
+      "immutableValues": 26,
+      "creationCodeSha256": "cb479023288fa3673246f0061b1a1fa27abcf8fa44348c159dd0eb696650fdc2",
+      "runtimeCodeSha256": "042ab620fe5609e8ed569e1a5b469b3912c3c7e0e23472892773cc6ba47084c6",
+      "buildFile": "build/v2/GenesisLedgerV2.json",
+      "buildFileSha256": "16dbc3cd26df16e14e659bd97d2db8f7cbaf0830dbe27a2b217b802c9011c23e"
+    },
+    "TenderAdapter8414V2": {
+      "sourceName": "contracts/v2/TenderAdapter8414V2.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/TenderAdapter8414V2.sol",
+        "contracts/v2/TypesV2.sol",
+        "contracts/v2/external/ITaskTender8414.sol",
+        "contracts/v2/interfaces/IGenesisLedgerV2.sol"
+      ],
+      "creationCodeBytes": 5526,
+      "runtimeCodeBytes": 5050,
+      "underTheCodeSizeLimitBy": 19526,
+      "immutableValues": 17,
+      "creationCodeSha256": "57fce3b09a53175dd3efbc000621e040f1782cb97633de2f3c60eca48d438f2a",
+      "runtimeCodeSha256": "56b0b410a9a79b8986c3ff7c90adba644a586b81fba7aa26203298a6016cc7fc",
+      "buildFile": "build/v2/TenderAdapter8414V2.json",
+      "buildFileSha256": "ac723522f8be4153b1f382027cf4cc74b7f1fcde6f15b7596aa2f14607264904"
+    },
+    "FogaCellGuard": {
+      "sourceName": "contracts/v2/guards/FogaCellGuard.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/TypesV2.sol",
+        "contracts/v2/guards/FogaCellGuard.sol",
+        "contracts/v2/interfaces/IParticipantGuard.sol"
+      ],
+      "creationCodeBytes": 2452,
+      "runtimeCodeBytes": 2424,
+      "underTheCodeSizeLimitBy": 22152,
+      "immutableValues": 0,
+      "creationCodeSha256": "2d7c54802b51675a0d3986267d8c1646318a39cfd075a9e94e6a251864a42786",
+      "runtimeCodeSha256": "adf1a9ca9b6c936e611ad0e57918931db325f74360a54a4d86ea0028e26c1ae2",
+      "buildFile": "build/v2/FogaCellGuard.json",
+      "buildFileSha256": "156a9abe18361b29eaec7029989a3fd014d8812cd6d4ba0befd77d4f487d1001"
+    }
+  }
+}
