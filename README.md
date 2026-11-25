@@ -6,9 +6,10 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.6 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.1.7 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
-builds are committed with their record, and it is not deployed.**
+builds are committed with their record, the client audits an epoch of it as a library, and it
+is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -48,6 +49,15 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.7, with design revision v0.1.14 (2026-11-25), is the first part of the client for a
+v2 deployment (`docs/decisions.md` A86, section 17): the audit of an epoch of ledger v2, as a
+library (`client/lib/audit2.js`) with its record (`client/lib/report2.js`). At one block it
+re-decides every receipt whose work it can read again, holds each delegated receipt to its
+permit - read from the delegate's own transaction, or given to the run - and compares every
+figure with the ledger. What it cannot read again it lists as undecided, apart from the
+differences. It is not yet a command: the commands take a manifest, and the manifest of a v2
+deployment comes with the deployment. No contract, no compiled interface and no build changed.
 
 Release 0.1.6, with design revision v0.1.12 (2026-11-25), gives ledger v2 a compiler of its own
 (`docs/decisions.md` A82, section 16). Everything under `contracts/v2` is compiled by solc
@@ -142,6 +152,8 @@ client/                the reference client: pouw.js, lib/, abi/
   lib/canonical.js       the one byte form of a record, and its two hashes
   lib/permit.js          the three signed statements of ledger v2 as typed data
   lib/ledger2.js         the encodings and the allocation of ledger v2, off chain
+  lib/audit2.js          the audit of an epoch of ledger v2 at one block; a library, not yet a command
+  lib/report2.js         the record of that audit
 test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
   sign-permit.js         one statement of ledger v2, signed off line from a key file; no network;
@@ -250,7 +262,7 @@ future asset. `docs/acceptance-matrix.md`, section 10, has the full list.
 | `docs/decisions.md` | Approved rulings; the two reviews of the kernel and how each ruling was applied; the alignment of 2026-11-24 and the reviews of design revisions v0.1.4, v0.1.5 and v0.1.6, and how each is applied; the owner's adoption of the advisor's recommendations on Q17 to Q29; this repository's proposals, each open to a veto; the questions put to the owner, open and adopted; illustrative figures |
 | `docs/architecture.md` | Position; the first production commodity and what is implemented against what is future design; the economic stages and the three operating dimensions; actors, production roles and the complete AI Node; modules as built and future responsibilities; identity and admission; interfaces between the repositories; data flow, the three records, GMU and SIG, the ledgers; the trust and abuse model; chain neutrality |
 | `docs/genesis-mining-mvp.md` | The specification of what is built (sections 1 to 12): data, the life of a receipt, the two profiles, GMU, epochs and the allocation, the complete rules for duplicates, lateness and versions, the audit. The designs kept for what is deferred (13). The production extension design and its proposed acceptance (14, 15): not implemented |
-| `docs/ledger-v2.md` | Ledger v2 as built on a local network: participant, sender and origin; the permit and the two statements that end one; the check at each use; guards; ending permits and taking a key's signing right away; the receipt and the order of the reasons; the operator cap; work facts and confirmations; the authority at settlement; the frozen interfaces, with every encoding, and what the freeze leaves open; the client's audit at one block; the test matrix with its results; what is not built |
+| `docs/ledger-v2.md` | Ledger v2 as built on a local network: participant, sender and origin; the permit and the two statements that end one; the check at each use; guards; ending permits and taking a key's signing right away; the receipt and the order of the reasons; the operator cap; work facts and confirmations; the authority at settlement; the frozen interfaces, with every encoding, and what the freeze leaves open; the client's audit at one block, and its audit of an epoch of ledger v2; the test matrix with its results; what is not built |
 | `docs/production-service.md` | Plan, adopted as design (A70) and not built: the first production profile - its task class, published checks and enumerated task units; the pinned choices; the evidence envelope, the three identities of a piece of work with the task description behind the content key, and the pinned revision of ERC-8506 its records follow; the measurement rule; the evidence class of every claim; the contribution record and the rules that count a task unit once; three forms of supply under one profile |
 | `docs/supply-and-payment.md` | Plan, adopted as design (A70) and not built: the records a worker's side keeps for supply, purchasing policy, purchases and funding; the three parts of a purchase's state - payment, service credit, adjustments - with the attempts under a purchase, and what settlement means per channel; the budget book of an agent's purchases and the recovery after a crash; failure and recovery; the customer's payment; the operating report; the later adaptations |
 | `docs/roadmap.md` | What is reused, what is new, the rounds R0 to R4, round R2 as two acceptances and the figures round R2a must show; economic stages beside engineering numbers; the first production increment, the staged acceptances after it and the linked chain of evidence that closes the first production milestone; the later increments and the order |

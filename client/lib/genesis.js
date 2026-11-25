@@ -948,6 +948,8 @@ module.exports = {
   poolBudgets, share, connect, refusal, actorOf, eventOf, horizon, epochEnd, requireEnded, readEpochReceipts, replayRecorded,
   auditSubjectFor, workAudit, bridgeTender, policyAt, mintBlockOf, tenderHistory, auditEpoch, verifyDeployment, maskedCode, codeHashOf,
   pinBlock, snapshotOf, recheck, stateRead, authorityAtSettlement, AUTHORITY_EVIDENCE, withHashes,
+  // the reading of a chain at one block, for the audit of a v2 deployment (audit2.js)
+  at, isContractAnswer, requireEndedAt, logs, before, lastBefore, OBSERVATION_ORDER,
   AuditMismatch, NotFinalYet, StateUnavailable, SnapshotMoved, ACCOUNT_ABI,
   plainParams, plainProfile, plainReceipt, plainStatus, jsonable,
 };

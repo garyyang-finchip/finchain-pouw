@@ -52,10 +52,10 @@ nothing to submit at the close.
 ## 1. Scope
 
 In R1 (implemented): G0 protocol work with one profile, `g0.ref`, verified by recomputation on
-chain; G1 tender settlement with one profile, `g1.tender`, through ERC-8414, with the subsidy decided
-apart from the settlement; one receipt type; GMU measured and GMU subsidized per receipt; epochs of
-a fixed clock with parameters fixed before they begin; an allocation that is a pure function of
-the ledger; the reference client with a worker's job and an independent audit.
+chain; G1 tender settlement with one profile, `g1.tender`, through ERC-8414, with the subsidy
+decided apart from the settlement; one receipt type; GMU measured and GMU subsidized per receipt;
+epochs of a fixed clock with parameters fixed before they begin; an allocation that is a pure
+function of the ledger; the reference client with a worker's job and an independent audit.
 
 Deferred, with the designs kept (section 13): `g0.cal` and calibration records, `g0.ver` and its
 commit-reveal, challenge windows and overturns, any tier or quality factor, paging, a cap per
@@ -1076,11 +1076,11 @@ The same rows, with identifiers, the items of `decisions.md` A54 they belong to 
 increment planned to run each, are in `acceptance-matrix.md`, section 11.
 
 R2 continues first as the already-approved Finchain Sepolia ledger and audit round. Its public
-evidence is scoped to the functions it actually exercises. The production extension adopted as design is
-then specified and implemented as a separately reviewable increment, starting with one bounded
-inference profile, a supported procurement route, its evidence envelope and an operating report.
-Additional providers, stablecoin settlement, richer verification, SIG calibration and platform
-economics expand from that evidence rather than being assumed complete by the generic loop.
+evidence is scoped to the functions it actually exercises. The production extension adopted as
+design is then specified and implemented as a separately reviewable increment, starting with one
+bounded inference profile, a supported procurement route, its evidence envelope and an operating
+report. Additional providers, stablecoin settlement, richer verification, SIG calibration and
+platform economics expand from that evidence rather than being assumed complete by the generic loop.
 
 The protocol remains in `finchain-pouw`. Finchain supplies the deployment environment and records
 verified integration versions. FOGA and other agents participate through their existing approved

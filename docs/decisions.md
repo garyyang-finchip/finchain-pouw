@@ -12,11 +12,18 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.13; the software stays release 0.1.6. It records the hosted run that A85
+Design revision v0.1.14 comes with software release 0.1.7. It records no new ruling. It is the
+first part of the client for a v2 deployment that A86 names: the audit of an epoch of ledger
+v2, built as a library with its record, and tested on a local network (section 17). No
+contract, no compiled interface and no build changes; nothing is deployed and nothing is
+signed. Six choices of this repository are put to the owner with it (P71 to P76). The two open
+questions stay as they are (Q32, Q33).
+
+Design revision v0.1.13 kept the software at release 0.1.6. It recorded the hosted run that A85
 agreed to: on 2026-11-25 the client of release 0.1.5 checked and audited the deployment of
 round R2a on its public endpoint, each of its three reports at a finalized block of its own,
-and found every figure of the round (15.6; `evidence/hosted-ci-4/`). Nothing of round R2a is
-reopened or changed, and no file but documents and that record changes.
+and found every figure of the round (15.6; `evidence/hosted-ci-4/`). Nothing of round R2a was
+reopened or changed, and no file but documents and that record changed.
 
 Design revision v0.1.12 came with software release 0.1.6. It applies A82 and records no new
 ruling (section 16). The contracts of ledger v2 are compiled behind a boundary of their own, by
@@ -1359,3 +1366,90 @@ its audit and its run record. Beside it: the module that shows task units and th
 and the two discussion drafts. The builds of this revision are candidates for a deployment.
 One of them becomes the build of a deployment when that deployment's operation package names
 it by commit and by the hashes of its record, and not before.
+
+## 17. The audit of an epoch of ledger v2
+
+### 17.1 What this revision is
+
+It applies A86 in its first part and holds no new ruling. The record of the hosted run was
+uploaded on 2026-11-25 at 14:12 (UTC+8) as one commit,
+`7e2782fd0f4747fd5e947ebb0cfb00f44ffc0577`, made by the owner through the web interface; the
+executor compared `main` with its own copy file by file and found them equal. This revision
+has that commit as its base.
+
+A86 names the next main line: the builds and the deployment tooling of v2, the client for a v2
+deployment with its audit, and the run record. The deployment waits for the answer to Q33. The
+audit does not: it reads a ledger and needs nothing of how that ledger came to be deployed. So
+it is built first, as a library, and the commands that take a manifest follow the deployment.
+
+### 17.2 What was built
+
+| File | What it is |
+| --- | --- |
+| `client/lib/audit2.js` | The audit of an epoch of a v2 ledger at one block (`ledger-v2.md` 13.1): the policy replayed from its log, every receipt the client can read again re-decided, each receipt's transaction, entry and permit, the operators' shares and the allocations, the content keys, the close record |
+| `client/lib/report2.js` | The record of such an audit, schema `finchain-pouw.ledger-v2.audit/1`, with the canonical form and the two hashes that the kernel's records have |
+| `client/lib/genesis.js` | Seven helpers of the kernel's audit are exported for the new library - the reads at one block, the log queries and their order. No function changes |
+| `test/v2.audit.test.js` | Eight tests, the rows L36 to L43 of `ledger-v2.md` 14 |
+
+Nothing under `contracts/`, `build/` or `client/abi/` changes, and no script. The kernel's
+audit and its records are as they were.
+
+### 17.3 Findings, and this repository's choices
+
+1. **A permit and its signature are public from the moment they are used.** A delegate passes them
+   as the input of its call. When the delegate is a key that sends its own transaction to the ledger
+   or to the adapter - the arrangement of A74, in which everyday operation uses a separate delegate
+   key - the audit reads the permit there and needs nothing published. Only a delegate that is a
+   contract, or a call sent through a relay, leaves the audit with the digest alone.
+2. **Whether an account had code when its permit was used cannot be read at a later block.**
+   The ledger decides between its two rules by the account's code at that moment, and an
+   account can gain code afterwards, by a code delegation for one. The permit itself tells the
+   two rules apart, because each rule refuses the other's permits.
+3. **A v2 deployment will hold receipts this client cannot read again.** The first production
+   profile brings a module of its own. An audit that called such receipts differences would
+   fail on every such deployment for no fault of the ledger; one that passed them over would
+   hide what it did not check.
+4. **The occupancy of content keys reaches back over all epochs.** The audit of one epoch reads
+   that epoch's receipts. What was taken before is in the ledger's log of keys.
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P71 | A report keeps differences and undecided receipts apart: `findings`, `undecided`, and the three flags `agrees`, `complete` and `ok`. A command built on the audit succeeds only when `ok`, and tells "agrees, not complete" from "differs" by its exit status | Finding 3. A receipt whose work was not read again is not shown to be wrong, and is not shown to be right either | Implemented in the library; the command and its exit statuses are not built; to be confirmed or changed with the review of this delivery |
+| P72 | The permit behind a delegated receipt is read from the receipt's own transaction when that transaction is the delegate's call to the ledger or to the module; otherwise it is looked for among permits given to the run; otherwise the digest alone is reported, and said to be alone. A round whose delegates are keys that send their own transactions publishes no permit. A round that uses a contract delegate or a relay puts the signing script's record of each such permit with its evidence | Finding 1. It keeps the audit "from the chain alone" for the arrangement the rounds use, and does not ask a third party to trust a file where the chain has the same content | Implemented; to be confirmed or changed with the review of this delivery |
+| P73 | Which of the ledger's two rules a permit passed is read from the permit and not from the account's code at the audit's block. No guard named: an account without code, and a signature that must recover to it in the one accepted form. A guard named: an account with code, the binding in force for the epoch, and a signature the audit does not ask the account for again. The account's code at the block is reported and decides nothing | Finding 2. A finding raised on the code an account has today would be false for an account that gained code after it signed; and asking a contract account today would report today's answer as that moment's | Implemented; to be confirmed or changed with the review of this delivery |
+| P74 | A G0 receipt of a function the client does not carry: the verdict is taken as recorded and everything that follows from it is re-decided. A G1 receipt of a module the client does not read: the recorded status is replayed as it is; the two rules for task units, the taking of its key and the ledger's store of the key are held all the same | Those rules need the receipt and the log only. Holding them costs nothing and leaves the undecided part as small as it can be | Implemented; to be confirmed or changed with the review of this delivery |
+| P75 | Content keys taken before the epoch's first receipt are read from the ledger's log of keys; from there on the audit derives the taking from the epoch's own receipts in their order and compares it with the log and with the store | Finding 4. Each epoch's audit holds its own part, and the audits of all epochs together hold the whole. Reading every earlier receipt in every audit would hold it twice and cost a full history each time | Implemented; to be confirmed or changed with the review of this delivery |
+| P76 | The record of a v2 audit has a schema name of its own, `finchain-pouw.ledger-v2.audit/1`, and the permits a run was given are members of what it found, so they enter the result hash | The kernel's client goes on writing schema 2 for kernel deployments, so a third revision of that name would not be a later form of the same record. Two runs that were given different permits did not find the same thing | Implemented; to be confirmed or changed with the review of this delivery |
+
+P68 stands as it was: the client's own `--out` still replaces a file that exists, and the
+change is for the commands of the v2 client, which this revision does not add.
+
+### 17.4 What was verified
+
+On a local network, as before. No key of a participant was used and nothing was sent to a
+public chain.
+
+| What | Result |
+| --- | --- |
+| The tests | 151 pass, none fails (Node 22.23.5, Hardhat 2.29.2; the kernel by solc 0.8.24, v2 by solc 0.8.39): the 143 of release 0.1.6, unchanged, and eight new ones |
+| The rows L1 to L43 | every row has a passing test that carries its id |
+| A mixed epoch | 24 receipts re-decided, with every figure equal to the ledger's: seven of G0 - entered directly, through a delegate by a key and by a contract account behind a guard, and through a delegate that is a contract - and seventeen of G1, with one for every reason of the order but the two of task units, which have a test of their own. The next epoch audited from the first one's subject under a changed policy |
+| One block | with an endpoint that notes its reads: every view and every code at the pinned block, every log query at or before it, the hash asked for again |
+| The record | both hashes recomputed by `scripts/report-hash.py`; equal result hashes for two runs at one block with the same permits |
+| The contracts, the builds and the compiled interfaces | byte for byte those of `7e2782f`: the kernel's six builds, the four builds of v2 with their record, and the ten files of `client/abi/` |
+| A clean copy | `npm ci`, `npm test` and `npm run export-abi` in a copy of the delivered tree: 151 tests pass, and the builds are written byte for byte as committed |
+| The rehearsal | 41 checks, all passed, with release 0.1.7 from a clean copy; its record is under `evidence/`. The rehearsal deploys the kernel alone and does not run the new library |
+| The tests against changes that should break them | 70 changes: the 40 of 16.5, and 30 new ones on the audit of v2 and its record - an operator taken from the receipt's own record, a binding or a declaration read before its epoch, a permit's scope, epochs, nonce or ending not held, a signature of any key accepted, a view read at the latest block, an undecided receipt not listed, and so on. Every one made at least one test fail. One of the new ones was not noticed at first - a permit read from a transaction that only passes a call on - and a test was added for it |
+
+### 17.5 What is not built, and what comes next
+
+Not built: the audit as a command, with a manifest of a v2 deployment and exit statuses (P71);
+`status` and `verify` for a v2 deployment; work and confirmation through a delegate in the
+client; the run record with the label `delegated-by-owner-permit`. The deployment of v2 from
+the builds of `build/v2` still waits for the answer to Q33.
+
+Next, in the order of A86 and as far as no open question stands in the way: work and
+confirmation through a delegate in the client's library, which like the audit need no
+manifest; then, with the answer to Q33, the deployment tooling and its manifest, and on them
+the commands and the run record. Beside it, as before: the module that shows task units and
+their issuer, and the two discussion drafts.
