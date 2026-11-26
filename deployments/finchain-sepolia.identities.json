@@ -1,6 +1,7 @@
 {
   "schema": "finchain-pouw.identity-config/1",
   "name": "finchain-sepolia",
+  "environment": "public-testnet",
   "chainId": 85422,
   "rpc": "https://rpc.finchain.one",
   "taskToken8414": {

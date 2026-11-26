@@ -50,7 +50,9 @@ library with its record (`decisions.md` 17); releases 0.1.8 and 0.1.9 correct it
 its reviews found (`decisions.md` 18, 19). Q33 is ruled (A87), and release 0.1.10 builds the
 deployment of v2 as local development: v2's own copies of the audit function and the seed
 sources, the deployment tooling and the manifest, rehearsed on a development network, and a
-read-only probe of the deployed cells (`decisions.md` 20). Nothing of v2 is deployed yet.
+read-only probe of the deployed cells (`decisions.md` 20). Release 0.1.11 is the client for a
+v2 deployment: its commands on a v2 manifest, work and confirmation through a delegate under the
+participant's permit, and the run record (`decisions.md` 21). Nothing of v2 is deployed yet.
 
 ## 1. Reused as they are (A6)
 
@@ -87,6 +89,7 @@ read-only probe of the deployed cells (`decisions.md` 20). Nothing of v2 is depl
 | The client's audit at one finalized block; records with a canonical form and two hashes; the authority at a settlement as far as a tender's log settles it; no second sending of what is recorded | R2b, R3 | built in release 0.1.4 against the kernel of 0.1.3 (A76): `client/lib/`, `scripts/report-hash.py`, `test/snapshot.test.js`. Its first run on a public endpoint was made on 2026-11-25 against the deployment of round R2a and found every figure of the round (A85; `evidence/hosted-ci-4/`) |
 | The audit of an epoch of ledger v2: every receipt the client can read again re-decided at one block, each delegated receipt held to its permit, differences kept apart from what was not re-decided; its record | R2b, R3 | built in release 0.1.7 as a library, and tested on a local network (A86); corrected in release 0.1.8 on the start of the logs, the binding of an entry's own call to its receipt and the reading of signing records, and in 0.1.9 on the replay of replaced profile versions and the reading of full signing records (`decisions.md` 18, 19): `client/lib/audit2.js`, `client/lib/report2.js`, `test/v2.audit.test.js`, `ledger-v2.md` 13.1. Not built: the audit as a command, which takes the manifest of a v2 deployment; work and confirmation through a delegate; in 0.1.10 it connects from a v2 manifest, and three residual cases of the reading of full records are closed |
 | The deployment of ledger v2 from its builds, with a manifest that names every contract and its code, the log starts, the guards with their code hashes and the deployment it supersedes; the check of a deployment against it; the read-only probe of contract accounts | R2b | built in release 0.1.10 and rehearsed on a development network (A87): `scripts/deploy-v2.js`, `client/lib/manifest2.js`, `scripts/cell-probe.js`, `test/v2.deploy.test.js`, `test/v2.probe.test.js`. Not deployed on a public chain. The probe was run on 2026-11-26 against the cells of OG and cell-b on Finchain Sepolia: both gas bounds hold (`evidence/cell-probe-20261126T152040Z.json`) |
+| The client for a v2 deployment: `status`, `verify`, `audit` and `seal` on a v2 manifest; `work` and `bridge` for a key itself or through a delegate under the participant's permit; the run record with its label | R2b | built in release 0.1.11 and rehearsed on a development network (A86): `client/pouw.js`, `client/lib/client2.js`, `test/v2.client.test.js`. No permit is signed with a live key; that is the round's operation package (A74) |
 | `g0.ver`, `g0.cal`, the authority at settlement, a freshness window | after rulings | designs kept (`genesis-mining-mvp.md` 13) |
 | The production line: the first specification with its evaluator, counter, canonicalization rule and committed fixture set; the `g1.inference` profile and its adapter; the reference worker, demander and recount; the operating report; the rehearsal of the increment | the first production increment | designed, not built (`production-service.md`, `supply-and-payment.md`). The design is adopted (`decisions.md` A70, 12.2) |
 | The budget book and the procurement adapters for an agent's wallet and for a fiat-billed account; an operated model as a source of supply | the second and third increments | outlined; the records an adapter is built to are specified (`supply-and-payment.md` 3, 4, 11) |
@@ -200,10 +203,10 @@ are candidates for a deployment until an operation package names one. From relea
 include v2's own copies of the audit function and the seed sources (A87), and the deployment
 tooling and the manifest are built and rehearsed on a development network. What round R2b still
 needs is listed in `ledger-v2.md` 16: the deployment on Finchain Sepolia, under an operation
-package of its own; the client for a v2 deployment - its audit and the check of a deployment are
-built as libraries, its commands and its work and confirmation through a delegate are not - the
-module of the first production profile where that profile is to take part, the round's
-configuration and runbook with the operation package of the one signature. The probe has
+package of its own; the module of the first production profile where that profile is to take
+part; and the round's configuration and runbook with the operation package of the one signature.
+The client for a v2 deployment is built from release 0.1.11, its work and confirmation through a
+delegate and its run record included (`ledger-v2.md` 13.2). The probe has
 measured the deployed cells of OG and cell-b against the two gas bounds, and both hold
 (`ledger-v2.md` 11.7).
 

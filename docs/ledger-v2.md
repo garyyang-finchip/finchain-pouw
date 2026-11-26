@@ -1,12 +1,14 @@
 # Ledger v2: bounded delegation, operator aggregation, work facts and receipts
 
-Status: **revision 9. Implemented and tested on a local network; the interfaces are frozen
+Status: **revision 10. Implemented and tested on a local network; the interfaces are frozen
 (section 11.8); the v2 contracts are compiled behind a boundary of their own, and their builds
-are committed with a build record (section 1), now with v2's own copies of `AuditV1` and of the
-seed sources (A87); the client's audit of an epoch of ledger v2 is built as a library (section
-13.1); the deployment of v2 from its builds, with its manifest, is built and rehearsed on a
-development network (sections 1 and 16), and a read-only probe has measured the deployed cells
-of OG and cell-b against the two gas bounds (11.7). Not deployed and nothing signed.**
+are committed with a build record (section 1), with v2's own copies of `AuditV1` and of the seed
+sources (A87); the deployment of v2 from its builds, with its manifest, is built (section 1);
+the client takes a v2 manifest - its audit of an epoch (13.1), and work and confirmation sent
+for a key itself or through a delegate under the participant's permit, with a record of each
+run (13.2) - and all of it is rehearsed on a development network; a read-only probe has measured
+the deployed cells of OG and cell-b against the two gas bounds (11.7). Not deployed and nothing
+signed.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
@@ -16,8 +18,9 @@ form, the authority at a settlement - is built in release 0.1.4 against the kern
 epoch of ledger v2 itself; releases 0.1.8 and 0.1.9 correct it on the points its reviews found
 (section 13.1). Release 0.1.10 adds the deployment of v2 - v2's own copies of the audit function
 and the seed sources, the deployment tooling, the manifest and the check of a deployment against
-it - and the probe of contract accounts (sections 1, 11.7 and 16). What is not built is listed in
-section 16.
+it - and the probe of contract accounts (sections 1, 11.7 and 16). Release 0.1.11 adds the
+client for a v2 deployment: its commands on a v2 manifest, work and confirmation through a
+delegate, and the run record with its label (13.2). What is not built is listed in section 16.
 
 Where this comes from, in order: revision 1 was this repository's draft for the rulings on Q13,
 Q14 and Q16; revision 2 applied the advisor's walk-through of it and the six choices the owner
@@ -44,7 +47,11 @@ of contract accounts that 11.7 asks for before round R2b. It also closes three r
 the reading of full signing records, each reproduced on the tree of 0.1.9 before the correction
 (`decisions.md` 20). It changes no contract of the ledger and no compiled interface. Design
 revision v0.1.18 adds to it the probe's run against the deployed cells (11.7; `decisions.md`
-20.7) and changes nothing else.
+20.7) and changes nothing else. Revision 10, with release 0.1.11, is the client for a v2
+deployment that A86 names: the commands on a v2 manifest, work and confirmation through a
+delegate under the participant's permit, and the run record with the label
+`delegated-by-owner-permit` (13.2; `decisions.md` 21). It changes no contract, no interface and
+no build.
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -977,8 +984,8 @@ Built in release 0.1.7 as a library, `client/lib/audit2.js`, with the record it 
 this section says, and adds what v2 adds. Release 0.1.9 corrects it again on two points
 (`decisions.md` 19). Release 0.1.10 lets it connect from the manifest of a v2 deployment
 (section 1) and closes three residual cases of the reading of full signing records
-(`decisions.md` 20). It is not yet a command: the command that takes a v2 manifest is the next
-part of the client.
+(`decisions.md` 20). From release 0.1.11 it is a command: `pouw audit <epoch>` on a v2 manifest
+(13.2).
 
 - **Where the logs start, and that they reach back far enough.** A deployment names
   `deployBlock`, the block of its first contract, as the kernel's manifests do: the policy is
@@ -1098,19 +1105,62 @@ is held by whom the account meant. It does not evaluate the checks of a producti
 those come with that profile's module. It reads the tender contract behind an adapter and no
 other source of work.
 
+### 13.2 The client for a v2 deployment
+
+Built in release 0.1.11 (`client/lib/client2.js`, `client/pouw.js`). The client's commands take
+the manifest of a v2 deployment as they take a kernel's, and tell the two apart by its schema.
+
+- **`status`, `verify`, `audit`, `seal`.** `status` shows the deployment, the deployment it
+  supersedes, the epoch and, for an address, its admission, its operator, its guard binding and
+  its minimum nonce. `verify` is the check of a deployment against its manifest (section 1),
+  with a record of schema `finchain-pouw.ledger-v2.deployment-check/1`. `audit` is the audit of
+  13.1, with its record, and takes the permits a deployment has published (`--permits`). Its
+  exit status is 0 when the audit is `ok`, 2 when it differs, and 5 when it agrees but left
+  receipts undecided, which no other kind of result shares (P71).
+- **`work` and `bridge`.** Without a permit the key sends for itself: `submitG0` to the ledger,
+  `confirm` to the adapter. With `--permit` the key is the delegate a permit names and sends
+  for the permit's account: `submitG0For`, `confirmFor`. The permit is the record that
+  `scripts/sign-permit.js` wrote where the account's key is (section 12), read by the audit's
+  own rules (13.1): a Permit for this chain and this ledger, whole, and signed. A bare message,
+  which the audit takes by agreement, is not sent. The account's key never reaches this client.
+- **Refused before anything is sent.** The client holds the sending key to the permit's
+  delegate and the operation to its scope; asks the ledger's own `checkPermit` - every check
+  the ledger makes, the guard of a contract account and its signature included - without a
+  transaction; and calls the entry itself without a transaction before sending it. A permit
+  that the ledger would refuse is refused with the ledger's reason, and a tender that the
+  participant does not own, or that is not settled, is refused the same way. What is recorded
+  already is found by its contribution id and not sent again.
+- **The audit job.** In epoch N the job recomputes epoch N-1 in full (13.1) and submits only
+  when the recomputation agrees and is complete. When it agrees and is not complete nothing is
+  submitted and the exit status is 5: work that was not re-decided is not vouched for.
+- **The run record**, written with `--out`, has schema `finchain-pouw.ledger-v2.run/1` and the
+  canonical form and two hashes of section 13. It records the participant, the sender and the
+  origin apart (section 2); the label `delegated-by-owner-permit` or `direct-by-key`; the
+  permit's digest, its fields, its signer and the SHA-256 of its file; the receipt, its status,
+  the transaction and its gas; for work, what was audited; for a confirmation, the tender. It
+  says which run of the client sent the transaction and how the sending key was authorized,
+  and nothing about which program decided to do the work (A74, condition 7).
+- **Outputs are created, never replaced** (P68). For a v2 manifest every `--out` is refused
+  before anything is read when its path exists. The kernel's commands are as they were.
+
+What it does not do: act through an account's own `execute` on ledger v2 (`--account` is the
+kernel's; on v2 an account takes part through a delegate, or by its own key), sign anything,
+or hold any key but the one it sends with.
+
 ## 14. The test matrix, as run
 
-Run on 2026-11-26 on the in-process network (Node 22.23.5, Hardhat 2.29.2; the kernel compiled
-by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.1.10, 162 tests pass and none fails:
+Run on 2026-11-27 on the in-process network (Node 22.23.5, Hardhat 2.29.2; the kernel compiled
+by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.1.11, 165 tests pass and none fails:
 the 83 of the kernel of 0.1.3, of which three were adapted to the client's new behaviour; the
 48 that release 0.1.4 added; six that release 0.1.5 added; six that release 0.1.6 added, on the
 compile boundary and the builds; eight that release 0.1.7 added, on the audit of ledger v2,
 which are the rows L36 to L43; three that release 0.1.8 added on its corrections, the rows L44
-to L46; one that release 0.1.9 added, the row L47; and seven that release 0.1.10 adds, beside
-more cases in L46: one on v2's own copies of the audit function and the seed sources, four on
-the deployment, the rows L48 to L50 and one on records that are never replaced, and two on the
-probe, the row L51 and one on its meter. The twelve of releases 0.1.5 and 0.1.6 and three of
-release 0.1.10 have no row below.
+to L46; one that release 0.1.9 added, the row L47; seven that release 0.1.10 added, beside more
+cases in L46: one on v2's own copies of the audit function and the seed sources, four on the
+deployment, the rows L48 to L50 and one on records that are never replaced, and two on the
+probe, the row L51 and one on its meter; and three that release 0.1.11 adds on the client for a
+v2 deployment, the rows L52 to L54. The twelve of releases 0.1.5 and 0.1.6 and three of release
+0.1.10 have no row below.
 Every row below has at least one test that carries its id in its title; the last column names
 the file. A row is "passed" when every test that carries its id passed. The limits of what a
 pass covers follow the table. From release 0.1.6 on, every row is run on the builds of the v2
@@ -1119,9 +1169,9 @@ compiler - the builds a deployment would be made from - and no longer on those o
 The advisor ran the 131 tests of release 0.1.4 and the rehearsal again on its own, under
 another version of Node, and found all 35 ids of that release in its output (`decisions.md`
 15.2). That run is the advisor's evidence; it is not repeated here as this repository's. The
-rows L36 to L51 came after it.
+rows L36 to L54 came after it.
 
-The ids L1 to L51 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
+The ids L1 to L54 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
 linked chain of business evidence; where both could be meant, the document is named.
 
 | Id | Case | Expected | Result |
@@ -1177,6 +1227,9 @@ linked chain of business evidence; where both could be meant, the document is na
 | L49 | Deployment: a manifest that is not what is on chain - another schema or code hash; the kernel's `AuditV1` behind the role of v2's; a role filled by another role's build, a role not known, a role left out; log starts that do not fit the contracts; a guard binding or guard code that is not the policy's, a guard named as another contract, a binding for an account that has none, a rebinding after the deployment; a superseded deployment on another chain, without code, the ledger itself, without its manifest hash; another clock; an ERC-8414 contract with other code or none recorded | each found by name, and nothing else | passed (`v2.deploy`) |
 | L50 | Deployment: plans that cannot run as written - schema, chain, lead time, epoch length; parameter versions and their basis points; profiles missing, twice, unknown, not from epoch 0; seed source; the ERC-8414 contract and its deploy block; a party twice or with an operator out of range; a guard for an account without code, a guard that is neither the cell guard nor a contract; funds; a superseded deployment on another chain, of the same name, without a ledger, without its hash | refused before anything is sent; a cell that the guard would refuse now is planned, and the plan says so | passed (`v2.deploy`) |
 | L51 | Probe: contract accounts read at one block - a cell stand-in the guard allows, one whose verdict is not satisfied, one whose registry fails, one whose anchor is stale, a key without code; the meter against a transaction; a call starved of gas; code where the probe would place its meter or the guard | what the guard would answer, from the views and from the guard itself, in agreement; the gas of the guard and of the signature check against their bounds; nothing sent; the meter reads the transaction's execution plus the access of the callee; no code is placed over code | passed (`v2.probe`) |
+| L52 | Client: a cell's audit job through its delegate under the cell's permit, signed by `scripts/sign-permit.js` with the owner's key; a bare message, a record for another ledger, an unsigned record, an edited record; a key that is not the delegate; a permit without the operation; the cell's gate not satisfied; a revoked permit; the job again; a key for itself; the next epoch; a receipt of a module the client does not read | each refusal before anything is sent, with the reason, the ledger's own where it is the ledger's; the cell the worker of record, the delegate the sender and the origin, the permit's digest the authorization; the run record labelled, its hashes recomputed, nothing of the endpoint beyond its host; found again and not sent; the direct entry labelled so; the next epoch audited in full and submitted; an audit that agrees and is not complete submits nothing | passed (`v2.client`) |
+| L53 | Client: a tender confirmed through the owner's delegate under the owner's permit; a tender of another owner, a permit without the operation, a key that is not the delegate, a submission not settled; the confirmation again; the owner for itself; the epoch audited | each refusal before anything is sent; the owner the counterparty, the delivering key the worker, the delegate the sender; found again and not sent; the direct entry labelled so; the permit read from the delegate's own transaction by the audit | passed (`v2.client`) |
+| L54 | Client: the command line on a v2 manifest and on a kernel's - `--account` on v2, `--permit` on the kernel, a manifest of neither schema, an `--out` that exists; the exit status of the audit | each refused before an endpoint is asked anything, the file left as it was; 0, 5 and 2 for ok, agrees-not-complete and differs | passed (`v2.client`) |
 
 What a pass covers, and what it does not:
 
@@ -1201,15 +1254,16 @@ What a pass covers, and what it does not:
   fixture's test module, and the function it does not carry the fixture's echo function. The
   cases of L39 and L45 are made by showing the audit a log, an answer or a transaction other
   than the chain's, because the ledger as built does not produce them; the records of L46 are
-  made by editing the signing script's record. No command of the client runs this audit yet;
-  it connects from a v2 manifest in L48, and work and confirmation through a delegate are not
-  built in the client.
-- **L48 to L51 run on the in-process network**, the cell being the stand-in of
+  made by editing the signing script's record. From release 0.1.11 `pouw audit` runs it on a v2
+  manifest (13.2).
+- **L48 to L54 run on the in-process network**, the cell being the stand-in of
   `contracts/v2/testing`. The rehearsal (`npm run local-run`) makes a v2 deployment with the
   command itself, against a development node behind an endpoint, superseding the rehearsal's
-  first deployment, and checks it from the outside at the finalized block; nothing is worked on
-  it there, because the commands that act through a delegate are not built. No v2 deployment
-  exists on a public chain; the probe's run against the deployed cells is recorded in 11.7.
+  first deployment, checks it from the outside at the finalized block, and works it with the
+  client's commands: permits signed by the signing script, the cell's audit job and a tender
+  confirmation through a delegate, a wallet for itself, the audit of the epoch and the check of
+  the deployment. No v2 deployment exists on a public chain; the probe's run against the
+  deployed cells is recorded in 11.7.
 - **L35's second program** is run by the test when the machine has `python3`; where it has not,
   that part is skipped and the second implementation inside the test stands. It ran here.
 - **Six tests of release 0.1.6 carry no row.** They hold the compile boundary and the builds
@@ -1225,17 +1279,19 @@ What a pass covers, and what it does not:
 - **Three tests of release 0.1.10 carry no row.** They hold v2's own copies of the kernel's
   audit function and seed sources (section 1), the creation of records that never replaces one
   (P68), and the probe's meter against its listing.
-- **The tests were checked against changes that should break them.** Each of 116 changes that
+- **The tests were checked against changes that should break them.** Each of 130 changes that
   break one rule of the contracts, of the client or of a tool - a missing revocation check, a
   guard compared by address only, an allocation that reads the present declaration, a read at
   the latest block, an output written over a file that exists, a statement not verified when it
   is sent again, an operator taken from the receipt's own record, a permit's scope not held, a
   full record read as a bare message, a guard binding the manifest records that is not the
-  policy's, and so on - made at least one test fail. There were 38 with release 0.1.5 and two
+  policy's, a key sending a permit it is not the delegate of, and so on - made at least one test
+  fail. There were 38 with release 0.1.5 and two
   more with 0.1.6; release 0.1.7 added 30 on the audit of ledger v2 and its record, release
-  0.1.8 added 12 on its corrections, release 0.1.9 added seven and release 0.1.10 adds 27: six
+  0.1.8 added 12 on its corrections, release 0.1.9 added seven, release 0.1.10 added 27 - six
   on the reading of full records, 15 on the deployment, its plan, its manifest check and its
-  records, three on the probe and three on the copied contracts. The first run of that check,
+  records, three on the probe and three on the copied contracts - and release 0.1.11 adds 14 on
+  the client for a v2 deployment. The first run of that check,
   with release 0.1.4, found one test that did not notice a rule being broken: the bound on the
   gas given to a signature check. The test now measures the gas a refused transaction used. Its
   review with release 0.1.7 found that the runner had counted a test process that died for
@@ -1249,9 +1305,20 @@ What a pass covers, and what it does not:
 
 ## 15. What changed
 
-Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 9 against revision 8
-applies A87 to the deployment, and changes no contract of the ledger and no compiled interface
-(`decisions.md` 20):
+Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 10 against revision
+9 adds the client for a v2 deployment and changes nothing on chain (`decisions.md` 21):
+
+| Point | Revision 9 | Revision 10 |
+| --- | --- | --- |
+| The client's commands on a v2 manifest | none: the audit and the check of a deployment were libraries | `status`, `verify`, `audit`, `seal`, `work`, `bridge` (13.2) |
+| Work and confirmation through a delegate | not built in the client | with `--permit`, the record of the signing script; refused before anything is sent where the ledger or the adapter would refuse |
+| The run record | not built | schema `finchain-pouw.ledger-v2.run/1`, labelled `delegated-by-owner-permit` or `direct-by-key` |
+| Exit status of the audit | not built | 0 ok, 2 differs, 5 agrees and not complete; work submits nothing on 2 or 5 |
+| The client's outputs on v2 | - | created, never replaced (P68) |
+| The test matrix | L1 to L51 | L1 to L54 |
+
+Revision 9 against revision 8 applies A87 to the deployment, and changes no contract of the
+ledger and no compiled interface (`decisions.md` 20):
 
 | Point | Revision 8 | Revision 9 |
 | --- | --- | --- |
@@ -1356,7 +1423,9 @@ sending; from 0.1.7 on, the audit of an epoch of ledger v2 as a library, with it
 corrected in 0.1.8, 0.1.9 and 0.1.10 (13.1); and, from 0.1.10 on, v2's own copies of `AuditV1`
 and of the seed sources, the deployment of v2 from its builds with its manifest and the check of
 a deployment against it, rehearsed on a development network (section 1), and the read-only probe
-of contract accounts (11.7), run on 2026-11-26 against the cells of OG and cell-b.
+of contract accounts (11.7), run on 2026-11-26 against the cells of OG and cell-b; and, from
+0.1.11 on, the client for a v2 deployment: its commands on a v2 manifest, work and confirmation
+through a delegate, and the run record with its label (13.2).
 
 Not built, and needed before round R2b (the production module only where the round uses its
 profile):
@@ -1364,8 +1433,6 @@ profile):
 | What | Why it is not in this version |
 | --- | --- |
 | The deployment of v2 on Finchain Sepolia, superseding the deployment of round R2a | an operation package of its own, reviewed as such: the configuration, the steward's key on the host where it is, the plan as the command prints it, the funds. The tooling is built (section 1) |
-| The client for a v2 deployment: `status`, `verify` and `audit` as commands on its manifest, and `work` and `bridge` through a delegate | the audit and the check of a deployment are built as libraries and read a v2 manifest; the commands, and work and confirmation through a delegate, are the next part |
-| The run record of the client, with the label `delegated-by-owner-permit` | with the v2 client |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment, which runs beside R2b and R3 (A70, Q23). It is a precondition of a round only where that round uses the profile (A87); R2b as the roadmap describes it does not |
 | The configuration of round R2b, its runbook and the operation package of the one signature | a round's own package, reviewed as such |
 

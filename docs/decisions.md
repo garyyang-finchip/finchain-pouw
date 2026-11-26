@@ -12,9 +12,17 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.18 keeps the software at release 0.1.10 and records no new ruling. It
-records the probe of the two deployed cells, OG and cell-b, run on 2026-11-26 on Finchain
-Sepolia from the host of cell-b: both gas bounds of the ledger hold for them (20.7). Nothing is
+Design revision v0.1.19 comes with software release 0.1.11 and records no new ruling. It is the
+client for a v2 deployment that A86 names: the client's commands on a v2 manifest, the audit as
+a command with the exit statuses P71 asks for, work and confirmation sent through a delegate
+under the participant's permit, and the run record with the label `delegated-by-owner-permit`
+(section 21). Three choices of this repository are put to the owner with it, P80 to P82. No
+contract, no compiled interface and no build changes; nothing is deployed on a public chain and
+nothing is signed with a live key.
+
+Design revision v0.1.18 kept the software at release 0.1.10 and recorded no new ruling. It
+recorded the probe of the two deployed cells, OG and cell-b, run on 2026-11-26 on Finchain
+Sepolia from the host of cell-b: both gas bounds of the ledger hold for them (20.7). Nothing was
 changed but documents and that record.
 
 Design revision v0.1.17 came with software release 0.1.10 and recorded no new ruling. It was the
@@ -1211,7 +1219,7 @@ still replace a file that matters there, a key file included.
 
 | Id | Proposal | Why | Status |
 | --- | --- | --- | --- |
-| P68 | From the client for a v2 deployment on, the client's `--out` creates its file and refuses a path that exists. The scripts that write into a directory of their own keep replacing their own records. Release 0.1.5 leaves both as they are | The fault of this section was the replacing, and it is as easy to mistype a path there. Changing it now would change commands that the runbook of round R2a and the hosted workflow use as they are, and the owner asked for three corrections | Adopted 2026-11-26 (A87): the v2 client's official outputs are created, never overwritten; overwriting only for temporary, regenerable files that are not yet sealed. Applies from the commands of the v2 client on, which are not yet built |
+| P68 | From the client for a v2 deployment on, the client's `--out` creates its file and refuses a path that exists. The scripts that write into a directory of their own keep replacing their own records. Release 0.1.5 leaves both as they are | The fault of this section was the replacing, and it is as easy to mistype a path there. Changing it now would change commands that the runbook of round R2a and the hosted workflow use as they are, and the owner asked for three corrections | Adopted 2026-11-26 (A87): the v2 client's official outputs are created, never overwritten; overwriting only for temporary, regenerable files that are not yet sealed. Applies from the commands of the v2 client on, built in release 0.1.11 (21.2) |
 
 ### 15.5 The compiler, and the kernel's builds
 
@@ -1454,7 +1462,7 @@ audit and its records are as they were.
 
 | Id | Proposal | Why | Status |
 | --- | --- | --- | --- |
-| P71 | A report keeps differences and undecided receipts apart: `findings`, `undecided`, and the three flags `agrees`, `complete` and `ok`. A command built on the audit succeeds only when `ok`, and tells "agrees, not complete" from "differs" by its exit status | Finding 3. A receipt whose work was not read again is not shown to be wrong, and is not shown to be right either | Implemented in 0.1.7 and corrected in 0.1.8 and 0.1.9; adopted in its direction 2026-11-26 (A87), with the advisor's boundary: `complete` is the completeness of the work's re-decision within what the client reads, the authorization evidence states its own reach, and an authorization that contradicts the receipt is a finding. The command and its exit statuses are not built |
+| P71 | A report keeps differences and undecided receipts apart: `findings`, `undecided`, and the three flags `agrees`, `complete` and `ok`. A command built on the audit succeeds only when `ok`, and tells "agrees, not complete" from "differs" by its exit status | Finding 3. A receipt whose work was not read again is not shown to be wrong, and is not shown to be right either | Implemented in 0.1.7 and corrected in 0.1.8 and 0.1.9; adopted in its direction 2026-11-26 (A87), with the advisor's boundary: `complete` is the completeness of the work's re-decision within what the client reads, the authorization evidence states its own reach, and an authorization that contradicts the receipt is a finding. The command and its exit statuses are built in release 0.1.11 (21.2) |
 | P72 | The permit behind a delegated receipt is read from the receipt's own transaction when that transaction is the delegate's call to the ledger or to the module; otherwise it is looked for among permits given to the run; otherwise the digest alone is reported, and said to be alone. A round whose delegates are keys that send their own transactions publishes no permit. A round that uses a contract delegate or a relay puts the signing script's record of each such permit with its evidence | Finding 1. It keeps the audit "from the chain alone" for the arrangement the rounds use, and does not ask a third party to trust a file where the chain has the same content | Implemented in 0.1.7, corrected in 0.1.8 (the entry's own call held in full; an invalid permit in it a finding) and 0.1.9 (full records read as they are); adopted in its direction 2026-11-26 (A87) |
 | P73 | Which of the ledger's two rules a permit passed is read from the permit and not from the account's code at the audit's block. No guard named: an account without code, and a signature that must recover to it in the one accepted form. A guard named: an account with code, the binding in force for the epoch, and a signature the audit does not ask the account for again. The account's code at the block is reported and decides nothing | Finding 2. A finding raised on the code an account has today would be false for an account that gained code after it signed; and asking a contract account today would report today's answer as that moment's | Implemented in 0.1.7; adopted in its direction 2026-11-26 (A87), stated as an inference from the permit's form and the frozen rules, not as a reading of the account's code at the time |
 | P74 | A G0 receipt of a function the client does not carry: the verdict is taken as recorded and everything that follows from it is re-decided. A G1 receipt of a module the client does not read: the recorded status is replayed as it is; the two rules for task units, the taking of its key and the ledger's store of the key are held all the same | Those rules need the receipt and the log only. Holding them costs nothing and leaves the undecided part as small as it can be | Implemented in 0.1.7; adopted in its direction 2026-11-26 (A87): each receipt says which of its verdict and facts stand as recorded, and arithmetic that agrees is not a check of the work's facts |
@@ -1765,3 +1773,66 @@ figure for any later state of a cell, or anything about a v2 deployment, of whic
 a public chain. The record names its environment "unspecified", because the configuration it
 read names none; it is of the public test network. The measurement that `ledger-v2.md` 11.7 asks
 for before round R2b is made; no ruling is asked for.
+
+## 21. The client for a v2 deployment
+
+### 21.1 What this revision is
+
+Revision v0.1.18 was uploaded on 2026-11-26 as one commit,
+`b70cf55d3d2f419b3664b2bb6efd5601cb7c17f9`; the executor compared `main` with its own copy file
+by file and found them equal. This revision is the client for a v2 deployment that A86 names
+and that `ledger-v2.md` 16 listed as needed before round R2b: the commands on a v2 manifest,
+work and confirmation through a delegate, and the run record. It changes no contract, no
+compiled interface and no build. The probe's configuration names its environment from now on
+(20.7).
+
+### 21.2 What was built
+
+| Part | What it is | Rows |
+| --- | --- | --- |
+| The commands on a v2 manifest | `client/pouw.js` tells a kernel's manifest from a v2 manifest by its schema. On v2: `status` with an address's guard binding and minimum nonce; `verify`, with a record of schema `finchain-pouw.ledger-v2.deployment-check/1`; `audit`, the audit of `ledger-v2.md` 13.1 as a command, with `--permits`; `seal` | L54 |
+| Work and confirmation | `client/lib/client2.js`: `work` and `bridge` for the key itself, or with `--permit` as the delegate under the participant's permit, the record of `scripts/sign-permit.js` | L52, L53 |
+| Refusals before sending | the delegate and the scope held; the ledger's `checkPermit` and the entry itself called without a transaction; the owner of a tender looked at; what is recorded found by its contribution id | L52, L53 |
+| Exit statuses | 0 ok, 2 differs, 5 agrees and not complete, for the audit and for the audit job; the job submits nothing on 2 or 5 (P71) | L52, L54 |
+| The run record | schema `finchain-pouw.ledger-v2.run/1`, labelled `delegated-by-owner-permit` or `direct-by-key`, with participant, sender and origin apart (A74, condition 7) | L52, L53 |
+| Created outputs | every `--out` on a v2 manifest is a new file, refused before anything is read when its path exists (P68) | L54 |
+| The rehearsal | its third part now works the v2 deployment with these commands: permits signed by the signing script, the cell's audit job and a tender confirmation through a delegate, a wallet for itself, the audit and the check; nine more checks | - |
+
+### 21.3 Findings, and this repository's choices
+
+1. **A permit can be read in two ways, and only one of them is a signed statement.** The audit
+   reads a bare message by agreement, because a deployment may publish permits that way. A
+   transaction carries a signature over typed data; the client sends only the record the
+   signing script wrote, so that what is sent is what the key signed, field for field.
+2. **The ledger can be asked before it is told.** `checkPermit` is a view that makes every
+   check of the entry, and the entry itself can be called without a transaction. Asking both
+   first means a refused permit costs nothing and opens no epoch.
+3. **"Agrees" and "complete" are two answers.** A command that turned both into one exit status
+   would report an audit that could not read some receipts as either right or wrong.
+4. **The run record cannot know who decided to do the work.** It knows the run that sent the
+   transaction and the authority the sending key had. A74 asks that the record say so.
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P80 | The run record of the v2 client, schema `finchain-pouw.ledger-v2.run/1`, with two labels: `delegated-by-owner-permit` when the key sent under a permit, `direct-by-key` when it sent for itself; participant, sender and origin apart; the permit by digest, fields, signer and the SHA-256 of its file; and a reading that the record says nothing about which program decided to do the work | Finding 4; A74, condition 7 | Proposed; owner ruling pending |
+| P81 | Exit status 5 for an audit, or an audit job, that agrees and is not complete; the job submits nothing on it | Finding 3; P71 | Proposed; owner ruling pending |
+| P82 | The client sends a permit only as the signed record of `scripts/sign-permit.js`, read by the audit's rules, after the ledger's `checkPermit` and the entry called without a transaction; `--account` is the kernel's, and on ledger v2 an account takes part through a delegate or by its own key | Findings 1 and 2 | Proposed; owner ruling pending |
+
+### 21.4 What was verified
+
+| What | Result |
+| --- | --- |
+| The tests | 165 pass, none fails: the 162 of release 0.1.10 and three new ones, L52 to L54 |
+| The rows L1 to L54 | every row has a passing test that carries its id |
+| The contracts, the builds and the compiled interfaces | byte for byte those of `b70cf55` |
+| A clean copy | `npm ci`, `npm test`, `npm run export-abi`: 165 tests pass and the builds are rewritten byte for byte as committed |
+| The rehearsal | 55 of 55 checks, with release 0.1.11 from a clean copy; its record is under `evidence/` |
+| The changes that should break the tests | 14 new ones on the client, all killed; M64, on the record module that this release also touched, rerun and killed; the rest as recorded, not rerun |
+
+### 21.5 What comes next
+
+The operation package of round R2b: its configuration, the deployment on Finchain Sepolia
+superseding the deployment of round R2a, the permits of the two cells as readable typed data
+with their digests for review before any key signs, the delegate keys, the runbook, and the
+round. The production module and the two discussion drafts continue beside it, and the isolated
+check of Q32 is a task of its own.

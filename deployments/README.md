@@ -107,7 +107,7 @@ that lists every transaction and the hash of every build used. `docs/r2-runbook.
 | File | What it is |
 | --- | --- |
 | `finchain-sepolia-r2.config.json` | the configuration of round R2a on Finchain Sepolia: two-hour epochs, a 10 / 90 split, epoch 0 as a controlled self-test and a standard version from epoch 1, two wallets of one operator (`docs/decisions.md`, A34) |
-| `finchain-sepolia.identities.json` | public addresses for `scripts/identity-check.js` and `scripts/cell-probe.js`: the two FOGA cells on Finchain Sepolia, each with its Cell Account and its key, and the tender of their recorded business loop |
+| `finchain-sepolia.identities.json` | public addresses for `scripts/identity-check.js` and `scripts/cell-probe.js`, with the environment they are of (`public-testnet`, from release 0.1.11): the two FOGA cells on Finchain Sepolia, each with its Cell Account and its key, and the tender of their recorded business loop |
 | `finchain-sepolia-r2.json` | the manifest of round R2a on Finchain Sepolia, byte for byte as `scripts/deploy.js` wrote it on the host of the round: chain 85422, ledger `0x7180CdDA4aE494f551d196146E6fcCB717675F1a`, genesis time 1795489148 (2026-11-24T02:59:08Z). It is the input of the hosted audit (`docs/r2-runbook.md`, step 7). An earlier deployment from the same configuration was left unused; its manifest is not here, and its records are submitted apart from this deployment's |
 
 `finchain-sepolia-r2.json` is the first manifest of a public deployment here. A manifest says

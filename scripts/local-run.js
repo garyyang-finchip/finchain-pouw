@@ -19,9 +19,11 @@
 //                          themselves, through their accounts; their keys alone are somebody else.
 //   3. ledger v2         - deployed by scripts/deploy-v2.js from the builds of build/v2, superseding
 //                          deployment 1, with the cell guard bound to a stand-in for a FOGA cell, and
-//                          checked from the outside against its manifest. The v2 commands that work
-//                          through a delegate are not built yet; test/v2.deploy.test.js works such a
-//                          deployment in process.
+//                          checked from the outside against its manifest; then worked with the
+//                          client's commands: the cell's audit job through a delegate under a permit
+//                          that scripts/sign-permit.js signed with the cell owner's key, a wallet for
+//                          itself, and a tender confirmed through the delegate under its owner's
+//                          permit; then audited and checked by the commands.
 //
 // Keys are made by scripts/keys.js in a temporary directory outside the repository and deleted at
 // the end. One evidence record is written under evidence/.
@@ -42,7 +44,7 @@ const a2 = require("../client/lib/audit2");
 const m2 = require("../client/lib/manifest2");
 const canonical = require("../client/lib/canonical");
 const c = require("./lib/common");
-const { TENDER_ABI, eventIn } = require("./lib/tender");
+const { TENDER_ABI, eventIn, stageTender } = require("./lib/tender");
 
 const root = c.root;
 const NODE_PORT = Number(process.env.POUW_LOCAL_PORT ?? 18545);
@@ -468,16 +470,72 @@ async function main() {
   log("deployed by scripts/deploy-v2.js from build/v2: policy, seed source, ledger, audit function, adapter, cell guard; two profiles; two parameter versions; a cell stand-in bound to the cell guard; superseding deployment 1",
     { manifest: "out/local-run/v2/manifest.json", ledger: manifest3.contracts.GenesisLedgerV2, transactions: deployment3.transactions.length, gasUsed: deployment3.gasUsed });
 
+  // worked with the commands. The permits are signed by scripts/sign-permit.js with the account's key
+  // (the cell's owner key is agent-x's here, as the stand-in was made for it); the delegate key sends
+  const ledger3 = manifest3.contracts.GenesisLedgerV2;
+  const EPOCH3 = BigInt(manifest3.clock.epochDuration);
+  await l1Origin();
+  await setTime(BigInt(manifest3.clock.genesisTime) + 5n);
+  const sign3 = (out, account, keyName, scope, extra = []) => run("scripts/sign-permit.js", ["permit", "--chain-id", chainId, "--ledger", ledger3, "--account", account,
+    "--delegate", address.delegate, "--scope", scope, "--not-before-epoch", 0, "--not-after-epoch", 10, "--nonce", 1, ...extra, "--key-file", keyFile(keyName), "--out", path.join(OUT3, out)]);
+  must(await sign3("permit-cell.json", cell, "agent-x", "submit-g0", ["--guard", manifest3.contracts.FogaCellGuard, "--guard-binding-version", 1]), "scripts/sign-permit.js (the cell)");
+  must(await sign3("permit-wallet-a.json", address["wallet-a"], "wallet-a", "confirm-tender"), "scripts/sign-permit.js (wallet-a)");
+  const pouw3 = (args, key, extra = []) => run("client/pouw.js", [...args, "--manifest", manifest3Path, "--json", ...(key ? ["--key-file", keyFile(key)] : []), ...extra]);
+  const permitCell = path.join(OUT3, "permit-cell.json");
+  const runs3 = [];
+  const wc = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--out", path.join(OUT3, "run-work-cell-0.json")]), "pouw work --permit (the cell)").json;
+  check("v2: pouw work --permit: the cell's audit job, sent by the delegate under the cell's permit; the cell is the worker of record, and the run record says delegated-by-owner-permit",
+    wc.label === "delegated-by-owner-permit" && wc.participant === cell && wc.sender === address.delegate && wc.origin === address.delegate
+    && wc.receipt.worker === cell && wc.status.verdict === "accepted" && fs.existsSync(path.join(OUT3, "run-work-cell-0.json")));
+  const wa = must(await pouw3(["work"], "wallet-a"), "pouw work (wallet-a, for itself)").json;
+  check("v2: pouw work without a permit: a wallet for itself, labelled direct-by-key", wa.label === "direct-by-key" && wa.participant === address["wallet-a"] && wa.sender === address["wallet-a"]);
+  const again3 = must(await pouw3(["work"], "delegate", ["--permit", permitCell]), "pouw work --permit (again)").json;
+  check("v2: a second pouw work --permit finds the cell's receipt and sends nothing", again3.alreadyRecorded === true && again3.receiptId === wc.receiptId);
+  const wrongKey3 = await pouw3(["work"], "wallet-b", ["--permit", permitCell]);
+  check("v2: a key that is not the permit's delegate is refused before anything is sent", wrongKey3.status === 1 && wrongKey3.stderr.includes("is not the permit's delegate"));
+  // a tender of wallet-a's, delivered by agent-y's key and accepted by wallet-a, confirmed by the delegate under wallet-a's permit
+  await sent(chainOperator.sendTransaction({ to: address["wallet-a"], value: ethers.parseEther("0.1") }));
+  const staged = await stageTender({ tenderAddress: taskToken.target, demander: c.walletOf(KEYS, "wallet-a", provider), worker: Y.key,
+    reward: ethers.parseEther(String(r2.round.rewardEth)), label: "local-run-v2" });
+  const wb = must(await pouw3(["bridge", staged.tokenId, staged.submissionId], "delegate", ["--permit", path.join(OUT3, "permit-wallet-a.json"), "--out", path.join(OUT3, "run-bridge.json")]), "pouw bridge --permit").json;
+  check("v2: pouw bridge --permit: wallet-a's tender confirmed by the delegate under wallet-a's permit, for the delivering key",
+    wb.label === "delegated-by-owner-permit" && wb.participant === address["wallet-a"] && wb.receipt.counterparty === address["wallet-a"] && wb.receipt.worker === Y.key.address
+    && wb.receipt.sender === address.delegate);
+  runs3.push(wc, wa, wb);
+  const taken3 = await pouw3(["work"], "delegate", ["--permit", permitCell, "--out", path.join(OUT3, "run-work-cell-0.json")]);
+  check("v2: an --out that exists is refused, and the file stays as it was", taken3.status === 1 && taken3.stderr.includes("exists already")
+    && c.readJson(path.join(OUT3, "run-work-cell-0.json")).reportHash === wc.reportHash);
+
+  await l1Origin();
+  await setTime(BigInt(manifest3.clock.genesisTime) + EPOCH3 + 5n);
+  must(await pouw3(["seal", 0], "delegate"), "pouw seal 0 (v2)");
+  const audit3 = await pouw3(["audit", 0, "--out", path.join(OUT3, "audit-epoch-0.json")]);
+  check("v2: pouw audit: the epoch agrees with the ledger and is complete; both delegated receipts read from the delegate's own transactions",
+    audit3.status === 0 && audit3.json?.ok === true && audit3.json.complete === true && audit3.json.receiptCount === "3" && audit3.json.entries.delegated === 2
+    && audit3.json.entries.byPermitEvidence["permit-in-the-transaction"] === 2 && audit3.json.sealed === true);
+  const wc1 = must(await pouw3(["work"], "delegate", ["--permit", permitCell]), "pouw work --permit (epoch 1)").json;
+  check("v2: in epoch 1 the cell's audit job recomputes epoch 0 in full through its delegate and is accepted",
+    wc1.epoch === "1" && wc1.work.audited === "0" && wc1.work.receipts === 3 && wc1.status.verdict === "accepted");
+  runs3.push(wc1);
+  const verified3 = await pouw3(["verify"]);
+  check("v2: pouw verify: the deployment as its manifest says, once started", verified3.status === 0 && verified3.json?.ok === true && verified3.json.schema === "finchain-pouw.ledger-v2.deployment-check/1");
+  console.log("");
+  console.log((await run("client/pouw.js", ["status", "--manifest", manifest3Path, "--address", cell])).stdout.trimEnd());
+  console.log("");
+  console.log((await run("client/pouw.js", ["audit", 0, "--manifest", manifest3Path])).stdout.trimEnd());
+  log("ledger v2 worked with the commands: the cell's audit job through its delegate, a wallet for itself, a tender through the delegate; audited and checked",
+    { runs: runs3.length, audit: audit3.json?.resultHash, verify: verified3.json?.resultHash });
+
   // ---------------------------------------------------------------- evidence
   const ok = checks.every((x) => x.ok);
   const recordedAt = new Date().toISOString();
   const sources = [...filesUnder("contracts"), ...filesUnder("build"), ...filesUnder("client"), ...filesUnder("scripts"), R2_CONFIG, "hardhat.config.js", "package.json", "package-lock.json"];
   const gasOf = (list, step) => list.filter((s) => s.step === step);
   const record = {
-    schema: "finchain-pouw.local-run/3",
+    schema: "finchain-pouw.local-run/4",
     environment: "local-devnet",
     recordedAt,
-    what: "Rehearsal of round R2 with the commands of a public deployment: keys, deployment from the committed builds, verification, an operator's round over two epochs (controlled self-test, then standard) with a settled block that lags, close records, audits; then two contract accounts taking part as themselves on a deployment of their own; then ledger v2 deployed from its own builds, superseding the first deployment, and checked against its manifest",
+    what: "Rehearsal of round R2 with the commands of a public deployment: keys, deployment from the committed builds, verification, an operator's round over two epochs (controlled self-test, then standard) with a settled block that lags, close records, audits; then two contract accounts taking part as themselves on a deployment of their own; then ledger v2 deployed from its own builds, superseding the first deployment, checked against its manifest, worked through a delegate under its participants' permits, and audited",
     ok,
     host: c.hostInfo(),
     tools: { hardhat: versionOf("hardhat"), ethers: ethers.version, solc: versionOf("solc") },
@@ -486,7 +544,8 @@ async function main() {
     checks,
     operatorWallets: { configuration: config, deployment, verification: verified.json, rounds, audits },
     contractAccounts: { identities, configuration: config2, deployment: deployment2, steps: g.jsonable(steps), audits: [audit2.json] },
-    ledgerV2: { configuration: config3, deployment: deployment3, verification: g.jsonable({ ok: check3.ok, block: check3.pin.number, checks: check3.checks }) },
+    ledgerV2: { configuration: config3, deployment: deployment3, verification: g.jsonable({ ok: check3.ok, block: check3.pin.number, checks: check3.checks }),
+      runs: runs3, audits: [audit3.json], check: verified3.json },
     gasUsed: {
       deployment: deployment.gasUsed,
       work: rounds.flatMap((r) => gasOf(r.did, "work").map((s) => s.gasUsed)),
@@ -495,6 +554,8 @@ async function main() {
       workThroughAccount: [wx.gasUsed, wy.gasUsed],
       bridgeThroughAccount: [bx.gasUsed, bo.gasUsed],
       deploymentV2: deployment3.gasUsed,
+      workThroughDelegate: [wc.gasUsed, wc1.gasUsed],
+      bridgeThroughDelegate: [wb.gasUsed],
     },
     transcript,
     notes: [
@@ -504,7 +565,7 @@ async function main() {
       `Blocks were mined every ${BLOCK_MS} ms, not one per transaction: transactions waited in the pool as they do on a public chain. Epochs are the two hours of the round's configuration, on the node's clock.`,
       "The contract accounts are the test account of contracts/testing: one owner key and an execute call. They show that the kernel and the client treat an account as the party; they are not an agent's node, and nothing here was done through one.",
       "The test tenders settle a fixed result and carry no task.",
-      "The v2 deployment of part 3 is made and checked; nothing is worked on it here, because the v2 commands that act through a delegate are not built yet. Its cell is a stand-in from contracts/v2/testing with the views the cell guard reads; no FOGA build product is used, and a real cell is read on its own chain by a read-only probe.",
+      "The v2 deployment of part 3 is made, checked and worked with the client's commands. Its cell is a stand-in from contracts/v2/testing with the views the cell guard reads and its owner's signature rule; no FOGA build product is used. The permits were signed by scripts/sign-permit.js with keys made for the run, and the delegate key sent for the accounts. The run records say how each transaction was authorized; they are no evidence of which program decided to do the work.",
     ],
   };
   const out = path.join(root, "evidence", `local-run-${c.stamp(new Date(recordedAt))}.json`);

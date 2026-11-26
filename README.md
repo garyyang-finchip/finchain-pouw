@@ -6,11 +6,11 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.10 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.1.11 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
-builds are committed with their record, the client audits an epoch of it as a library, its
-deployment tooling and manifest are built and rehearsed on a development network, and it is not
-deployed.**
+builds are committed with their record, its deployment tooling and manifest and the client for a
+v2 deployment - work and confirmation through a delegate included - are built and rehearsed on a
+development network, and it is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -50,6 +50,17 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.11, with design revision v0.1.19 (2026-11-27), is the client for a v2 deployment
+(`docs/decisions.md` 21). The client's commands take a v2 manifest: `status`, `verify`, `audit`
+and `seal`; `work` and `bridge` send for the key itself or, with `--permit`, as the delegate a
+participant's permit names - the record that `scripts/sign-permit.js` wrote where the
+participant's key is. Whatever the ledger or the adapter would refuse is refused before anything
+is sent. Each run can leave a record that keeps participant, sender and origin apart and is
+labelled `delegated-by-owner-permit` or `direct-by-key`; it is no evidence of which program
+decided to do the work. An audit that agrees but left receipts undecided has an exit status of
+its own. Every output on a v2 manifest is a new file. No contract, no compiled interface and no
+build changed; nothing is deployed on a public chain.
 
 Release 0.1.10, with design revision v0.1.17 (2026-11-26), is the deployment of ledger v2 as
 local development, as the owner's ruling A87 has it (`docs/decisions.md` 20). v2 gets its own
@@ -189,6 +200,8 @@ client/                the reference client: pouw.js, lib/, abi/
   lib/audit2.js          the audit of an epoch of ledger v2 at one block; a library, not yet a command
   lib/report2.js         the record of that audit
   lib/manifest2.js       the manifest of a v2 deployment, and the check of a deployment against it
+  lib/client2.js         work and confirmation on ledger v2, for a key itself or through a delegate
+                         under a permit, and the record of each run
 test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
   sign-permit.js         one statement of ledger v2, signed off line from a key file; no network;
@@ -237,9 +250,11 @@ the committed builds and the configuration of round R2a, the check of the deploy
 operator's round over a controlled self-test epoch and a standard one - behind an endpoint whose
 finalized block lags, as a rollup's does - close records and audits. It then makes a second
 deployment in which two contract accounts take part as themselves, and a third, of ledger v2
-from its own builds, which supersedes the first and is checked against its manifest from the
-outside. Keys are made for the run outside the checkout and deleted after it. It ends with
-`PASS` and the number of checks, and prints the epochs' tables as an auditor sees them.
+from its own builds, which supersedes the first, is checked against its manifest from the
+outside, and is worked with the client's commands through a delegate under permits that the
+signing script signed. Keys are made for the run outside the checkout and deleted after it. It
+ends with `PASS` and the number of checks, and prints the epochs' tables as an auditor sees
+them.
 
 The same tests and the same rehearsal can be run on a hosted runner from a clean checkout
 (`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow". It first ran there on 2026-11-24,
@@ -275,6 +290,15 @@ account, and the worker of record - and the owner that confirms a tender - is th
 the key. Do not give the client a key that a running agent node also sends from: two programs
 sending from one key collide on nonces, and a key beside an agent is not the agent
 (`docs/genesis-mining-mvp.md`, section 5.5).
+
+On a deployment of ledger v2 the same commands take its manifest. `work` and `bridge` send for the
+key itself, or with `--permit <file>` as the delegate that a participant's permit names - the file
+being the record that `scripts/sign-permit.js` wrote where the participant's key is; the key file
+given to the client is then the delegate's own. Whatever the ledger or the adapter would refuse is
+refused before anything is sent. `--out` writes the run's record, which says how the sending key
+was authorized; on a v2 manifest every `--out` is a new file and a path that exists is refused.
+`audit` exits with 5 when the audit agrees with the ledger but left receipts undecided
+(`docs/ledger-v2.md` 13.2).
 
 ## What the rounds show, and what they do not
 

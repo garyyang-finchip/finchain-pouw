@@ -4,7 +4,7 @@
 const g = require("./genesis");
 const v2 = require("./ledger2");
 const { sealed } = require("./canonical");
-const { CLIENT, endpointHost } = require("./report");
+const { CLIENT, endpointHost, points } = require("./report");
 
 const SCHEMA = "finchain-pouw.ledger-v2.audit/1";
 
@@ -127,4 +127,47 @@ function auditRecord(ctx, report, { deployment = {}, rpc = "", recordedAt = new 
   }));
 }
 
-module.exports = { SCHEMA, ROLE_NAME, UNIT_NAME, auditRecord };
+const pad = (v, n) => String(v).padEnd(n);
+
+/// The audit of an epoch of ledger v2 as text, for the person who ran it. The record is the evidence;
+/// this is a reading of it.
+function auditText(ctx, report) {
+  const d = ctx.deployment ?? {};
+  const verdict = report.ok ? "MATCH" : report.agrees ? "AGREES, NOT COMPLETE" : "DIFFERS";
+  const lines = [];
+  lines.push(`epoch ${report.epoch}  ${verdict}  mode ${report.mode}  settled block ${report.settledBlock}`);
+  lines.push(`  read at block ${report.pin.number} ${report.pin.hash} (${report.pin.finality}), block time ${new Date(Number(report.pin.timestamp) * 1000).toISOString()}, observed ${report.pin.observedAt}`);
+  lines.push(report.closeRecord.present
+    ? `  close record in block ${report.closeRecord.block}, tx ${report.closeRecord.txHash}`
+    : "  no close record at that block (it changes no figure; `pouw seal` writes it)");
+  if ((d.labels ?? []).length > 0) lines.push(`  ${d.environment ?? "environment unspecified"}: ${d.labels.join(", ")}`);
+  lines.push(`  parameters v${report.paramsVersion}  budget ${points(report.budget)} (G0 ${points(report.pools[0])}, G1 ${points(report.pools[1])})  share cap ${Number(report.params.workerCapBps) / 100}% per address, ${Number(report.params.operatorCapBps) / 100}% per operator`);
+  lines.push(`  receipts ${report.receiptCount}: ${report.entries.direct} direct, ${report.entries.delegated} through a delegate${report.entries.delegated > 0 ? ` (permit ${JSON.stringify(report.entries.byPermitEvidence)})` : ""}`);
+  lines.push(`  measured GMU G0 ${report.totals.measured[0]} G1 ${report.totals.measured[1]}  subsidized GMU G0 ${report.totals.subsidized[0]} G1 ${report.totals.subsidized[1]}`);
+  lines.push(`  digest  ${report.digest}`);
+  lines.push(`  subject ${report.subject}`);
+  lines.push(`  table   ${report.tableHash}  allocated ${points(report.allocated)}  unallocated ${points(report.unallocated)}`);
+  lines.push("");
+  lines.push(`  ${pad("worker", 42)}  ${pad("op", 4)} ${pad("adm", 3)} ${pad("GMU s/m G0", 10)} ${pad("GMU s/m G1", 10)}  test points`);
+  for (const row of report.table) {
+    lines.push(`  ${row.worker}  ${pad(row.operator || "-", 4)} ${pad(row.admitted ? "yes" : "no", 3)} ${pad(`${row.subsidized[0]}/${row.measured[0]}`, 10)} ${pad(`${row.subsidized[1]}/${row.measured[1]}`, 10)}  ${points(row.allocation)}`);
+  }
+  if (report.operators.length > 0) {
+    lines.push("");
+    lines.push("  by declared operator, under the operator cap:");
+    for (const o of report.operators) lines.push(`    operator ${o.operator}: ${o.addresses.length} address(es), ${points(o.allocation)} test points`);
+  }
+  if (report.undecided.length > 0) {
+    lines.push("");
+    lines.push("  undecided (work of a function or a module this client does not read; not differences, and not shown right):");
+    for (const u of report.undecided) lines.push(`    receipt ${u.receiptId}: ${u.why ?? u.what}`);
+  }
+  if (report.findings.length > 0) {
+    lines.push("");
+    lines.push("  differences between the recomputation and the ledger:");
+    for (const f of report.findings) lines.push(`    ${f.what}${f.recomputed !== undefined ? `: recomputed ${f.recomputed}, ledger ${f.ledger}` : ""}`);
+  }
+  return lines.join("\n");
+}
+
+module.exports = { SCHEMA, ROLE_NAME, UNIT_NAME, auditRecord, auditText };
