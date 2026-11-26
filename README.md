@@ -60,9 +60,10 @@ account with the guard's code hash, and the deployment it supersedes; the check 
 against its manifest and the audit both read that manifest. The rehearsal makes such a
 deployment with the command. `scripts/cell-probe.js` reads, without a key and without sending,
 what the cell guard would answer for each contract account and the gas of the guard and of the
-signature check against the ledger's bounds; it has been run against stand-ins only. Three
-residual cases of the reading of full signing records are closed. No contract of the ledger and
-no compiled interface changed; nothing is deployed on a public chain and nothing is signed.
+signature check against the ledger's bounds; on 2026-11-26 it was run against the cells of OG
+and cell-b on Finchain Sepolia, and both bounds hold for them. Three residual cases of the
+reading of full signing records are closed. No contract of the ledger and no compiled interface
+changed; nothing is deployed on a public chain and nothing is signed.
 
 Release 0.1.9, with design revision v0.1.16 (2026-11-26), is the second correction of the audit
 of ledger v2, after the advisor's review of 0.1.8 (`docs/decisions.md` 19): a profile version

@@ -5,8 +5,8 @@ Status: **revision 9. Implemented and tested on a local network; the interfaces 
 are committed with a build record (section 1), now with v2's own copies of `AuditV1` and of the
 seed sources (A87); the client's audit of an epoch of ledger v2 is built as a library (section
 13.1); the deployment of v2 from its builds, with its manifest, is built and rehearsed on a
-development network, and a read-only probe of the deployed cells is built (sections 1, 11.7 and
-16). Not deployed and nothing signed.**
+development network (sections 1 and 16), and a read-only probe has measured the deployed cells
+of OG and cell-b against the two gas bounds (11.7). Not deployed and nothing signed.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
@@ -42,7 +42,9 @@ Revision 9, with release 0.1.10, applies A87 to the deployment: v2's own copies 
 of the two seed sources, the deployment tooling and the manifest of v2, and the read-only probe
 of contract accounts that 11.7 asks for before round R2b. It also closes three residual cases of
 the reading of full signing records, each reproduced on the tree of 0.1.9 before the correction
-(`decisions.md` 20). It changes no contract of the ledger and no compiled interface.
+(`decisions.md` 20). It changes no contract of the ledger and no compiled interface. Design
+revision v0.1.18 adds to it the probe's run against the deployed cells (11.7; `decisions.md`
+20.7) and changes nothing else.
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -838,16 +840,30 @@ above.
 
 A v2 receipt costs about 90,000 gas more than one of 0.1.3, for the fields and the attribution
 it adds. A fact stores its content, thirteen words of storage. The signature check and the
-guard of a real FOGA cell are not in this table: the cell guard was measured against a mock
-only. Before round R2b both are measured against the deployed cells by a read-only call, and
+guard of a real FOGA cell are not in this table: in the tests the cell guard runs against
+stand-ins. Before round R2b both are measured against the deployed cells by a read-only call, and
 compared with the 200,000 and 500,000 gas the ledger gives them. The two bounds are the rule of
 this implementation and are not said to suit every account (A83). The probe that measures them
 is built, `scripts/cell-probe.js` (row L51): at one block it reads each account's views as the
 cell guard reads them, and makes `eth_call`s in which the guard's committed build and a small
 gas meter are placed at two unused addresses by a state override, for that call only. It
 measures the guard for both delegated operations and the account's signature check for a
-well-formed signature that is not the owner's. It has been run against stand-ins only; its run
-against the deployed cells is a read-only step before the round's package (section 16).
+well-formed signature that is not the owner's.
+
+It was run on 2026-11-26 against the two deployed cells on Finchain Sepolia, at the finalized
+block 645150, from the host of cell-b with release 0.1.10 and no key
+(`evidence/cell-probe-20261126T152040Z.json`):
+
+| Account | Its views | The guard | Gas of the guard | Gas of the signature check |
+| --- | --- | --- | --- | --- |
+| OG, `0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1` | revision 3; one binding presented for one clause; verdict satisfied; anchor active in its AID registry | allows both operations, as the views say | 157,764 (`submitG0`) and 157,784 (`confirmTender`) of 500,000 | 10,919 of 200,000; the foreign signature refused |
+| cell-b, `0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB` | the same | the same | the same | the same |
+
+Both bounds hold for these two cells, the guard with more than three times its figure and the
+signature check with more than eighteen. The figures include the access of the called contract,
+as the ledger's own call does. They are of this block and these cells: a cell whose
+requirement, bindings or registry change can take another figure, and the cost of the check for
+the owner's own valid signature is not among them.
 
 ### 11.8 The freeze
 
@@ -1172,8 +1188,8 @@ What a pass covers, and what it does not:
   this repository, they are not these tests, and neither stands in for the other. No transfer
   of ownership was made on a deployed cell.
 - **The cell guard runs against a mock** of the account's views (two tests, without a row of
-  their own, and L48 and L51). Its behaviour and its gas against a deployed cell are not yet
-  measured: the probe that measures them is built and has been run against stand-ins (L51).
+  their own, and L48 and L51). Against the two deployed cells its answer and its gas were
+  measured by the probe on Finchain Sepolia (11.7): that is a record, not a test.
 - **L27 to L29 test the ledger's rules for task units**, given what a module states. The module
   that shows membership and the issuer is part of the first production profile and is not
   built.
@@ -1193,7 +1209,7 @@ What a pass covers, and what it does not:
   command itself, against a development node behind an endpoint, superseding the rehearsal's
   first deployment, and checks it from the outside at the finalized block; nothing is worked on
   it there, because the commands that act through a delegate are not built. No v2 deployment
-  exists on a public chain, and the probe has not been run against a deployed cell.
+  exists on a public chain; the probe's run against the deployed cells is recorded in 11.7.
 - **L35's second program** is run by the test when the machine has `python3`; where it has not,
   that part is skipped and the second implementation inside the test stands. It ran here.
 - **Six tests of release 0.1.6 carry no row.** They hold the compile boundary and the builds
@@ -1340,7 +1356,7 @@ sending; from 0.1.7 on, the audit of an epoch of ledger v2 as a library, with it
 corrected in 0.1.8, 0.1.9 and 0.1.10 (13.1); and, from 0.1.10 on, v2's own copies of `AuditV1`
 and of the seed sources, the deployment of v2 from its builds with its manifest and the check of
 a deployment against it, rehearsed on a development network (section 1), and the read-only probe
-of contract accounts (11.7).
+of contract accounts (11.7), run on 2026-11-26 against the cells of OG and cell-b.
 
 Not built, and needed before round R2b (the production module only where the round uses its
 profile):
@@ -1352,7 +1368,6 @@ profile):
 | The run record of the client, with the label `delegated-by-owner-permit` | with the v2 client |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment, which runs beside R2b and R3 (A70, Q23). It is a precondition of a round only where that round uses the profile (A87); R2b as the roadmap describes it does not |
 | The configuration of round R2b, its runbook and the operation package of the one signature | a round's own package, reviewed as such |
-| A measurement of the signature check and of the cell guard against the deployed cells | the probe is built (11.7); its run against the cells of OG and cell-b on Finchain Sepolia is a read-only step, before the round's package |
 
 It does not show that an agent's software did the work, that a model ran, or that demand is
 independent. It does not bind the authority at settlement, and its audit does not establish who

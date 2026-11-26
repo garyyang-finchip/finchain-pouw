@@ -1,0 +1,123 @@
+{
+  "schema": "finchain-pouw.cell-probe/1",
+  "environment": "unspecified",
+  "configuration": "finchain-sepolia",
+  "chainId": "85422",
+  "endpointHost": "rpc.finchain.one",
+  "recordedAt": "2026-11-26T15:20:40.537Z",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.1.10"
+  },
+  "host": {
+    "node": "v22.22.0",
+    "platform": "linux/x64"
+  },
+  "block": {
+    "number": 645150,
+    "hash": "0x30fb9f413b311d880a145a49c84b735f1a0c48e78aa04ca8bc8573b219bcc937",
+    "timestamp": 1795704972,
+    "asked": "finalized"
+  },
+  "bounds": {
+    "guard": "500000",
+    "signature": "200000"
+  },
+  "guardBuild": {
+    "file": "build/v2/FogaCellGuard.json",
+    "runtimeCodeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+  },
+  "meter": {
+    "code": "0x603436038060346080375a6040526020602082608060003560601c601435fa5a60405103604052600052503d60605260806000f3",
+    "at": "0x00000000000000000000000000000000c0115ead",
+    "guardAt": "0x00000000000000000000000000000000c0115eaf"
+  },
+  "signatureProbe": {
+    "digest": "0x08ec9ba2f7e530585dc1edb4ae904c09fee2a78a868edd9b9e46e6b3a22d52ed",
+    "signer": "a key made for this probe and not kept",
+    "signature": "0x3c8120ab9423274811682719c79f20221f69da09f2b30c18a345cc0162a9a8554adba8f4453ad6c377307281f10a7da7a6671b78b4670f1a1dc6b656ba41af1b1c"
+  },
+  "parties": [
+    {
+      "name": "OG",
+      "account": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "reading": {
+        "account": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+        "code": true,
+        "accountVersion": 3,
+        "presentedBindings": 1,
+        "clauses": 1,
+        "verdict": 1,
+        "aid": "0x2Bb91282D6E8B2Fd1a6f82d76fD0226086E39e42",
+        "aidState": 1,
+        "allows": true,
+        "reasons": []
+      },
+      "guard": {
+        "submitG0": {
+          "answered": true,
+          "allows": true,
+          "gasUsed": "157764",
+          "withinBound": true
+        },
+        "confirmTender": {
+          "answered": true,
+          "allows": true,
+          "gasUsed": "157784",
+          "withinBound": true
+        }
+      },
+      "signature": {
+        "answered": true,
+        "answer": "0x00000000",
+        "gasUsed": "10919",
+        "withinBound": true,
+        "acceptedTheForeignSignature": false
+      },
+      "readingAgreesWithGuard": true
+    },
+    {
+      "name": "cell-b",
+      "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "reading": {
+        "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+        "code": true,
+        "accountVersion": 3,
+        "presentedBindings": 1,
+        "clauses": 1,
+        "verdict": 1,
+        "aid": "0x2Bb91282D6E8B2Fd1a6f82d76fD0226086E39e42",
+        "aidState": 1,
+        "allows": true,
+        "reasons": []
+      },
+      "guard": {
+        "submitG0": {
+          "answered": true,
+          "allows": true,
+          "gasUsed": "157764",
+          "withinBound": true
+        },
+        "confirmTender": {
+          "answered": true,
+          "allows": true,
+          "gasUsed": "157784",
+          "withinBound": true
+        }
+      },
+      "signature": {
+        "answered": true,
+        "answer": "0x00000000",
+        "gasUsed": "10919",
+        "withinBound": true,
+        "acceptedTheForeignSignature": false
+      },
+      "readingAgreesWithGuard": true
+    }
+  ],
+  "notes": [
+    "Read-only: every figure is an eth_call at the block named, with the guard's committed build and a gas meter placed at two unused addresses for that call only. Nothing was deployed or sent.",
+    "The signature checked is a well-formed signature by a key made for the probe and not kept: the figure is the cost of the account's check for a signature that is not its owner's.",
+    "The gas of a call is as the caller sees it: it includes the access of the called contract and a few dozen gas of setup, as the ledger's own call does."
+  ]
+}

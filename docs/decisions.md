@@ -12,7 +12,12 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.17 comes with software release 0.1.10 and records no new ruling. It is the
+Design revision v0.1.18 keeps the software at release 0.1.10 and records no new ruling. It
+records the probe of the two deployed cells, OG and cell-b, run on 2026-11-26 on Finchain
+Sepolia from the host of cell-b: both gas bounds of the ledger hold for them (20.7). Nothing is
+changed but documents and that record.
+
+Design revision v0.1.17 came with software release 0.1.10 and recorded no new ruling. It was the
 delivery that A87 opened, as local development: v2's own copies of `AuditV1` and of the two
 seed sources inside the v2 boundary, the deployment tooling and the manifest of v2, rehearsed on
 a development network, and the read-only probe of contract accounts that `ledger-v2.md` 11.7
@@ -1726,9 +1731,37 @@ given permits with a record of the signing script, edited.
 
 ### 20.6 What comes next
 
-The client for a v2 deployment: `status`, `verify` and `audit` as commands on its manifest,
-work and confirmation through a delegate, and the run record with its label. Then the operation
+The client for a v2 deployment: `status`, `verify` and `audit` as commands on its manifest, work
+and confirmation through a delegate, and the run record with its label. Then the operation
 package of round R2b: its configuration, the deployment on Finchain Sepolia superseding the
 deployment of round R2a, the one signature, and the round. Before that package, the probe is run
-against the cells of OG and cell-b, read-only. The production module and the two discussion
-drafts continue beside them, and the isolated check of Q32 is a task of its own.
+against the cells of OG and cell-b, read-only; it was, the same day (20.7). The production
+module and the two discussion drafts continue beside them, and the isolated check of Q32 is a
+task of its own.
+
+### 20.7 The probe of the deployed cells (design revision v0.1.18)
+
+Release 0.1.10 was uploaded on 2026-11-26 as one commit,
+`813d1725b0e1afa5eeedad305c7e1fcc2bbec0b4`; the executor compared `main` with its own copy file
+by file and found them equal, and on a clone of it 162 tests pass and the builds are rewritten
+byte for byte. The same evening the owner ran `scripts/cell-probe.js` from that commit on the
+host of cell-b, read-only and with no key, against the two cells of
+`deployments/finchain-sepolia.identities.json`, at the finalized block 645150 of Finchain
+Sepolia. Its record is `evidence/cell-probe-20261126T152040Z.json`, taken from the host by
+`cat` and held by the executor against the committed guard build, the meter and the
+configuration.
+
+| What | OG | cell-b |
+| --- | --- | --- |
+| The account's views | revision 3; one binding presented for one clause; the registry's verdict satisfied; the anchor active in its AID registry | the same |
+| What the guard answers | allows `submitG0` and `confirmTender`, as the views say | the same |
+| Gas of the guard, of 500,000 | 157,764 and 157,784 | the same |
+| Gas of the signature check, of 200,000 | 10,919; a signature that is not the owner's refused | the same |
+
+What it shows: at that block both bounds hold for both cells, the guard with more than three
+times its figure and the signature check with more than eighteen, and the cell guard as built
+allows both cells. What it does not show: the figure for the owner's own valid signature, a
+figure for any later state of a cell, or anything about a v2 deployment, of which none exists on
+a public chain. The record names its environment "unspecified", because the configuration it
+read names none; it is of the public test network. The measurement that `ledger-v2.md` 11.7 asks
+for before round R2b is made; no ruling is asked for.
