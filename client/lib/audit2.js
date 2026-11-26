@@ -340,13 +340,20 @@ const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
 const DOMAIN_FIELDS = ["name", "version", "chainId", "verifyingContract"];
 // what makes a given item a full record, which is then never read as a bare message
 const FULL_RECORD_MARKS = ["schema", "kind", "typedData", "domain", "types", "primaryType"];
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 /// Whether a list of typed-data fields is `frozen` as a type: the same fields, each a name and a type
 /// and nothing else, in the same order. The order of the members inside a field is no part of a type.
 function sameFields(given, frozen) {
   if (!Array.isArray(given) || given.length !== frozen.length) return false;
-  return given.every((f, i) => f !== null && typeof f === "object" && !Array.isArray(f)
-    && Object.keys(f).length === 2 && f.name === frozen[i].name && f.type === frozen[i].type);
+  // by index over the frozen type, never over the given array: an array with an empty slot - which a
+  // caller in JavaScript can pass, though JSON cannot carry one - has no field at that position
+  return frozen.every((expected, i) => {
+    if (!own(given, i)) return false;
+    const f = given[i];
+    return f !== null && typeof f === "object" && !Array.isArray(f) && Object.keys(f).length === 2
+      && own(f, "name") && own(f, "type") && f.name === expected.name && f.type === expected.type;
+  });
 }
 
 /// A typed-data value of `type` as it is, or the reason it is not one: addresses as address strings,
@@ -405,32 +412,37 @@ function permitIndex(ctx, permits = []) {
   permits.forEach((given, index) => {
     const refuse = (why) => unusable.push({ index, why });
     const isObject = given !== null && typeof given === "object" && !Array.isArray(given);
-    const full = isObject && FULL_RECORD_MARKS.some((k) => given[k] !== undefined);
+    // the record's form decides how it is read, and nothing inside it does: a full record whose
+    // typed data is null, false, zero or empty is a full record without typed data
+    const full = isObject && FULL_RECORD_MARKS.some((k) => own(given, k));
     if (given?.schema !== undefined && given.schema !== RECORD_SCHEMA) return refuse(`schema ${given.schema} is not ${RECORD_SCHEMA}`);
     if (given?.kind !== undefined && given.kind !== "Permit") return refuse(`a ${given.kind}, not a Permit`);
     // a full record is read whole or not at all: its typed data is under `typedData`, or it is itself
     // typed data; a record that carries a mark of one and neither is not read as a bare message
     let typed = null;
     if (full) {
-      if (given.typedData !== undefined) typed = given.typedData;
-      else if (given.domain !== undefined || given.types !== undefined || given.primaryType !== undefined) typed = given;
-      else return refuse(`it carries ${FULL_RECORD_MARKS.filter((k) => given[k] !== undefined).join(" and ")} but no typed data: a signing record is read with its typed data, never as a bare message`);
+      if (own(given, "typedData")) typed = given.typedData;
+      else if (own(given, "domain") || own(given, "types") || own(given, "primaryType")) typed = given;
+      else return refuse(`it carries ${FULL_RECORD_MARKS.filter((k) => own(given, k)).join(" and ")} but no typed data: a signing record is read with its typed data, never as a bare message`);
     }
     const stated = given?.digest !== undefined ? String(given.digest).toLowerCase() : null;
-    let message = typed ? typed.message : given?.message ?? given;
-    let own = null;
-    if (typed) {
+    let message;
+    let ownDigest = null;
+    if (full) {
       // read as it is: structure first, then its own digest, then where it belongs
-      try { own = ownDigestOfTyped(typed); } catch (e) { return refuse(e.message); }
-      if (stated !== null && stated !== own) return refuse(`its stated digest ${stated} is not the digest of its own typed data ${own}`);
+      try { ownDigest = ownDigestOfTyped(typed); } catch (e) { return refuse(e.message); }
+      if (stated !== null && stated !== ownDigest) return refuse(`its stated digest ${stated} is not the digest of its own typed data ${ownDigest}`);
+      message = typed.message;
+    } else {
+      message = given?.message ?? given;
     }
     let st;
     try { st = permitLib.statement("Permit", ctx.chainId, ctx.address, message ?? {}); } catch (e) { return refuse(e.message); }
     const digest = permitLib.digestOf(st);
-    if (typed) {
-      if (own !== digest) {
+    if (full) {
+      if (ownDigest !== digest) {
         const d = typed.domain;
-        foreign.push({ index, domain: { name: d.name, version: d.version, chainId: String(d.chainId), verifyingContract: d.verifyingContract }, digest: own }); return;
+        foreign.push({ index, domain: { name: d.name, version: d.version, chainId: String(d.chainId), verifyingContract: d.verifyingContract }, digest: ownDigest }); return;
       }
     } else if (stated !== null && stated !== digest) {
       foreign.push({ index, statedDigest: stated, digestHere: digest }); return;

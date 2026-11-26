@@ -75,20 +75,21 @@ table above, whose meaning stays:
 | Field | Meaning |
 | --- | --- |
 | `contracts`, `code` | the roles `GenesisPolicyV2`, `SeedSource`, `GenesisLedgerV2`, `AuditV1`, `TenderAdapter8414V2`, and `FogaCellGuard` where the deployment binds it; every build from `build/v2/`, the seed source being v2's own copy of `L1BlockSeedSource` or `PrevBlockSeedSource` |
-| `deployBlock`, `policyDeployBlock` | the block of the policy, the first contract: the policy's log is read from it |
-| `ledgerDeployBlock` | the block of the ledger: its log is read from it |
-| `tenderDeployBlock` | the block of the ERC-8414 contract, which the configuration must state: the tenders' log is read from it |
-| `guards` | for each contract account bound to a guard: the guard, the build where it is the deployment's own, the guard's code hash as the policy recorded it, the binding version and its first epoch |
-| `supersedes` | the deployment this one supersedes: its name, chain and ledger, and the SHA-256 of its manifest file. Nothing of it is read beyond its code, and nothing of it is changed |
+| `deployBlock`, `policyDeployBlock` | where the policy's log is read from: the block of the policy, the first contract, or an earlier one; never a later one. `code.GenesisPolicyV2.block` is the exact block, held to the deployment transaction |
+| `ledgerDeployBlock` | where the ledger's log is read from: the ledger's block or an earlier one; `code.GenesisLedgerV2.block` is the exact block |
+| `tenderDeployBlock` | where the tenders' log is read from: the block of the ERC-8414 contract, which the configuration must state, and the same as `external.taskToken8414.deployBlock` |
+| `guards` | for each contract account bound to a guard: the guard, the build where it is the deployment's own, the guard's code hash as the policy recorded it, the binding version and its first epoch. Every account the policy bound a guard to must be here: one left out is a finding |
+| `supersedes` | the deployment this one supersedes: its name, chain and ledger, and the SHA-256 of its manifest file, which is a commitment and is not checked against that file. Nothing of the superseded deployment is read beyond its code, and nothing of it is changed |
 
-`client/lib/manifest2.js` checks a deployment against such a manifest at one block, and the audit
-of an epoch of ledger v2 connects from it. Its configuration is of schema
+`client/lib/manifest2.js` checks a deployment against such a manifest at one block, and the
+audit of an epoch of ledger v2 connects from it. Its configuration is of schema
 `finchain-pouw.deploy-config/2`: that of the kernel with an operator cap in each parameter
 version, the start of the tenders' log, a guard per contract account, and `supersedes.manifest`,
 the path of the superseded manifest relative to the configuration. Its record is
 `finchain-pouw.deployment-record/2`. The manifest and the record are created and never replace a
-file. No v2 deployment exists on a public chain yet; the rehearsal makes one on a development
-network.
+file, and from release 0.2.1 a journal created before anything is sent holds every transaction
+the moment it is taken, its outcome after it, and in the end the manifest and the record. No v2
+deployment exists on a public chain yet; the rehearsal makes one on a development network.
 
 ## Making a deployment
 
@@ -107,7 +108,7 @@ that lists every transaction and the hash of every build used. `docs/r2-runbook.
 | File | What it is |
 | --- | --- |
 | `finchain-sepolia-r2.config.json` | the configuration of round R2a on Finchain Sepolia: two-hour epochs, a 10 / 90 split, epoch 0 as a controlled self-test and a standard version from epoch 1, two wallets of one operator (`docs/decisions.md`, A34) |
-| `finchain-sepolia.identities.json` | public addresses for `scripts/identity-check.js` and `scripts/cell-probe.js`, with the environment they are of (`public-testnet`, from release 0.1.11): the two FOGA cells on Finchain Sepolia, each with its Cell Account and its key, and the tender of their recorded business loop |
+| `finchain-sepolia.identities.json` | public addresses for `scripts/identity-check.js` and `scripts/cell-probe.js`, with the environment they are of (`public-testnet`, from release 0.1.11): the two FOGA cells on Finchain Sepolia, each with its Cell Account and its owner-wallet address, and the tender of their recorded business loop |
 | `finchain-sepolia-r2.json` | the manifest of round R2a on Finchain Sepolia, byte for byte as `scripts/deploy.js` wrote it on the host of the round: chain 85422, ledger `0x7180CdDA4aE494f551d196146E6fcCB717675F1a`, genesis time 1795489148 (2026-11-24T02:59:08Z). It is the input of the hosted audit (`docs/r2-runbook.md`, step 7). An earlier deployment from the same configuration was left unused; its manifest is not here, and its records are submitted apart from this deployment's |
 
 `finchain-sepolia-r2.json` is the first manifest of a public deployment here. A manifest says

@@ -1,14 +1,16 @@
 # Ledger v2: bounded delegation, operator aggregation, work facts and receipts
 
-Status: **revision 10. Implemented and tested on a local network; the interfaces are frozen
+Status: **revision 0.2.1. Implemented and tested on a local network; the interfaces are frozen
 (section 11.8); the v2 contracts are compiled behind a boundary of their own, and their builds
 are committed with a build record (section 1), with v2's own copies of `AuditV1` and of the seed
 sources (A87); the deployment of v2 from its builds, with its manifest, is built (section 1);
 the client takes a v2 manifest - its audit of an epoch (13.1), and work and confirmation sent
 for a key itself or through a delegate under the participant's permit, with a record of each
-run (13.2) - and all of it is rehearsed on a development network; a read-only probe has measured
-the deployed cells of OG and cell-b against the two gas bounds (11.7). Not deployed and nothing
-signed.**
+run (13.2) - and all of it is rehearsed on a development network; the deployment tooling, the
+check of a manifest and the probe are corrected on the points the advisor's review of 0.1.10
+found, and the client on the points its review of 0.1.11 found; a first probe of the deployed
+cells of OG and cell-b is recorded, and the corrected probe's run is due in the preflight of
+round R2b (11.7). Not deployed; no participant key read and no operational permit signed.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
@@ -20,7 +22,12 @@ epoch of ledger v2 itself; releases 0.1.8 and 0.1.9 correct it on the points its
 and the seed sources, the deployment tooling, the manifest and the check of a deployment against
 it - and the probe of contract accounts (sections 1, 11.7 and 16). Release 0.1.11 adds the
 client for a v2 deployment: its commands on a v2 manifest, work and confirmation through a
-delegate, and the run record with its label (13.2). What is not built is listed in section 16.
+delegate, and the run record with its label (13.2). Release 0.2.1 corrects the reading of full
+signing records, the checks of a deployment's configuration, its journal, the check of a
+manifest and the probe, on the points the advisor's review of 0.1.10 found, and the client's
+checks before sending, its run record and its output, on the points of the review of 0.1.11
+(`decisions.md` 22).
+What is not built is listed in section 16.
 
 Where this comes from, in order: revision 1 was this repository's draft for the rulings on Q13,
 Q14 and Q16; revision 2 applied the advisor's walk-through of it and the six choices the owner
@@ -51,7 +58,11 @@ revision v0.1.18 adds to it the probe's run against the deployed cells (11.7; `d
 deployment that A86 names: the commands on a v2 manifest, work and confirmation through a
 delegate under the participant's permit, and the run record with the label
 `delegated-by-owner-permit` (13.2; `decisions.md` 21). It changes no contract, no interface and
-no build.
+no build. Revision 0.2.1, with release 0.2.1 - the numbers of revision and release are one from
+here on (`decisions.md` A88) - corrects five groups of faults that the advisor's review of
+release 0.1.10 found and three that the review of release 0.1.11 found, each reproduced on
+release 0.1.11 first, and narrows what is said of the probe's first record (sections 1, 11.7,
+13.1, 13.2; `decisions.md` 22).
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -154,20 +165,33 @@ hashes of its record. Sizes and gas: section 11.7.
 configuration of schema `finchain-pouw.deploy-config/2`, in one sequence for every chain: the
 policy with its first parameters, the seed source, the ledger, `AuditV1` bound to it, the
 adapter, and the cell guard when a party names it; then the profiles, the later parameter
-versions, the admissions, the operators and the guard bindings, all before the genesis; then
-the funds. Without `--yes` it checks the plan and prints it, with what the cell guard would
-answer now for each account bound to it, and sends nothing. After the sequence it reads the
-deployment back as an auditor will: the code against the builds, the wiring, the guards and the
-policy replayed from its log. The manifest, of schema `finchain-pouw.deployment/2`, names every
-contract with its build and code hash; the block of the policy as `deployBlock` and
-`policyDeployBlock`, the ledger's as `ledgerDeployBlock`, and the ERC-8414 contract's as
-`tenderDeployBlock`, which the configuration must state; each contract account's guard with its
-binding version, its first epoch and the guard's code hash as the policy recorded it; and, in
-`supersedes`, the deployment it supersedes by name, chain, ledger and the SHA-256 of that
-deployment's manifest file. The superseded deployment is named and nothing of it is read
-beyond its code or changed. The manifest and the record are created and never replace a file
-(P68). `client/lib/manifest2.js` checks a deployment against its manifest at one block, and the
-audit of 13.1 connects from the same manifest (rows L48 to L50).
+versions, the admissions, the operators and the guard bindings, all before the genesis; then the
+funds. Before any transaction it holds every parameter version and profile to the types, widths
+and rules the policy takes and to what the built-in modules can do - `g0.ref` of pool g0 with
+one job, `g1.tender` of pool g1 with none, both unclassified and counting no task unit - and
+refuses a boolean that is not true or false and a field it does not know. Without `--yes` it
+checks the plan and prints it, with what the cell guard would answer now for each account bound
+to it, and sends nothing. With `--yes` it first creates a journal beside the manifest, which
+holds every transaction the moment the endpoint has taken it - what it is for, its hash, sender
+and nonce - and its outcome after it, confirmed, failed or unknown, and in the end the manifest
+and the record; a transaction whose outcome is unknown is named, to be looked up by its hash
+before anything is sent again. After the sequence it reads the deployment back as an auditor
+will: the code against the builds, the wiring, the guards and the policy replayed from its log.
+The manifest, of schema `finchain-pouw.deployment/2`, names every contract with its build and
+code hash; the block of the policy as `deployBlock` and `policyDeployBlock`, the ledger's as
+`ledgerDeployBlock`, and the ERC-8414 contract's as `tenderDeployBlock`, which the configuration
+must state; each contract account's guard with its binding version, its first epoch and the
+guard's code hash as the policy recorded it; and, in `supersedes`, the deployment it supersedes
+by name, chain, ledger and the SHA-256 of that deployment's manifest file, which is a commitment
+and is not checked against that file. The superseded deployment is named and nothing of it is
+read beyond its code or changed. The manifest and the record are created and never replace a
+file (P68). `client/lib/manifest2.js` checks a deployment against its manifest at one block:
+each contract against the transaction that created it, in the block the manifest names, in the
+chain; each log start at or before its contract's block - an earlier one costs time and leaves
+nothing out - and never after it or after the block of the check; the two blocks of the tender
+contract against each other; and the guards against every binding the policy made, so that a
+binding left out of the manifest is a finding. The audit of 13.1 connects from the same manifest
+(rows L48 to L50, L55).
 
 ## 2. Participant, sender and origin
 
@@ -857,20 +881,34 @@ gas meter are placed at two unused addresses by a state override, for that call 
 measures the guard for both delegated operations and the account's signature check for a
 well-formed signature that is not the owner's.
 
-It was run on 2026-11-26 against the two deployed cells on Finchain Sepolia, at the finalized
-block 645150, from the host of cell-b with release 0.1.10 and no key
-(`evidence/cell-probe-20261126T152040Z.json`):
+Release 0.2.1 corrects it on three points the advisor's review found (row L51): the block is
+taken once, every read is made at its number, and its hash is asked for again at the end, so
+that nothing is reported when the block changed; an account whose `aid()` cannot be read is a
+refusal with that reason, as the guard makes it, and not an account that names no registry; and
+each call reports apart the caller's gas, whether it succeeded with the bound it was given -
+which is what a bound is for - whether its answer has the form the ledger reads, and why it
+failed. The caller's figure includes the call's own cost and is not compared with the bound.
+
+A first record was made on 2026-11-26 with release 0.1.10, from the host of cell-b, read-only,
+at the finalized block 645150 of Finchain Sepolia (`evidence/cell-probe-20261126T152040Z.json`):
 
 | Account | Its views | The guard | Gas of the guard | Gas of the signature check |
 | --- | --- | --- | --- | --- |
 | OG, `0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1` | revision 3; one binding presented for one clause; verdict satisfied; anchor active in its AID registry | allows both operations, as the views say | 157,764 (`submitG0`) and 157,784 (`confirmTender`) of 500,000 | 10,919 of 200,000; the foreign signature refused |
 | cell-b, `0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB` | the same | the same | the same | the same |
 
-Both bounds hold for these two cells, the guard with more than three times its figure and the
-signature check with more than eighteen. The figures include the access of the called contract,
-as the ledger's own call does. They are of this block and these cells: a cell whose
-requirement, bindings or registry change can take another figure, and the cost of the check for
-the owner's own valid signature is not among them.
+In the recorded calls the injected guard allowed both delegated operations for both cells, with
+a largest caller-side figure of 157,784 gas against the 500,000 the call was given, and the
+account refused the probe's foreign signature with 10,919 against 200,000. The cap-to-figure
+ratios are about 3.17 and 18.32; they are not the callee's exact gas to spare. The endpoint
+supplied the finalized header of block 645150, and release 0.1.10 did not ask for its hash again
+at the end. The advisor read the six calls again on the same endpoint at the same block and found
+the same figures and answers, with the same block hash before and after (`decisions.md` 22.3):
+an independent reading of one endpoint, not a second node. The record is of this block and these
+cells - a cell whose requirement, bindings or registry change can take another figure - and the
+owner's own valid signature, a whole ledger transaction and later states are not in it. It is
+kept as an initial observation; the corrected probe is run in the preflight of round R2b, from a
+fixed reviewed commit, with its full record and the record's SHA-256.
 
 ### 11.8 The freeze
 
@@ -1048,8 +1086,9 @@ this section says, and adds what v2 adds. Release 0.1.9 corrects it again on two
 - **How given permits are read.** Two forms, under two rules (L46). A bare message - the eight
   fields, with or without a signature - is read, by agreement, as a permit for this chain and
   this ledger, in the shorthand the signing script accepts: the scope by the names of its
-  operations, the guard fields left out for an account without code. A full record is
-  anything that carries a mark of one - `schema`, `kind`, `typedData`, or at its top level
+  operations, the guard fields left out for an account without code. The record's form decides
+  which way it is read, and nothing inside it: a full record is anything that carries a mark of
+  one - `schema`, `kind`, `typedData`, or at its top level
   `domain`, `types` or `primaryType` - and it is read as what it says and never as a bare
   message: nothing is filled in, converted or dropped for it. Its typed data has all four
   parts: its primary type is Permit; its types define Permit and EIP712Domain as the frozen
@@ -1059,7 +1098,12 @@ this section says, and adds what v2 adds. Release 0.1.9 corrects it again on two
   computed from its own domain and message as given. A signing record without its typed data
   is unusable. A record that fails any of this is unusable, whatever a repaired version of it
   would have been. A record that passes and whose domain is another chain or another ledger is
-  foreign. Neither is read in this domain instead, and both are listed in the report.
+  foreign. Neither is read in this domain instead, and both are listed in the report. A full
+  record whose typed data is null, false, zero or empty has no typed data; a type is read field
+  by field by the index of the frozen type, so an array with an empty slot - which a caller in
+  JavaScript can pass, though JSON cannot carry one - has no field there. That a full record
+  names its primary type and its domain type is this project's format of a signing record, not
+  a rule for every EIP-712 tool.
 - **Which rule a permit passed.** Whether an account had code when its permit was used is a
   fact of that moment, and it is not in the block the audit reads. The audit infers the rule
   from the permit and the frozen rules of the ledger: a permit that names no guard passes for
@@ -1123,25 +1167,57 @@ the manifest of a v2 deployment as they take a kernel's, and tell the two apart 
   `scripts/sign-permit.js` wrote where the account's key is (section 12), read by the audit's
   own rules (13.1): a Permit for this chain and this ledger, whole, and signed. A bare message,
   which the audit takes by agreement, is not sent. The account's key never reaches this client.
-- **Refused before anything is sent.** The client holds the sending key to the permit's
-  delegate and the operation to its scope; asks the ledger's own `checkPermit` - every check
-  the ledger makes, the guard of a contract account and its signature included - without a
-  transaction; and calls the entry itself without a transaction before sending it. A permit
-  that the ledger would refuse is refused with the ledger's reason, and a tender that the
-  participant does not own, or that is not settled, is refused the same way. What is recorded
-  already is found by its contribution id and not sent again.
+- **Checked before anything is sent.** The client holds the sending key to the permit's delegate
+  and the operation to its scope; asks the ledger's own `checkPermit` - every check the ledger
+  makes, the guard of a contract account and its signature included - without a transaction;
+  holds the function of the g0.ref profile in force to the one the client evaluates - AuditV1
+  bound to this ledger, by its function id, its ledger, its code against the build of `build/v2`
+  with the immutable values aside, and the deployment's AuditV1 where the manifest names one -
+  and the g1.tender adapter to this ledger; and calls the entry itself without a transaction.
+  The name of a profile is not the identity of its function. The output of the audit job depends
+  on the seed that the opening of the epoch captures, so when the epoch is not open the entry is
+  first asked with an output that decides only the verdict: every refusal the ledger would make
+  at that moment - recording paused, a profile of another pool or without the job among them -
+  comes before the opening, with the ledger's own reason, and nothing is sent. A check is of the
+  moment it is made: the chain can change after it, and a transaction is then decided by the
+  contract, as always. What is recorded already is found by its contribution id and not sent
+  again, and finding it needs no permit in force.
+- **What a run sends.** The opening of an epoch is a transaction of its own. Each transaction is
+  written down the moment the endpoint takes it - what it is for, its hash, its sender and its
+  nonce - and again with its outcome: confirmed, failed, or unknown when the answer was lost.
+  A run that stops after it sent something says what it sent, and carries it. The receipt that
+  the transaction recorded is held to what the client computed - its contribution id, worker or
+  demander, sender, authorization and, for the audit job, its epoch, instance, input and output
+  - and a receipt that differs is reported with its differences and exit status 2, never with a
+  computed field in place of the recorded one.
 - **The audit job.** In epoch N the job recomputes epoch N-1 in full (13.1) and submits only
   when the recomputation agrees and is complete. When it agrees and is not complete nothing is
   submitted and the exit status is 5: work that was not re-decided is not vouched for.
-- **The run record**, written with `--out`, has schema `finchain-pouw.ledger-v2.run/1` and the
-  canonical form and two hashes of section 13. It records the participant, the sender and the
-  origin apart (section 2); the label `delegated-by-owner-permit` or `direct-by-key`; the
-  permit's digest, its fields, its signer and the SHA-256 of its file; the receipt, its status,
-  the transaction and its gas; for work, what was audited; for a confirmation, the tender. It
-  says which run of the client sent the transaction and how the sending key was authorized,
-  and nothing about which program decided to do the work (A74, condition 7).
-- **Outputs are created, never replaced** (P68). For a v2 manifest every `--out` is refused
-  before anything is read when its path exists. The kernel's commands are as they were.
+- **The run record**, written with `--out`, has schema `finchain-pouw.ledger-v2.run/2` and the
+  canonical form and two hashes of section 13. What the run was given - the sending key and the
+  permit, with its digest, fields, the SHA-256 of its file, the key whose ECDSA signature it
+  holds as recovered from it, and the signer its record declares - is kept apart from what the
+  receipt shows, and so are the transactions the run sent. The label, the participant, the
+  sender, the permit and the origin are the receipt's, as the ledger recorded it: the label is
+  `direct-by-key` when the receipt's authorization is zero and `delegated-by-owner-permit`
+  when it is a permit's digest; the permit's statement is given where the run was given that
+  permit, and otherwise only its digest. A receipt recorded before the run is found and its
+  transaction and origin read back from the ledger's log, or written as unknown; the permit the
+  run was given for it is not said to have authorized it. The signer a record declares is not
+  bound by its signature: a record whose declared signer is not the key that signed is refused,
+  and the record names the two apart. For an account with code, that the account accepted a
+  signature does not show that only its current owner could make it. The record says which run
+  of the client sent the transactions, and nothing about which program decided to do the work
+  (A74, condition 7).
+- **Outputs are created, never replaced** (P68). For a v2 manifest the place of every `--out` is
+  taken before anything is read or sent, by creating the file: a path that exists, a link
+  included, or that cannot be created is refused with nothing sent. While `work` or `bridge`
+  runs the file holds the journal of its transactions, one event per line written through to the
+  disk, and the record takes its place at the end; a run that stops after sending leaves the
+  journal, and one that stops before sending leaves nothing. The events are also shown on the
+  standard error as they happen. A file system and a chain are not one transaction: what a check
+  can find before sending is found then, and what happens after a transaction is kept. The
+  kernel's commands are as they were.
 
 What it does not do: act through an account's own `execute` on ledger v2 (`--account` is the
 kernel's; on v2 an account takes part through a delegate, or by its own key), sign anything,
@@ -1150,17 +1226,18 @@ or hold any key but the one it sends with.
 ## 14. The test matrix, as run
 
 Run on 2026-11-27 on the in-process network (Node 22.23.5, Hardhat 2.29.2; the kernel compiled
-by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.1.11, 165 tests pass and none fails:
-the 83 of the kernel of 0.1.3, of which three were adapted to the client's new behaviour; the
-48 that release 0.1.4 added; six that release 0.1.5 added; six that release 0.1.6 added, on the
+by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.2.1, 170 tests pass and none fails:
+the 83 of the kernel of 0.1.3, of which three were adapted to the client's new behaviour; the 48
+that release 0.1.4 added; six that release 0.1.5 added; six that release 0.1.6 added, on the
 compile boundary and the builds; eight that release 0.1.7 added, on the audit of ledger v2,
 which are the rows L36 to L43; three that release 0.1.8 added on its corrections, the rows L44
 to L46; one that release 0.1.9 added, the row L47; seven that release 0.1.10 added, beside more
 cases in L46: one on v2's own copies of the audit function and the seed sources, four on the
 deployment, the rows L48 to L50 and one on records that are never replaced, and two on the
-probe, the row L51 and one on its meter; and three that release 0.1.11 adds on the client for a
-v2 deployment, the rows L52 to L54. The twelve of releases 0.1.5 and 0.1.6 and three of release
-0.1.10 have no row below.
+probe, the row L51 and one on its meter; three that release 0.1.11 added on the client for a v2
+deployment, the rows L52 to L54; and five that release 0.2.1 adds on its corrections, a second
+test of L51 and the rows L55 to L58, beside more cases in L46, L49, L50, L51, L52 and L54. The
+twelve of releases 0.1.5 and 0.1.6 and three of release 0.1.10 have no row below.
 Every row below has at least one test that carries its id in its title; the last column names
 the file. A row is "passed" when every test that carries its id passed. The limits of what a
 pass covers follow the table. From release 0.1.6 on, every row is run on the builds of the v2
@@ -1169,9 +1246,9 @@ compiler - the builds a deployment would be made from - and no longer on those o
 The advisor ran the 131 tests of release 0.1.4 and the rehearsal again on its own, under
 another version of Node, and found all 35 ids of that release in its output (`decisions.md`
 15.2). That run is the advisor's evidence; it is not repeated here as this repository's. The
-rows L36 to L54 came after it.
+rows L36 to L58 came after it.
 
-The ids L1 to L54 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
+The ids L1 to L58 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
 linked chain of business evidence; where both could be meant, the document is named.
 
 | Id | Case | Expected | Result |
@@ -1221,15 +1298,19 @@ linked chain of business evidence; where both could be meant, the document is na
 | L43 | Client: receipts of a module the client cannot read, under profiles that count task units and one that does not; a key met again in a later epoch | listed as undecided; the two unit rules, the taking of each key and the ledger's store of it are held all the same | passed (`v2.audit`) |
 | L44 | Client: the logs read from the deployment's first block, from starts named apart, from no start; from the ledger's block alone, which is after the policy's; from a block after a later parameter change; from inside an epoch, and after it; a profile version shown without the one before, a version re-registered for another epoch, a retirement of a version that is not the last | the first three audit; each of the others is refused with `HistoryIncomplete`, naming the log and the block, instead of auditing a shorter history or reporting the gap as a difference | passed (`v2.audit`) |
 | L45 | Client: the entry's own call shown with an input that does not match its receipt - a permit of an unknown scope, another output, profile, epoch or job index, the direct entry for a delegated receipt and the reverse, another function, an input that decodes as nothing, another permit under the first one's signature, a confirmation of another tender or submission, the call sent to the wrong contract; and a relay's transaction with any input | each mismatch is a finding that names what differs; an invalid permit in the entry's call is a finding and no given permit stands in for it; the relay's input is not read and a given permit still serves it | passed (`v2.audit`) |
-| L46 | Client: signing records whose own domain names another chain or ledger, with and without the digest of this one; a type, a domain type or a primary type that is not the frozen one; another kind or schema; a stated digest that is not the record's own; types without Permit, a message without the guard fields or with a field Permit does not have, a scope written by name, a nonce that is not whole, a scope too wide, a delegate that is no address, a domain with a `salt`, no types at all; the same permit as plain typed data, as a bare message in the shorthand, and in another lawful spelling of its values; a full record without a primary type or a domain type, a field with a third member, a signing record without its typed data, a record with `kind` and a bare message, a record or bare fields beside a domain of another chain; the members of a field in another order | a self-contradicting record is unusable, a consistent record for another domain is foreign; a full record is read as it is, never as a bare message, and each structural fault makes it unusable with the fault named; neither is read in this domain; the plain, bare and respelled forms are read; a good record beside a foreign one is unaffected | passed (`v2.audit`) |
+| L46 | Client: signing records whose own domain names another chain or ledger, with and without the digest of this one; a type, a domain type or a primary type that is not the frozen one; another kind or schema; a stated digest that is not the record's own; types without Permit, a message without the guard fields or with a field Permit does not have, a scope written by name, a nonce that is not whole, a scope too wide, a delegate that is no address, a domain with a `salt`, no types at all; the same permit as plain typed data, as a bare message in the shorthand, and in another lawful spelling of its values; a full record without a primary type or a domain type, a field with a third member, a signing record without its typed data, a record with `kind` and a bare message, a record or bare fields beside a domain of another chain; the members of a field in another order; a full record whose typed data is null, false, zero or empty beside a bare message, a type with an empty slot | a self-contradicting record is unusable, a consistent record for another domain is foreign; a full record is read as it is, never as a bare message, and each structural fault makes it unusable with the fault named; neither is read in this domain; the plain, bare and respelled forms are read; a good record beside a foreign one is unaffected | passed (`v2.audit`) |
 | L47 | Client: the three lawful histories of a replaced profile version - version 1 corrected before the genesis; version 2 for epoch 1 registered twice during epoch 0; a future version registered, retired and registered again - and a future version retired and not replaced | each audits, with the values the policy holds for the epoch: the corrected version 1; version 1 for epoch 0 and the second registration for epoch 1; the re-registration with its retirement cleared; and no profile for the epoch of the retired version | passed (`v2.audit`) |
 | L48 | Deployment: v2 from the builds of `build/v2` by its configuration - the five contracts and the cell guard, two profiles, two parameter versions, admissions, operators, a guard bound to a stand-in cell, funds - superseding a kernel deployment on the same chain; then worked and audited from its manifest alone | read back as configured; the manifest names every contract with its code, the log starts, the guard with its binding and code hash, and the superseded deployment by name, ledger and manifest hash; the planned transactions and gas hold; the check from outside passes before and after the start; a key's own work and a cell's work through its delegate and the cell guard are accepted; the audit of the epoch, from the manifest's log starts, agrees and is complete | passed (`v2.deploy`) |
-| L49 | Deployment: a manifest that is not what is on chain - another schema or code hash; the kernel's `AuditV1` behind the role of v2's; a role filled by another role's build, a role not known, a role left out; log starts that do not fit the contracts; a guard binding or guard code that is not the policy's, a guard named as another contract, a binding for an account that has none, a rebinding after the deployment; a superseded deployment on another chain, without code, the ledger itself, without its manifest hash; another clock; an ERC-8414 contract with other code or none recorded | each found by name, and nothing else | passed (`v2.deploy`) |
-| L50 | Deployment: plans that cannot run as written - schema, chain, lead time, epoch length; parameter versions and their basis points; profiles missing, twice, unknown, not from epoch 0; seed source; the ERC-8414 contract and its deploy block; a party twice or with an operator out of range; a guard for an account without code, a guard that is neither the cell guard nor a contract; funds; a superseded deployment on another chain, of the same name, without a ledger, without its hash | refused before anything is sent; a cell that the guard would refuse now is planned, and the plan says so | passed (`v2.deploy`) |
-| L51 | Probe: contract accounts read at one block - a cell stand-in the guard allows, one whose verdict is not satisfied, one whose registry fails, one whose anchor is stale, a key without code; the meter against a transaction; a call starved of gas; code where the probe would place its meter or the guard | what the guard would answer, from the views and from the guard itself, in agreement; the gas of the guard and of the signature check against their bounds; nothing sent; the meter reads the transaction's execution plus the access of the callee; no code is placed over code | passed (`v2.probe`) |
+| L49 | Deployment: a manifest that is not what is on chain - another schema or code hash; the kernel's `AuditV1` behind the role of v2's; a role filled by another role's build, a role not known, a role left out; log starts that do not fit the contracts; a guard binding or guard code that is not the policy's, a guard named as another contract, a binding for an account that has none, a rebinding after the deployment; a superseded deployment on another chain, without code, the ledger itself, without its manifest hash; another clock; an ERC-8414 contract with other code or none recorded; a deployment transaction that does not exist or created another contract, a block that is not the transaction's, log starts after their contracts or past the block of the check, earlier starts, two blocks of the tender contract that disagree, a binding the policy made and the manifest leaves out | each found by name, and nothing else | passed (`v2.deploy`) |
+| L50 | Deployment: plans that cannot run as written - schema, chain, lead time, epoch length; parameter versions and their basis points; profiles missing, twice, unknown, not from epoch 0; seed source; the ERC-8414 contract and its deploy block; a party twice or with an operator out of range; a guard for an account without code, a guard that is neither the cell guard nor a contract; funds; a superseded deployment on another chain, of the same name, without a ledger, without its hash; a later parameter version out of range, a boolean given as a string, an amount that is no decimal, a field a parameter version or a profile does not have, the built-in profiles in another pool, with another job count, of another role or counting task units, a party's admission or funds of another type | refused before anything is sent; a cell that the guard would refuse now is planned, and the plan says so | passed (`v2.deploy`) |
+| L51 | Probe: contract accounts read at one block - a cell stand-in the guard allows, one whose verdict is not satisfied, one whose registry fails, one whose anchor is stale, a key without code; the meter against a transaction; a call starved of gas; code where the probe would place its meter or the guard; an account whose `aid()` fails; a call that uses nearly all of its bound and answers, one given less than it needs; a block replaced after it was taken | what the guard would answer, from the views and from the guard itself, in agreement; the gas of the guard and of the signature check against their bounds; nothing sent; the meter reads the transaction's execution plus the access of the callee; no code is placed over code | passed (`v2.probe`) |
 | L52 | Client: a cell's audit job through its delegate under the cell's permit, signed by `scripts/sign-permit.js` with the owner's key; a bare message, a record for another ledger, an unsigned record, an edited record; a key that is not the delegate; a permit without the operation; the cell's gate not satisfied; a revoked permit; the job again; a key for itself; the next epoch; a receipt of a module the client does not read | each refusal before anything is sent, with the reason, the ledger's own where it is the ledger's; the cell the worker of record, the delegate the sender and the origin, the permit's digest the authorization; the run record labelled, its hashes recomputed, nothing of the endpoint beyond its host; found again and not sent; the direct entry labelled so; the next epoch audited in full and submitted; an audit that agrees and is not complete submits nothing | passed (`v2.client`) |
 | L53 | Client: a tender confirmed through the owner's delegate under the owner's permit; a tender of another owner, a permit without the operation, a key that is not the delegate, a submission not settled; the confirmation again; the owner for itself; the epoch audited | each refusal before anything is sent; the owner the counterparty, the delivering key the worker, the delegate the sender; found again and not sent; the direct entry labelled so; the permit read from the delegate's own transaction by the audit | passed (`v2.client`) |
 | L54 | Client: the command line on a v2 manifest and on a kernel's - `--account` on v2, `--permit` on the kernel, a manifest of neither schema, an `--out` that exists; the exit status of the audit | each refused before an endpoint is asked anything, the file left as it was; 0, 5 and 2 for ok, agrees-not-complete and differs | passed (`v2.client`) |
+| L55 | Deployment: a funding transfer that is taken and mined and whose answer is lost; the order in which each transaction is written down; a manifest's name taken by a link to nothing | the transfer in the partial record as unknown, with its hash, sender and nonce, and every other transaction confirmed; each written down when it was taken and again with its outcome; the name refused before a key or an endpoint is used, with nothing sent | passed (`v2.deploy`) |
+| L56 | Client: what the audit job checks before it sends - a paused policy, a retired g0.ref profile, g0.ref in pool G1, g0.ref naming another function, an AuditV1 of another ledger, a module that is not the deployment's AuditV1; a run that stops after opening the epoch; the epoch open already; the receipt held to the computed fields | each refused with nothing sent and the epoch not opened; the stopped run says it sent the opening and carries it; only the entry sent when the epoch is open; the contribution id the receipt's own, and a field that differs named | passed (`v2.client`) |
+| L57 | Client: the record of a receipt found before the run, given a revoked permit it never used; a receipt recorded under another permit than the one given; a record whose signer field is not the key that signed, or not an address; full records whose typed data is null, false, zero or empty, at the reader of a permit to send | the route, sender, permit and origin of the receipt itself, its transaction read back from the ledger's log, the given permit apart and nothing sent; the other permit by its digest only; refused; refused | passed (`v2.client`) |
+| L58 | Client, at the command line: an `--out` in a directory that does not exist; a run refused before it sends, with `--out`; a run that sends, with `--out`; the journal of a run that stops | refused before anything is read or sent; no file left; each transaction on the standard error when taken and with its outcome, and the record with both transactions and their nonces in the file; the journal kept, and an empty place removed | passed (`v2.client`) |
 
 What a pass covers, and what it does not:
 
@@ -1256,7 +1337,7 @@ What a pass covers, and what it does not:
   than the chain's, because the ledger as built does not produce them; the records of L46 are
   made by editing the signing script's record. From release 0.1.11 `pouw audit` runs it on a v2
   manifest (13.2).
-- **L48 to L54 run on the in-process network**, the cell being the stand-in of
+- **L48 to L58 run on the in-process network**, the cell being the stand-in of
   `contracts/v2/testing`. The rehearsal (`npm run local-run`) makes a v2 deployment with the
   command itself, against a development node behind an endpoint, superseding the rehearsal's
   first deployment, checks it from the outside at the finalized block, and works it with the
@@ -1279,34 +1360,57 @@ What a pass covers, and what it does not:
 - **Three tests of release 0.1.10 carry no row.** They hold v2's own copies of the kernel's
   audit function and seed sources (section 1), the creation of records that never replaces one
   (P68), and the probe's meter against its listing.
-- **The tests were checked against changes that should break them.** Each of 130 changes that
+- **The tests were checked against changes that should break them.** Each of 161 changes that
   break one rule of the contracts, of the client or of a tool - a missing revocation check, a
   guard compared by address only, an allocation that reads the present declaration, a read at
   the latest block, an output written over a file that exists, a statement not verified when it
   is sent again, an operator taken from the receipt's own record, a permit's scope not held, a
   full record read as a bare message, a guard binding the manifest records that is not the
   policy's, a key sending a permit it is not the delegate of, and so on - made at least one test
-  fail. There were 38 with release 0.1.5 and two
-  more with 0.1.6; release 0.1.7 added 30 on the audit of ledger v2 and its record, release
-  0.1.8 added 12 on its corrections, release 0.1.9 added seven, release 0.1.10 added 27 - six
-  on the reading of full records, 15 on the deployment, its plan, its manifest check and its
-  records, three on the probe and three on the copied contracts - and release 0.1.11 adds 14 on
-  the client for a v2 deployment. The first run of that check,
-  with release 0.1.4, found one test that did not notice a rule being broken: the bound on the
-  gas given to a signature check. The test now measures the gas a refused transaction used. Its
-  review with release 0.1.7 found that the runner had counted a test process that died for
-  memory as a kill, for the change that gives a guard all the gas: the runner now reads its
-  verdict from the test summary alone, records a process that ended without one with its exit
-  status and no cause of its own, and that test bounds the gas of its refused transactions, so
-  the change is decided by its assertion (`decisions.md` 18). The list and its results are
-  review records outside this repository. The advisor read those of release 0.1.4 and did not
-  run them; with release 0.1.8 he reran M29 once on his own and found the same assertion. The
-  rest is this repository's evidence only.
+  fail. There were 38 with release 0.1.5 and two more with 0.1.6; release 0.1.7 added 30 on the
+  audit of ledger v2 and its record, release 0.1.8 added 12 on its corrections, release 0.1.9
+  added seven, release 0.1.10 added 27 - six on the reading of full records, 15 on the
+  deployment, its plan, its manifest check and its records, three on the probe and three on the
+  copied contracts - release 0.1.11 added 14 on the client for a v2 deployment, and release
+  0.2.1 adds 34 on its corrections - 17 on the tools and 17 on the client - and retires two, M99
+  and M128, whose rules M141 and M161 now hold. One of the 34, M154, which reports the
+  contribution id the client computed in place of the receipt's, broke no test and is not
+  counted among the 161: no state that the client reaches tells it apart, since the function's
+  identity is held before anything is sent and the two ids are then equal; the client reports
+  the receipt's all the same. The first run of that check, with release 0.1.4, found one test
+  that did not notice a rule being broken: the bound on the gas given to a signature check. The
+  test now measures the gas a refused transaction used. Its review with release 0.1.7 found that
+  the runner had counted a test process that died for memory as a kill, for the change that
+  gives a guard all the gas: the runner now reads its verdict from the test summary alone,
+  records a process that ended without one with its exit status and no cause of its own, and
+  that test bounds the gas of its refused transactions, so the change is decided by its
+  assertion (`decisions.md` 18). The list and its results are review records outside this
+  repository. The advisor read those of release 0.1.4 and did not run them; with release 0.1.8
+  he reran M29 once on his own and found the same assertion. The rest is this repository's
+  evidence only.
 
 ## 15. What changed
 
-Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 10 against revision
-9 adds the client for a v2 deployment and changes nothing on chain (`decisions.md` 21):
+Revision 2 against revision 1 is recorded in `decisions.md` 14.2. Revision 0.2.1 against
+revision 10 corrects the tooling and the client on the points of the advisor's review of
+release 0.1.10, and changes nothing on chain (`decisions.md` 22):
+
+| Point | Revision 10 | Revision 0.2.1 |
+| --- | --- | --- |
+| A full record's form | decided by whether its typed data was there and true | decided by its marks alone; a type read by the index of the frozen type |
+| The configuration of a deployment | its first parameter version encoded; the built-in profiles' pools and jobs not held | every version and profile held to the policy's types, widths and rules and to the built-in modules, before any transaction |
+| The journal of a deployment | transactions recorded after their receipts; the output's names looked at through links | written down when taken, with the outcome after; a journal created before sending; no advice to deploy again |
+| The check of a manifest | the entries it holds, against each other | against the deployment transactions, the block of the check, and every guard binding the policy made |
+| The probe | one block number, no recheck; an unreadable `aid()` as none; the caller's gas against the bound | the hash asked for again at the end; an unreadable `aid()` a refusal; gas, success with the bound and answer apart; schema 2 |
+| The probe's first record | "both bounds hold" | the recorded calls, measured value against cap; an initial observation, read again by the advisor; the corrected probe due in the preflight of R2b |
+| What the client checks before it sends | the permit, and the entry asked without a transaction after the epoch was opened | also, before the opening: the function of the profile in force, AuditV1 by id, ledger, code and manifest; the entry asked with an output that decides only the verdict, which finds a paused policy, another pool or no job; a check of its moment |
+| What a run sends | the entry's transaction, recorded after its receipt | every transaction, the opening of the epoch included, written down when taken and with its outcome; the receipt held to the computed fields |
+| The run record | schema 1; the given permit and the key taken as the receipt's route | schema 2; what the run was given apart from the receipt's own route, sender, permit and origin, which are read back for a receipt found; the declared signer apart from the key that signed |
+| The output of a run | refused when its path existed; written at the end | its place taken by creating it before anything is read or sent; the journal of the run in it until the record takes its place |
+| The test matrix | L1 to L54 | L1 to L58 |
+
+Revision 10 against revision 9 adds the client for a v2 deployment and changes nothing on chain
+(`decisions.md` 21):
 
 | Point | Revision 9 | Revision 10 |
 | --- | --- | --- |
@@ -1425,7 +1529,10 @@ and of the seed sources, the deployment of v2 from its builds with its manifest 
 a deployment against it, rehearsed on a development network (section 1), and the read-only probe
 of contract accounts (11.7), run on 2026-11-26 against the cells of OG and cell-b; and, from
 0.1.11 on, the client for a v2 deployment: its commands on a v2 manifest, work and confirmation
-through a delegate, and the run record with its label (13.2).
+through a delegate, and the run record with its label (13.2); and in 0.2.1 the corrections of
+the reading of full records, the checks of a deployment's configuration, its journal, the check
+of a manifest and the probe, and the client's checks before sending, its run record and its
+output (`decisions.md` 22).
 
 Not built, and needed before round R2b (the production module only where the round uses its
 profile):
@@ -1435,6 +1542,7 @@ profile):
 | The deployment of v2 on Finchain Sepolia, superseding the deployment of round R2a | an operation package of its own, reviewed as such: the configuration, the steward's key on the host where it is, the plan as the command prints it, the funds. The tooling is built (section 1) |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment, which runs beside R2b and R3 (A70, Q23). It is a precondition of a round only where that round uses the profile (A87); R2b as the roadmap describes it does not |
 | The configuration of round R2b, its runbook and the operation package of the one signature | a round's own package, reviewed as such |
+| The run of the corrected probe against the cells of OG and cell-b | the first record, from release 0.1.10, is kept as an initial observation, and its six calls were read again by the advisor; the corrected probe runs in the preflight of the round's package, from a fixed reviewed commit |
 
 It does not show that an agent's software did the work, that a model ran, or that demand is
 independent. It does not bind the authority at settlement, and its audit does not establish who

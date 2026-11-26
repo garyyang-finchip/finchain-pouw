@@ -460,6 +460,14 @@ async function main() {
     manifest3.supersedes.name === "local-run" && manifest3.supersedes.ledger === manifest.contracts.GenesisLedger
     && manifest3.supersedes.manifestSha256 === c.sha256File(path.relative(root, manifestPath))
     && manifest3.guards[cell]?.contract === "FogaCellGuard" && manifest3.guards[cell].guard === manifest3.contracts.FogaCellGuard && manifest3.guards[cell].bindingVersion === 1);
+  // the journal: created before anything was sent, each transaction written down when taken and again when confirmed
+  const journal3 = fs.readFileSync(/journal +(\S+)/.exec(deployed3.stdout)[1], "utf8").trimEnd().split("\n").map((l) => JSON.parse(l));
+  const journalTaken3 = journal3.filter((e) => e.event === "submitted");
+  const journalConfirmed3 = journal3.filter((e) => e.event === "confirmed");
+  check("v2: the journal holds every transaction of the deployment, written down when taken and again when confirmed, and ends with the manifest",
+    journal3[0]?.event === "planned" && journal3[0].transactions === journalTaken3.length && journalTaken3.length === deployment3.transactions.length && journalTaken3.length === journalConfirmed3.length
+    && journalTaken3.every((e, i) => e.txHash === journalConfirmed3[i].txHash && e.status === "submitted" && journalConfirmed3[i].status === "confirmed")
+    && journal3.at(-1)?.event === "finished" && journal3.at(-1).manifest?.contracts?.GenesisLedgerV2 === manifest3.contracts.GenesisLedgerV2);
   const second3 = await run("scripts/deploy-v2.js", [...deploy3Args, "--yes"]);
   check("v2: a second deployment over an existing manifest is refused, and the manifest is left as it was",
     second3.status === 1 && second3.stderr.includes("exists") && Buffer.compare(fs.readFileSync(manifest3Path), manifest3Bytes) === 0);
@@ -484,13 +492,19 @@ async function main() {
   const permitCell = path.join(OUT3, "permit-cell.json");
   const runs3 = [];
   const wc = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--out", path.join(OUT3, "run-work-cell-0.json")]), "pouw work --permit (the cell)").json;
-  check("v2: pouw work --permit: the cell's audit job, sent by the delegate under the cell's permit; the cell is the worker of record, and the run record says delegated-by-owner-permit",
+  check("v2: pouw work --permit: the cell's audit job, sent by the delegate under the cell's permit; the cell is the worker of record, the run record says delegated-by-owner-permit and lists the opening of the epoch and the entry",
     wc.label === "delegated-by-owner-permit" && wc.participant === cell && wc.sender === address.delegate && wc.origin === address.delegate
-    && wc.receipt.worker === cell && wc.status.verdict === "accepted" && fs.existsSync(path.join(OUT3, "run-work-cell-0.json")));
+    && wc.receipt.worker === cell && wc.status.verdict === "accepted" && wc.differences.length === 0
+    && wc.transactions.map((x) => `${x.step} ${x.status}`).join(", ") === "openEpoch confirmed, submitG0For confirmed"
+    && c.readJson(path.join(OUT3, "run-work-cell-0.json")).reportHash === wc.reportHash);
   const wa = must(await pouw3(["work"], "wallet-a"), "pouw work (wallet-a, for itself)").json;
   check("v2: pouw work without a permit: a wallet for itself, labelled direct-by-key", wa.label === "direct-by-key" && wa.participant === address["wallet-a"] && wa.sender === address["wallet-a"]);
   const again3 = must(await pouw3(["work"], "delegate", ["--permit", permitCell]), "pouw work --permit (again)").json;
   check("v2: a second pouw work --permit finds the cell's receipt and sends nothing", again3.alreadyRecorded === true && again3.receiptId === wc.receiptId);
+  const nonceB3 = await provider.getTransactionCount(address["wallet-b"]);
+  const absent3 = await pouw3(["work"], "wallet-b", ["--out", path.join(OUT3, "absent", "run.json")]);
+  check("v2: an --out in a directory that does not exist is refused before anything is read or sent",
+    absent3.status === 1 && absent3.stderr.includes("does not exist; nothing was sent") && (await provider.getTransactionCount(address["wallet-b"])) === nonceB3);
   const wrongKey3 = await pouw3(["work"], "wallet-b", ["--permit", permitCell]);
   check("v2: a key that is not the permit's delegate is refused before anything is sent", wrongKey3.status === 1 && wrongKey3.stderr.includes("is not the permit's delegate"));
   // a tender of wallet-a's, delivered by agent-y's key and accepted by wallet-a, confirmed by the delegate under wallet-a's permit

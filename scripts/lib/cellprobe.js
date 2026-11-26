@@ -7,6 +7,7 @@
 "use strict";
 
 const { ethers } = require("ethers");
+const g = require("../../client/lib/genesis");
 const m2 = require("../../client/lib/manifest2");
 
 // the bounds of the ledger (GenesisLedgerV2): a guard's static call, an account's signature check
@@ -56,11 +57,23 @@ async function metered(provider, blockTag, target, gas, data, overrides = {}) {
   return { success: success === 1n, word, gasUsed, answerBytes: Number(size) };
 }
 
+/// What one metered call shows, each thing apart: the gas the caller saw, whether the call succeeded
+/// with the bound it was given - which is what a bound is for - whether its answer has the form the
+/// ledger reads, and, when it failed, whether it used up what it was given. The caller's gas includes
+/// the access of the callee and the setup, so it is not compared with the callee's bound.
+function callOf(r, bound, answerValid) {
+  return {
+    callerGas: r.gasUsed, succeededWithTheBound: r.success, answerBytes: r.answerBytes, answerValid: r.success && answerValid,
+    failure: r.success ? null : r.gasUsed >= bound ? "used at least the gas it was given" : "reverted",
+  };
+}
+
 /// Probe each account at one block. `accounts` are `{ name, account }`. Returns the record's body.
+/// The block is taken once, every read is made at its number, and its hash is asked for again at the
+/// end: when it is not the same block any more, nothing is returned (genesis.js recheck).
 async function probe(provider, accounts, { blockTag = "finalized" } = {}) {
-  const block = await provider.getBlock(blockTag);
-  if (!block) throw new Error(`the endpoint has no ${blockTag} block`);
-  const tag = ethers.toQuantity(block.number);
+  const pin = await g.pinBlock(provider, blockTag);
+  const tag = ethers.toQuantity(pin.number);
   for (const a of [METER_AT, GUARD_AT]) {
     if ((await provider.getCode(a, tag)) !== "0x") throw new Error(`there is code at ${a} on this chain: the probe does not place its meter or the guard there`);
   }
@@ -79,19 +92,21 @@ async function probe(provider, accounts, { blockTag = "finalized" } = {}) {
     const guardCalls = {};
     for (const [op, code] of Object.entries(OPERATIONS)) {
       const r = await metered(provider, tag, GUARD_AT, GUARD_GAS, guard.encodeFunctionData("allows", [address, code]), { [GUARD_AT]: { code: guardBuild.deployedBytecode } });
-      guardCalls[op] = { answered: r.success && r.answerBytes === 32, allows: r.success && r.answerBytes === 32 && BigInt(r.word) === 1n, gasUsed: r.gasUsed,
-        withinBound: r.success && r.gasUsed < GUARD_GAS };
+      // the ledger reads one word: 1 allows, anything else - or no word - refuses
+      const call = callOf(r, GUARD_GAS, r.answerBytes === 32 && (BigInt(r.word) === 0n || BigInt(r.word) === 1n));
+      guardCalls[op] = { ...call, allows: call.answerValid && BigInt(r.word) === 1n };
     }
     const s = await metered(provider, tag, address, SIGNATURE_GAS, account1271.encodeFunctionData("isValidSignature", [digest, signature]));
-    const signatureCheck = { answered: s.success && s.answerBytes >= 4, answer: s.success && s.answerBytes >= 4 ? s.word.slice(0, 10) : null, gasUsed: s.gasUsed,
-      withinBound: s.success && s.gasUsed < SIGNATURE_GAS };
+    const sig = callOf(s, SIGNATURE_GAS, s.answerBytes >= 32);
+    const signatureCheck = { ...sig, answer: sig.answerValid ? s.word.slice(0, 10) : null };
     signatureCheck.acceptedTheForeignSignature = signatureCheck.answer === MAGIC;
     // the guard of the chain and the reading of the views agree, or the probe says that they do not
     const agrees = guardCalls.submitG0.allows === reading.allows && guardCalls.confirmTender.allows === reading.allows;
     parties.push({ name, account: address, reading, guard: guardCalls, signature: signatureCheck, readingAgreesWithGuard: agrees });
   }
+  await g.recheck(provider, pin);
   return {
-    block: { number: block.number, hash: block.hash, timestamp: block.timestamp, asked: blockTag },
+    block: { number: pin.number, hash: pin.hash, timestamp: pin.timestamp, asked: String(blockTag), finality: pin.finality, observedAt: pin.observedAt, hashRechecked: true },
     bounds: { guard: GUARD_GAS, signature: SIGNATURE_GAS },
     guardBuild: { file: "build/v2/FogaCellGuard.json", runtimeCodeHash: ethers.keccak256(guardBuild.deployedBytecode) },
     meter: { code: METER_CODE, at: METER_AT, guardAt: GUARD_AT },
@@ -100,4 +115,4 @@ async function probe(provider, accounts, { blockTag = "finalized" } = {}) {
   };
 }
 
-module.exports = { GUARD_GAS, SIGNATURE_GAS, OPERATIONS, METER_PROGRAM, METER_CODE, METER_AT, GUARD_AT, assemble, metered, probe };
+module.exports = { GUARD_GAS, SIGNATURE_GAS, OPERATIONS, METER_PROGRAM, METER_CODE, METER_AT, GUARD_AT, assemble, metered, callOf, probe };

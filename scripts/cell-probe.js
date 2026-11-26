@@ -39,7 +39,7 @@ async function main() {
   const tag = opts.block === undefined ? "finalized" : /^\d+$/.test(opts.block) ? Number(opts.block) : opts.block;
   const body = await probe.probe(provider, (config.parties ?? []).map((p) => ({ name: p.name, account: p.account })), { blockTag: tag });
   const record = g.jsonable({
-    schema: "finchain-pouw.cell-probe/1",
+    schema: "finchain-pouw.cell-probe/2",
     environment: config.environment ?? "unspecified",
     configuration: config.name,
     chainId,
@@ -51,21 +51,23 @@ async function main() {
     notes: [
       "Read-only: every figure is an eth_call at the block named, with the guard's committed build and a gas meter placed at two unused addresses for that call only. Nothing was deployed or sent.",
       "The signature checked is a well-formed signature by a key made for the probe and not kept: the figure is the cost of the account's check for a signature that is not its owner's.",
-      "The gas of a call is as the caller sees it: it includes the access of the called contract and a few dozen gas of setup, as the ledger's own call does.",
+      "The gas of a call is as the caller sees it: it includes the access of the called contract and a few dozen gas of setup. Whether a bound held is whether the call succeeded when it was given that bound, not a comparison of the caller's figure with the bound.",
+      "The block's hash was asked for again after the last read and was the same: every figure is of that one block.",
     ],
   });
   if (opts.out) c.createJson(path.resolve(c.expand(opts.out)), record);
   if (opts.json) { console.log(JSON.stringify(record, null, 2)); return 0; }
   const b = record.block;
-  console.log(`${config.name} on chain ${chainId}, block ${b.number} (${b.asked}, ${c.iso(b.timestamp)})`);
+  console.log(`${config.name} on chain ${chainId}, block ${b.number} ${b.hash} (${b.asked}, ${c.iso(b.timestamp)}); its hash asked for again at the end and unchanged`);
   for (const p of record.parties) {
     const r = p.reading;
     console.log(`\n${p.name ?? p.account}  ${p.account}`);
     console.log(`  views     revision ${r.accountVersion ?? "unreadable"}, ${r.presentedBindings ?? "?"} bindings for ${r.clauses ?? "?"} clauses, verdict ${["unknown", "satisfied", "not satisfied"][r.verdict] ?? "unreadable"}`
       + `${r.aid && r.aid !== ethers.ZeroAddress ? `, anchor ${["dormant", "active", "stale", "retired"][r.aidState] ?? "unreadable"} in ${r.aid}` : ", no AID registry named"}`);
     console.log(`  guard     would ${r.allows ? "allow" : `refuse (${r.reasons.join("; ")})`}; the guard itself answers ${p.guard.submitG0.allows ? "allow" : "refuse"} for submitG0 and ${p.guard.confirmTender.allows ? "allow" : "refuse"} for confirmTender${p.readingAgreesWithGuard ? "" : " - NOT what the views say"}`);
-    console.log(`  gas       guard ${p.guard.submitG0.gasUsed} and ${p.guard.confirmTender.gasUsed} of ${record.bounds.guard}${p.guard.submitG0.withinBound && p.guard.confirmTender.withinBound ? "" : " - NOT within the bound"}; `
-      + `signature check ${p.signature.gasUsed} of ${record.bounds.signature}${p.signature.withinBound ? "" : " - NOT within the bound"}, answer ${p.signature.answer ?? "none"}${p.signature.acceptedTheForeignSignature ? " - IT ACCEPTED A SIGNATURE THAT IS NOT THE OWNER'S" : ""}`);
+    const callText = (x, bound) => `${x.callerGas} caller gas, ${x.succeededWithTheBound ? `succeeded with ${bound}` : `FAILED with ${bound} (${x.failure})`}${x.succeededWithTheBound && !x.answerValid ? ", ANSWER NOT IN THE FORM THE LEDGER READS" : ""}`;
+    console.log(`  guard gas submitG0: ${callText(p.guard.submitG0, record.bounds.guard)}; confirmTender: ${callText(p.guard.confirmTender, record.bounds.guard)}`);
+    console.log(`  signature ${callText(p.signature, record.bounds.signature)}; answer ${p.signature.answer ?? "none"}${p.signature.acceptedTheForeignSignature ? " - IT ACCEPTED A SIGNATURE THAT IS NOT THE OWNER'S" : ""}`);
   }
   if (opts.out) console.log(`\nrecord ${opts.out}`);
   return 0;

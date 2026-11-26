@@ -11,7 +11,8 @@ import {signerOf} from "./Erc1271Accounts.sol";
 contract MockFogaCell {
     uint8 public ACCOUNT_VERSION = 3;
     address public owner;
-    address public aid;
+    address private _aid;
+    bool public aidFails;
     uint256 public clauseCount = 1;
     uint8 public verdict = 1;
     bool public statusFails;
@@ -24,7 +25,13 @@ contract MockFogaCell {
 
     function setRevision(uint8 revision) external { ACCOUNT_VERSION = revision; }
     function setOwner(address owner_) external { owner = owner_; }
-    function setAid(address registry) external { aid = registry; }
+    function setAid(address registry) external { _aid = registry; }
+    function setAidFails(bool fails) external { aidFails = fails; }
+
+    function aid() external view returns (address) {
+        require(!aidFails, "aid unreadable");
+        return _aid;
+    }
     function setClauseCount(uint256 n) external { clauseCount = n; }
     function setVerdict(uint8 verdict_) external { verdict = verdict_; }
     function setStatusFails(bool fails) external { statusFails = fails; }

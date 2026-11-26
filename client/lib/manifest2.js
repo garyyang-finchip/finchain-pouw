@@ -66,18 +66,32 @@ async function verifyDeployment(ctx, { pin = null, build = loadBuild } = {}) {
       onchain !== "0x" && sameLength && g.maskedCode(onchain, b.immutableReferences) === g.maskedCode(b.deployedBytecode, b.immutableReferences),
       sameLength ? undefined : `code of ${(onchain.length - 2) / 2} bytes, the build has ${(b.deployedBytecode.length - 2) / 2}`);
     check(`${role}: the code hash is the one the manifest records`, eq(entry.codeHash, hash), hash);
+    // where it came from: the transaction the manifest names created this contract, in the block the
+    // manifest names, which is in the chain and not after the block of this check
+    const rc = /^0x[0-9a-fA-F]{64}$/.test(entry.deployTx ?? "") ? await ctx.provider.getTransactionReceipt(entry.deployTx).catch(() => null) : null;
+    const inChain = rc && rc.blockNumber <= pin.number ? (await ctx.provider.getBlock(rc.blockNumber).catch(() => null))?.hash === rc.blockHash : false;
+    check(`${role}: its deployment transaction created it in the block the manifest names, in the chain at or before this block`,
+      Boolean(rc) && rc.status === 1 && eq(rc.contractAddress, address) && rc.blockNumber === entry.block && inChain,
+      rc ? `transaction ${entry.deployTx}: status ${rc.status}, contract ${rc.contractAddress}, block ${rc.blockNumber}${inChain ? "" : ", not in the chain up to this block"}`
+        : `no receipt at this endpoint for ${entry.deployTx}`);
   }
   const missing = ROLES.filter((role) => !m.contracts?.[role] || !m.code?.[role]?.codeHash);
   check("the manifest names every contract of the deployment and records its code", missing.length === 0, missing.length === 0 ? undefined : `missing: ${missing.join(", ")}`);
 
-  // the logs: the policy is the first contract, the ledger comes after it, and every start is a block
+  // the logs. The block each contract was deployed in is exact, and held above to its transaction; a
+  // log may be read from that block or from an earlier one, which only costs time, but never from a
+  // later one, which would leave out its start, and never from a block after this one
   const s = logStarts(m);
-  const starts = [s.deployBlock, s.policy, s.ledger, s.tender];
-  check("the manifest names where each log starts, the policy's at the deployment's first block and the ledger's after it",
-    starts.every((b) => Number.isInteger(b) && b >= 0) && s.policy === s.deployBlock && s.ledger >= s.policy
-      && (m.code?.GenesisPolicyV2?.block === undefined || m.code.GenesisPolicyV2.block === s.policy)
-      && (m.code?.GenesisLedgerV2?.block === undefined || m.code.GenesisLedgerV2.block === s.ledger),
-    `deployBlock ${s.deployBlock}, policy ${s.policy}, ledger ${s.ledger}, tender ${s.tender}`);
+  const policyBlock = m.code?.GenesisPolicyV2?.block;
+  const ledgerBlock = m.code?.GenesisLedgerV2?.block;
+  const block = (b) => Number.isInteger(b) && b >= 0 && b <= pin.number;
+  check("the manifest names where each log starts: at or before the block its contract was deployed in, and not after this block",
+    [s.deployBlock, s.policy, s.ledger, s.tender].every(block) && Number.isInteger(policyBlock) && Number.isInteger(ledgerBlock)
+      && s.deployBlock <= policyBlock && s.policy <= policyBlock && s.ledger <= ledgerBlock,
+    `deployBlock ${s.deployBlock}, policy ${s.policy} (deployed in ${policyBlock}), ledger ${s.ledger} (deployed in ${ledgerBlock}), tender ${s.tender}; this block ${pin.number}`);
+  check("the tenders' log starts where the manifest says the ERC-8414 contract was deployed",
+    m.external?.taskToken8414?.deployBlock !== undefined && s.tender === m.external.taskToken8414.deployBlock,
+    `tenderDeployBlock ${s.tender}, external.taskToken8414.deployBlock ${m.external?.taskToken8414?.deployBlock}`);
 
   const ledgerAddress = ctx.ledger.target;
   check("the ledger is the manifest's GenesisLedgerV2", eq(m.contracts?.GenesisLedgerV2, ledgerAddress), ledgerAddress);
@@ -118,9 +132,14 @@ async function verifyDeployment(ctx, { pin = null, build = loadBuild } = {}) {
   // the guards: each binding the manifest records was made as it records it - by the policy's own
   // event, with the guard's code hash at the time - the guard's code is still that code, and the
   // binding in force for the epoch is still this one
-  const policyLog = (account) => g.logs(ctx, ctx.policy, "GuardBound", [account], s.policy, pin.number);
+  const bound = await g.logs(ctx, ctx.policy, "GuardBound", [], s.policy, pin.number);
+  const recorded = new Set(Object.keys(m.guards ?? {}).map((a) => (ethers.isAddress(a) ? ethers.getAddress(a) : a)));
+  // every account the policy bound a guard to is in the manifest: leaving one out does not take it out of the check
+  const unrecorded = [...new Set(bound.map((ev) => ev.args.account))].filter((a) => !recorded.has(a));
+  check("the manifest records the guard of every account the policy bound one to", unrecorded.length === 0,
+    unrecorded.length === 0 ? `${recorded.size} account(s)` : `not recorded: ${unrecorded.join(", ")}`);
   for (const [account, rec] of Object.entries(m.guards ?? {})) {
-    const events = await policyLog(account);
+    const events = bound.filter((ev) => ethers.isAddress(account) && ev.args.account === ethers.getAddress(account));
     const made = events.find((ev) => BigInt(ev.args.version) === BigInt(rec.bindingVersion));
     check(`${account}: the policy bound guard ${rec.guard} as binding ${rec.bindingVersion} from epoch ${rec.fromEpoch}, with the code hash the manifest records`,
       Boolean(made) && eq(made.args.guard, rec.guard) && BigInt(made.args.fromEpoch) === BigInt(rec.fromEpoch) && eq(made.args.codeHash, rec.codeHash),
@@ -139,7 +158,7 @@ async function verifyDeployment(ctx, { pin = null, build = loadBuild } = {}) {
     const there = sup.ledger ? await codeAt(sup.ledger) : "0x";
     check(`it supersedes ${sup.name}: a ledger on the same chain, which is another ledger and has its code`,
       Number(sup.chainId) === Number(m.chainId) && Boolean(sup.ledger) && !eq(sup.ledger, ledgerAddress) && there !== "0x" && /^[0-9a-f]{64}$/.test(sup.manifestSha256 ?? ""),
-      `${sup.ledger} on chain ${sup.chainId}`);
+      `${sup.ledger} on chain ${sup.chainId}; the SHA-256 of its manifest is a commitment, not checked against that file here`);
   }
 
   const info = { steward: await read("the steward", (o) => ctx.policy.steward(o)), paused: await read("the pause", (o) => ctx.policy.paused(o)) };
@@ -170,6 +189,7 @@ async function cellGuardReading(provider, account, { blockTag = "latest" } = {})
   out.clauses = requirement.value === undefined ? null : requirement.value.clauses.length;
   out.verdict = status.value === undefined ? null : Number(status.value.verdict);
   out.aid = aid.value === undefined ? null : aid.value;
+  out.aidReadable = aid.value !== undefined;
   out.aidState = null;
   if (out.aid && out.aid !== ethers.ZeroAddress) {
     const registry = new ethers.Contract(out.aid, ["function state(address) view returns (uint8)"], provider);
@@ -181,6 +201,9 @@ async function cellGuardReading(provider, account, { blockTag = "latest" } = {})
   if (out.accountVersion !== 3) why.push(`account revision ${out.accountVersion ?? "unreadable"}, the guard is written for 3`);
   if (out.presentedBindings === null || out.clauses === null || out.presentedBindings !== out.clauses) why.push(`${out.presentedBindings ?? "unreadable"} bindings presented for ${out.clauses ?? "unreadable"} clauses`);
   if (out.verdict !== 1) why.push(`the registry's verdict is ${["unknown", "satisfied", "not satisfied"][out.verdict] ?? "unreadable"}`);
+  // an account that does not answer which AID registry it names is not one that names none: the guard
+  // asks the same question, and a call that fails is a refusal
+  if (!out.aidReadable) why.push(`the AID registry it names could not be read (${aid.error})`);
   if (out.aid && out.aid !== ethers.ZeroAddress && out.aidState !== 1) why.push(`the anchor is ${["dormant", "active", "stale", "retired"][out.aidState] ?? "unreadable"} in its AID registry`);
   out.allows = why.length === 0;
   out.reasons = why;

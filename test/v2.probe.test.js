@@ -45,15 +45,20 @@ describe("Ledger v2: the probe of contract accounts before a round", () => {
     }
     // the guard and the reading of the views agree for every account
     expect(record.parties.every((p) => p.readingAgreesWithGuard)).to.equal(true);
-    // a guard that reverts has not answered; one that refuses has
-    expect([by["registry down"].guard.submitG0.answered, by.unsatisfied.guard.submitG0.answered, by["a key"].guard.submitG0.answered]).to.deep.equal([false, true, false]);
+    // a guard that reverts has not answered, and says so; one that refuses has answered
+    const call = (x) => [x.succeededWithTheBound, x.answerValid, x.failure];
+    expect(call(by["registry down"].guard.submitG0)).to.deep.equal([false, false, "reverted"]);
+    expect(call(by.unsatisfied.guard.submitG0)).to.deep.equal([true, true, null]);
+    expect(call(by["a key"].guard.submitG0)).to.deep.equal([false, false, "reverted"]);
     // the signature check: the stand-in answers that a foreign signature is not its owner's; a key does not answer
-    expect([by.satisfied.signature.answered, by.satisfied.signature.answer, by.satisfied.signature.acceptedTheForeignSignature]).to.deep.equal([true, "0x00000000", false]);
-    expect(by["a key"].signature.answered).to.equal(false);
+    expect([by.satisfied.signature.answerValid, by.satisfied.signature.answer, by.satisfied.signature.acceptedTheForeignSignature]).to.deep.equal([true, "0x00000000", false]);
+    expect([by["a key"].signature.succeededWithTheBound, by["a key"].signature.answerValid]).to.deep.equal([true, false]);
     for (const p of record.parties.filter((q) => q.name !== "a key")) {
-      expect(p.guard.submitG0.gasUsed > 5_000n && p.guard.submitG0.withinBound || !p.guard.submitG0.answered, p.name).to.equal(true);
-      expect(p.signature.gasUsed > 3_000n && p.signature.withinBound, p.name).to.equal(true);
+      expect(p.guard.submitG0.callerGas > 5_000n, p.name).to.equal(true);
+      expect([p.signature.callerGas > 3_000n, p.signature.succeededWithTheBound], p.name).to.deep.equal([true, true]);
     }
+    // the block: taken once, every read at its number, its hash asked for again at the end
+    expect([record.block.asked, record.block.hashRechecked, record.block.hash]).to.deep.equal(["latest", true, (await ethers.provider.getBlock(record.block.number)).hash]);
     expect(record.bounds).to.deep.equal({ guard: 500_000n, signature: 200_000n });
     expect(record.guardBuild.runtimeCodeHash).to.equal(ethers.keccak256(m2.loadBuild("FogaCellGuard").deployedBytecode));
 
@@ -68,6 +73,45 @@ describe("Ledger v2: the probe of contract accounts before a round", () => {
     // a call that needs more than its bound runs out inside it, and the meter says so
     const starved = await cp.metered(ethers.provider, "latest", guard.target, 2_000n, data);
     expect([starved.success, starved.gasUsed > 2_000n]).to.deep.equal([false, true]);
+  });
+
+  it("reads an account that cannot say which AID registry it names as refused, a call that used all its bound as succeeded, and a block that changed as nothing (L51)", async () => {
+    const [, owner] = await ethers.getSigners();
+    const cell = await deployed("MockFogaCell", owner.address);
+    await (await cell.setAidFails(true)).wait();
+    const record = await cp.probe(ethers.provider, [{ name: "aid unreadable", account: cell.target }], { blockTag: "latest" });
+    const p = record.parties[0];
+    expect([p.reading.aidReadable, p.reading.allows, p.reading.reasons]).to.deep.equal([false, false, [p.reading.reasons[0]]]);
+    expect(p.reading.reasons[0]).to.match(/^the AID registry it names could not be read/);
+    expect([p.guard.submitG0.allows, p.guard.submitG0.failure, p.readingAgreesWithGuard]).to.deep.equal([false, "reverted", true]);
+    await (await cell.setAidFails(false)).wait();
+    // a call given its bound that uses nearly all of it and answers: the bound held, whatever the caller's figure
+    const burner = await deployed("GasBurner");
+    const r = await cp.metered(ethers.provider, "latest", burner.target, cp.GUARD_GAS, burner.interface.encodeFunctionData("read"));
+    const c = cp.callOf(r, cp.GUARD_GAS, r.answerBytes === 32);
+    expect([r.gasUsed > cp.GUARD_GAS, c.succeededWithTheBound, c.answerValid, c.failure, BigInt(r.word)]).to.deep.equal([true, true, true, null, 1n]);
+    // and one given less than it needs: it fails, having used what it was given
+    const guard = await deployed("FogaCellGuard");
+    const starved = cp.callOf(await cp.metered(ethers.provider, "latest", guard.target, 2_000n, guard.interface.encodeFunctionData("allows", [cell.target, 1])), 2_000n, false);
+    expect([starved.succeededWithTheBound, starved.failure]).to.deep.equal([false, "used at least the gas it was given"]);
+    // a block replaced after it was taken: the probe reads the replacement, finds the hash changed, and returns nothing
+    const snap = await h.network.provider.send("evm_snapshot", []);
+    await (await cell.setVerdict(1)).wait();
+    let first = true;
+    const provider = new Proxy(ethers.provider, { get(target, key) {
+      if (key === "getBlock") {
+        return async (tag) => {
+          const b = await target.getBlock(tag);
+          if (first) { first = false; await h.network.provider.send("evm_revert", [snap]); await (await cell.setVerdict(2)).wait(); }
+          return b;
+        };
+      }
+      const value = Reflect.get(target, key, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
+    let error = null;
+    try { await cp.probe(provider, [{ name: "cell", account: cell.target }], { blockTag: "latest" }); } catch (e) { error = e; }
+    expect(error).to.be.instanceOf(t.g.SnapshotMoved);
   });
 
   it("assembles its meter from the listing, and does not place it where a contract is", async () => {

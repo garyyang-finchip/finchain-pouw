@@ -102,7 +102,7 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(record.transactions.length).to.equal(planned.transactions);
     expect(record.transactions.length).to.equal(18);
     expect(record.cells).to.deep.equal([{ account: w.cell.target, code: true, accountVersion: 3, presentedBindings: 1, clauses: 1, verdict: 1,
-      aid: ethers.ZeroAddress, aidState: null, allows: true, reasons: [] }]);
+      aid: ethers.ZeroAddress, aidReadable: true, aidState: null, allows: true, reasons: [] }]);
     if (process.env.POUW_SHOW_GAS) console.log(record.transactions.map((x) => `${x.gasUsed} ${x.step}`).join("\n"));
     const gasOf = (prefix) => record.transactions.filter((x) => x.step.startsWith(prefix)).map((x) => BigInt(x.gasUsed));
     const sum = (xs) => xs.reduce((a, b) => a + b, 0n);
@@ -165,11 +165,27 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
       contracts: { ...manifest.contracts, Extra: manifest.contracts.AuditV1 } })).to.deep.equal(["Extra: a role of a v2 deployment, filled by the build it names"]);
     const { AuditV1, ...withoutAudit } = manifest.code;
     expect(await failing({ ...manifest, code: withoutAudit })).to.deep.equal(["the manifest names every contract of the deployment and records its code"]);
-    // log starts that do not fit the contracts
-    const starts = "the manifest names where each log starts, the policy's at the deployment's first block and the ledger's after it";
-    expect(await failing({ ...manifest, ledgerDeployBlock: manifest.policyDeployBlock - 1 })).to.deep.equal([starts]);
+    // log starts: at or before the block their contract was deployed in, and not after the block of the check
+    const starts = "the manifest names where each log starts: at or before the block its contract was deployed in, and not after this block";
     expect(await failing({ ...manifest, policyDeployBlock: manifest.policyDeployBlock + 1 })).to.deep.equal([starts]);
     expect(await failing({ ...manifest, ledgerDeployBlock: manifest.ledgerDeployBlock + 1 })).to.deep.equal([starts]);
+    expect(await failing({ ...manifest, deployBlock: manifest.deployBlock + 1 })).to.deep.equal([starts]);
+    const head = await ethers.provider.getBlockNumber();
+    expect(await failing({ ...manifest, tenderDeployBlock: head + 1000, external: { taskToken8414: { ...manifest.external.taskToken8414, deployBlock: head + 1000 } } }))
+      .to.deep.equal([starts]);
+    // earlier starts only cost time: a log read from before its contract is still the whole log
+    const early = await m2.verifyDeployment(await a2.connect({ ...manifest, ledgerDeployBlock: manifest.policyDeployBlock - 1, policyDeployBlock: 0, deployBlock: 0 }, ethers.provider, { tag: "latest" }));
+    expect(early.ok, JSON.stringify(early.checks.filter((x) => !x.ok))).to.equal(true);
+    // the two blocks of the tender contract say the same thing
+    expect(await failing({ ...manifest, tenderDeployBlock: 1 })).to.deep.equal(["the tenders' log starts where the manifest says the ERC-8414 contract was deployed"]);
+    // where the contracts came from: a transaction that does not exist, one that created another contract, another block
+    const provenance = (role) => `${role}: its deployment transaction created it in the block the manifest names, in the chain at or before this block`;
+    expect(await failing(withCode("GenesisLedgerV2", { deployTx: ethers.ZeroHash }))).to.deep.equal([provenance("GenesisLedgerV2")]);
+    expect(await failing(withCode("AuditV1", { deployTx: manifest.code.GenesisLedgerV2.deployTx }))).to.deep.equal([provenance("AuditV1")]);
+    // a block that is not the transaction's: with the log start and the code entry moved together, both are found
+    const moved = { ...withCode("GenesisPolicyV2", { block: 999999 }), deployBlock: 999999, policyDeployBlock: 999999 };
+    // (the policy's log is then read from a block past this one, so the guard's binding is not found in it either)
+    expect((await failing(moved)).slice(0, 2)).to.deep.equal([provenance("GenesisPolicyV2"), starts]);
     // a guard binding that is not the one the policy made, a guard whose code is not the one bound
     const made = `${account}: the policy bound guard ${manifest.guards[account].guard} as binding 1 from epoch 0, with the code hash the manifest records`;
     expect(await failing(withGuard({ codeHash: ethers.id("other") }))).to.deep.equal([made, `${account}: the guard's code is the code it had when it was bound`]);
@@ -177,14 +193,19 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(await failing(withGuard({ contract: "SwitchGuard" }))).to.deep.equal([`${account}: the guard is the manifest's SwitchGuard`]);
     const unbound = { ...manifest, guards: { ...manifest.guards, [w.w1.address]: manifest.guards[account] } };
     expect((await failing(unbound)).every((x) => x.startsWith(w.w1.address))).to.equal(true);
-    // a rebinding after the deployment leaves the manifest behind
+    // a binding the policy made and the manifest leaves out is found, not passed over
+    expect(await failing({ ...manifest, guards: {} })).to.deep.equal(["the manifest records the guard of every account the policy bound one to"]);
+    // a rebinding after the deployment leaves the manifest behind, and leaving the account out does not hide it
     const other = await (await ethers.getContractFactory("SwitchGuard")).deploy();
     const policy = new ethers.Contract(manifest.contracts.GenesisPolicyV2, v2.abi.policy, w.steward);
     await (await policy.bindGuard(account, other.target)).wait();
     expect(await failing(manifest)).to.deep.equal([`${account}: the binding in force for epoch 0 is the manifest's`]);
+    expect(await failing({ ...manifest, guards: {} })).to.deep.equal(["the manifest records the guard of every account the policy bound one to"]);
     // what it supersedes: on another chain, without code, the ledger itself
     const sup = (entry) => ({ ...withoutRebind(manifest), supersedes: { ...manifest.supersedes, ...entry } });
-    const withoutRebind = (m) => ({ ...m, guards: {} });
+    // the cases below concern other parts of the manifest: the rebinding's finding is kept out of their lists
+    const rebound = { guard: other.target, codeHash: ethers.keccak256(await ethers.provider.getCode(other.target)), bindingVersion: 2, fromEpoch: 0 };
+    const withoutRebind = (m) => ({ ...m, guards: { [account]: rebound } });
     const supersedes = `it supersedes kernel-test: a ledger on the same chain, which is another ledger and has its code`;
     expect(await failing(sup({ chainId: 85422 }))).to.deep.equal([supersedes]);
     expect(await failing(sup({ ledger: w.outsider.address }))).to.deep.equal([supersedes]);
@@ -194,7 +215,8 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(await failing({ ...withoutRebind(manifest), clock: { ...manifest.clock, epochDuration: 7200 } })).to.deep.equal(["the policy's clock is the manifest's"]);
     expect(await failing({ ...withoutRebind(manifest), external: { taskToken8414: { ...manifest.external.taskToken8414, codeHash: ethers.id("other") } } }))
       .to.deep.equal(["the ERC-8414 contract's code is what it was when the adapter was pointed at it"]);
-    expect(await failing({ ...withoutRebind(manifest), external: {} })).to.deep.equal(["the adapter reads the manifest's ERC-8414 contract", "the manifest records the ERC-8414 contract's code"]);
+    expect(await failing({ ...withoutRebind(manifest), external: {} })).to.deep.equal(["the tenders' log starts where the manifest says the ERC-8414 contract was deployed",
+      "the adapter reads the manifest's ERC-8414 contract", "the manifest records the ERC-8414 contract's code"]);
   });
 
   it("refuses, before anything is sent, a plan that cannot run as written (L50)", async () => {
@@ -226,8 +248,23 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     await refused(plan({ ...good, epochDuration: 0 }), "epochDuration");
     await refused(plan({ ...good, params: [params({ activeFromEpoch: 1 })] }), "from epoch 0");
     await refused(plan({ ...good, params: [params(), params()] }), "increasing epochs");
-    await refused(plan({ ...good, params: [params({ operatorCapBps: undefined })] }), "basis points");
+    await refused(plan({ ...good, params: [params({ operatorCapBps: undefined })] }), "parameter version 1 lacks operatorCapBps");
     await refused(plan({ ...good, params: [params({ operatorCapBps: 0 })] }), "basis points");
+    // every parameter version is held to the types and widths the policy takes, not the first alone
+    await refused(plan({ ...good, params: [params(), params({ activeFromEpoch: 1, maxSubsidizedPerPair: -1 })] }), "parameter version 2: maxSubsidizedPerPair must be a whole number below 2^32");
+    await refused(plan({ ...good, params: [params(), params({ activeFromEpoch: 1, halvingInterval: 2 ** 32 })] }), "parameter version 2: halvingInterval");
+    await refused(plan({ ...good, params: [params({ subsidizeDeclaredRelated: "false" })] }), "subsidizeDeclaredRelated must be true or false, not \"false\"");
+    await refused(plan({ ...good, params: [params({ budgetPoints: "1e3" })] }), "decimal amounts");
+    await refused(plan({ ...good, params: [{ ...params(), splitBps: 10 }] }), "a field splitBps that a parameter version does not have");
+    // the profiles are held to what the built-in modules can do
+    await refused(plan({ ...good, profiles: [{ ...good.profiles[0], jobsPerEpoch: 0 }, good.profiles[1]] }), "g0.ref: AuditV1 is a G0 function with one job");
+    await refused(plan({ ...good, profiles: [{ ...good.profiles[0], pool: "g1", jobsPerEpoch: 0 }, { ...good.profiles[1], pool: "g0", jobsPerEpoch: 1 }] }), "not pool g1 with 0");
+    await refused(plan({ ...good, profiles: [good.profiles[0], { ...good.profiles[1], jobsPerEpoch: 1 }] }), "g1.tender: the tender adapter reports to G1 and has no jobs");
+    await refused(plan({ ...good, profiles: [good.profiles[0], { ...good.profiles[1], role: 2 }] }), "the built-in profiles are of role 0");
+    await refused(plan({ ...good, profiles: [good.profiles[0], { ...good.profiles[1], countsUnits: true }] }), "show no task unit");
+    await refused(plan({ ...good, profiles: [good.profiles[0], { ...good.profiles[1], counts: 1 }] }), "a field counts that a profile does not have");
+    await refused(plan(good, { parties: [{ address: w.w1.address, admitted: "yes" }] }), "must be true or false, not \"yes\"");
+    await refused(plan(good, { parties: [{ address: w.w1.address, fundEth: "some" }] }), "must be a decimal amount");
     await refused(plan({ ...good, profiles: [good.profiles[0]] }), "no g1.tender profile");
     await refused(plan({ ...good, profiles: [...good.profiles, good.profiles[0]] }), "listed twice");
     await refused(plan({ ...good, profiles: [...good.profiles, { name: "g1.unit", pool: "g1", baseGmu: 1, maxGmuPerWorkerPerEpoch: 1 }] }), "g1.unit is neither");
@@ -254,6 +291,51 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(await ethers.provider.getTransactionCount(w.steward.address)).to.equal(nonce);
   });
 
+  it("writes every transaction down when it is taken, keeps one whose answer was lost, and takes its output place before sending (L55)", async () => {
+    const w = await world();
+    const events = [];
+    // a funding transfer is taken and mined, and the answer to it is lost on the way back
+    let lost = null;
+    const steward = Object.create(w.steward);
+    steward.sendTransaction = async (request) => {
+      const tx = await w.steward.sendTransaction(request);
+      if (!request.value || String(request.to).toLowerCase() !== w.delegate.address.toLowerCase()) return tx;
+      lost = tx; await tx.wait();
+      const response = Object.create(tx);
+      response.wait = async () => { throw new Error("the endpoint went away before it answered"); };
+      return response;
+    };
+    const before = await ethers.provider.getBalance(w.delegate.address);
+    let error = null;
+    try {
+      await d2.deployV2({ config: config(w.taskToken.target), steward, genesisTime: (await h.now()) + 1000n, parties: partiesOf(w), journal: (e) => events.push(e) });
+    } catch (e) { error = e; }
+    expect(String(error?.message)).to.contain("the endpoint went away");
+    const partial = error.partial;
+    const entry = partial.transactions.find((t) => t.txHash === lost.hash);
+    expect([entry.status, entry.step, entry.nonce, entry.from]).to.deep.equal(["unknown", `fund ${w.delegate.address} with 0.01`, lost.nonce, w.steward.address]);
+    expect(partial.counts).to.deep.equal({ confirmed: partial.transactions.length - 1, failed: 0, unknown: 1, submitted: 0 });
+    // the transfer did arrive: what is unknown is looked up, never sent again on a guess
+    expect(await ethers.provider.getBalance(w.delegate.address)).to.equal(before + ethers.parseEther("0.01"));
+    expect((await ethers.provider.getTransactionReceipt(lost.hash)).status).to.equal(1);
+    // every transaction was written down when it was taken, before its outcome
+    const of = (hash) => events.filter((e) => e.txHash === hash).map((e) => e.event);
+    for (const t of partial.transactions) expect(of(t.txHash), t.step).to.deep.equal(t.status === "unknown" ? ["submitted", "unknown"] : ["submitted", "confirmed"]);
+
+    // the command takes its output place before anything is sent: a name that is taken - here by a link to
+    // nothing, which a test for existence would pass over - is refused before a key or an endpoint is used
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pouw-v2-out-"));
+    try {
+      const out = path.join(dir, "out"); fs.mkdirSync(out);
+      fs.symlinkSync(path.join(dir, "nothing.json"), path.join(out, "manifest.json"));
+      const cfg = path.join(dir, "config.json"); fs.writeFileSync(cfg, JSON.stringify(config(w.taskToken.target)));
+      const r = require("child_process").spawnSync(process.execPath, [path.join(c.root, "scripts", "deploy-v2.js"), "--config", cfg, "--keys", path.join(dir, "keys"),
+        "--genesis", "+15m", "--out", out, "--rpc", "http://127.0.0.1:9", "--yes"], { encoding: "utf8", timeout: 20000 });
+      expect([r.status, r.stderr.includes("exists: a deployment named v2-test was made from here, or the name is taken")]).to.deep.equal([1, true]);
+      expect(fs.readdirSync(out)).to.deep.equal(["manifest.json"]);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
   it("creates its records and never replaces one (P68)", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pouw-v2-"));
     try {
@@ -270,7 +352,10 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
       expect(fs.readFileSync(target, "utf8")).to.equal("kept\n");
       // the command refuses a directory that holds a manifest before it reads a key or an endpoint
       const text = fs.readFileSync(path.join(c.root, "scripts", "deploy-v2.js"), "utf8");
-      expect(text.indexOf("fs.existsSync(manifestPath)") < text.indexOf("c.walletOf(")).to.equal(true);
+      const before = (a, b) => text.indexOf(a) >= 0 && text.indexOf(a) < text.indexOf(b);
+      expect(before("taken(manifestPath)", "c.walletOf(")).to.equal(true);
+      expect(before("fs.writeFileSync(journalPath, \"\", { flag: \"wx\" })", "d.deployV2(")).to.equal(true);
+      expect(text.includes("deploy again")).to.equal(false);
       expect(text.includes("c.writeJson(")).to.equal(false);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });

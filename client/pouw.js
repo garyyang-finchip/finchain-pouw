@@ -49,9 +49,15 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
                        manifest's logChunk, else 0)
   --json               print JSON instead of text
   --out <path>         audit, verify: also write the record to a file. Ledger v2: audit, verify, work and
-                       bridge; the file is created, and a path that exists is refused before anything is done
+                       bridge; the file is created before anything is read or sent, so that a path that
+                       exists or cannot be created is refused with nothing sent. While work or bridge
+                       runs, the file holds the journal of the transactions it sends, one event per
+                       line, and the record takes its place at the end; a run that stops after sending
+                       leaves the journal. Each transaction is also shown on the standard error when it
+                       is taken and with its outcome
 
-Exit status: 0 done / the audit or the check matches; 2 it differs (and work submits nothing);
+Exit status: 0 done / the audit or the check matches; 2 it differs (and work submits nothing), or,
+ledger v2, work or bridge sent and the receipt recorded is not the one the client computed;
 3 not settled yet; 4 the endpoint cannot serve state at the block that was taken (nothing is read at
 another block in its place); 5 ledger v2: the audit agrees with the ledger but left receipts
 undecided, which work it could not read again (and work submits nothing); 1 any other failure.
@@ -98,7 +104,9 @@ async function open(opts, { signer = false, pinned = false } = {}) {
     throw new Error("--account is for the kernel: on ledger v2 an account takes part through a delegate under its permit (--permit), or by its own key; the direct entry through an account's execute is not built in this client");
   }
   if (!isV2 && (opts.permit !== undefined || opts.permits !== undefined)) throw new Error("--permit and --permits are for a deployment of ledger v2");
-  if (isV2 && opts.out !== undefined) c2.refuseExisting(opts.out);
+  // the output's place is taken before anything is read or sent: a path that exists or cannot be
+  // created is refused with nothing sent
+  if (isV2 && opts.out !== undefined) output = c2.reserveOutput(opts.out);
   const rpc = need(opts.rpc ?? process.env.POUW_RPC ?? manifest.rpc, "--rpc (or POUW_RPC, or the manifest's rpc)");
   // no response cache: a read that follows a transaction must see it, also on a fast local network
   const provider = new ethers.JsonRpcProvider(rpc, undefined, { cacheTimeout: -1 });
@@ -124,10 +132,21 @@ function givenPermits(opts) {
   return Array.isArray(value) ? value : [value];
 }
 
-/// The record of a v2 command: printed, and with --out written to a new file.
+/// The output of a v2 command, taken by `open` when --out is given (client2.js reserveOutput).
+let output = null;
+
+/// Each transaction of a run, when the endpoint takes it and again with its outcome: on the standard
+/// error at once, and into the output's journal when there is one.
+function onEvent(event) {
+  const where = event.block !== undefined ? ` in block ${event.block}` : "";
+  console.error(`  ${event.event} ${event.step}: tx ${event.txHash ?? "with no hash"} from ${event.from}${event.nonce !== null && event.nonce !== undefined ? `, nonce ${event.nonce}` : ""}${where}`);
+  if (output) c2.appendEvent(output, event);
+}
+
+/// The record of a v2 command: printed, and with --out written in the place taken for it.
 function emitRecord(opts, record, text) {
   const json = JSON.stringify(record, null, 2) + "\n";
-  if (opts.out) c2.createFile(opts.out, json);
+  if (output) c2.finishOutput(output, json);
   console.log(opts.json ? json.trimEnd() : text);
 }
 
@@ -235,7 +254,7 @@ async function verify(opts) {
 
 // ---------------------------------------------------------------- ledger v2
 
-const scopeText = (p) => `${p.permit ? `as the delegate ${p.sender} under the permit ${p.permit.digest} of ${p.participant}` : `by ${p.sender} for itself`}`;
+const scopeText = (r) => `${r.given.permit ? `as the delegate ${r.given.sendingKey} under the permit ${r.given.permit.digest} of ${r.participant}` : `by ${r.given.sendingKey} for itself`}`;
 const statusText = (st) => `${g.VERDICT_NAME[st.verdict]}, ${require("./lib/ledger2").INELIGIBLE_NAME[st.ineligible]}, GMU ${st.gmuSubsidized}/${st.gmuMeasured}`;
 
 async function status2(opts, ctx) {
@@ -275,27 +294,35 @@ async function status2(opts, ctx) {
   print(opts, out, lines.join("\n"));
 }
 
+/// A run of work or bridge whose receipt is not the one the client computed has still sent its
+/// transaction: its record is written, with the differences, and the exit status is 2.
+async function sent(promise) {
+  try { return await promise; } catch (e) { if (e instanceof c2.ReceiptDiffers) return e.result; throw e; }
+}
+
 async function work2(opts, ctx, signer, rpc) {
   const permit = opts.permit === undefined ? null : c2.readPermitFile(ctx, opts.permit);
-  const r = await c2.workG0(ctx, signer, { permit, permits: givenPermits(opts) });
+  const r = await sent(c2.workG0(ctx, signer, { permit, permits: givenPermits(opts), onEvent }));
   const record = c2.runRecord(ctx, r, { rpc, host: { node: process.version, platform: `${process.platform}/${process.arch}` } });
   const text = r.alreadyRecorded
-    ? `epoch ${r.epoch}: the audit job of ${r.participant} is recorded already, receipt ${r.receiptId} (${statusText(r.status)}); nothing was sent`
+    ? `epoch ${r.epoch}: the audit job of ${r.participant} is recorded already, receipt ${r.receiptId} (${statusText(r.status)}), ${record.label}; nothing was sent`
     : `epoch ${r.epoch}: ${r.participant} audited ${r.work.audited === null ? "the deployment's configuration" : `epoch ${r.work.audited} (${r.work.receipts} receipts)`}, sent ${scopeText(r)}; `
-      + `receipt ${r.receiptId} ${statusText(r.status)}; tx ${r.txHash}`;
-  emitRecord(opts, record, `${text}\n  label ${record.label}`);
-  return 0;
+      + `receipt ${r.receiptId} ${statusText(r.status)}; ${r.transactions.length} transaction(s), the last ${r.txHash}`;
+  emitRecord(opts, record, `${text}\n  label ${record.label}${differencesText(r)}`);
+  return r.differences.length > 0 ? 2 : 0;
 }
 
 async function bridge2(opts, ctx, signer, rpc, tokenId, submissionId) {
   const permit = opts.permit === undefined ? null : c2.readPermitFile(ctx, opts.permit);
-  const r = await c2.confirmTender(ctx, signer, { tokenId, submissionId, permit });
+  const r = await sent(c2.confirmTender(ctx, signer, { tokenId, submissionId, permit, onEvent }));
   const record = c2.runRecord(ctx, r, { rpc, host: { node: process.version, platform: `${process.platform}/${process.arch}` } });
-  const text = `receipt ${r.receiptId} in epoch ${r.epoch}: tender ${tokenId}, submission ${submissionId} of ${r.participant}, confirmed ${scopeText(r)} for the worker ${r.receipt.worker}; `
+  const text = `receipt ${r.receiptId} in epoch ${r.epoch}: tender ${tokenId}, submission ${submissionId} of ${r.participant}, confirmed ${r.alreadyRecorded ? "before this run" : scopeText(r)} for the worker ${r.receipt.worker}; `
     + `${statusText(r.status)}, relation ${g.RELATION_NAME[r.status.relation]}; ${r.alreadyRecorded ? "recorded already, nothing was sent" : `tx ${r.txHash}`}`;
-  emitRecord(opts, record, `${text}\n  label ${record.label}`);
-  return 0;
+  emitRecord(opts, record, `${text}\n  label ${record.label}${differencesText(r)}`);
+  return r.differences.length > 0 ? 2 : 0;
 }
+
+const differencesText = (r) => (r.differences.length > 0 ? `\n  DIFFERS: the receipt recorded is not the one this client computed: ${r.differences.join("; ")}` : "");
 
 async function audit2(opts, ctx, rpc, epoch) {
   const report = await a2.auditEpoch(ctx, epoch, { requireSealed: Boolean(opts["require-sealed"]), permits: givenPermits(opts) });
@@ -332,6 +359,9 @@ async function main() {
 }
 
 main().then((code) => { process.exitCode = code; }, (e) => {
+  // the output is removed when it is still the empty file this run made, and kept with its journal otherwise
+  const kept = output ? c2.releaseOutput(output) : null;
+  if (kept) console.error(`pouw: the journal of what this run sent is in ${kept}`);
   if (e instanceof g.NotFinalYet) { console.error(`not settled yet: ${e.message}`); process.exitCode = 3; return; }
   if (e instanceof g.StateUnavailable) { console.error(`no state at the block: ${e.message}`); process.exitCode = 4; return; }
   if (e instanceof g.AuditMismatch) { console.error(`nothing submitted: ${e.message}`); process.exitCode = 2; return; }

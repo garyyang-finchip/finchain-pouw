@@ -39,7 +39,90 @@ function paramsStruct(p) {
 }
 
 const modeOf = (p) => (p.subsidizeDeclaredRelated ? "controlled-self-test" : "standard");
-const bps = (x) => Number.isInteger(x) && x > 0 && x <= 10000;
+
+// What the built-in modules can do, which a configuration cannot change: AuditV1 is a G0 function
+// with one job, job 0; the tender adapter reports to G1 and shows no task unit. Both profiles are of
+// the role the frozen types give the two profiles of 0.1.3, unclassified.
+const BUILT_IN = {
+  [g.PROFILE_G0_REF]: { pool: v2.POOL_G0, jobsPerEpoch: 1, what: "AuditV1 is a G0 function with one job" },
+  [g.PROFILE_G1_TENDER]: { pool: v2.POOL_G1, jobsPerEpoch: 0, what: "the tender adapter reports to G1 and has no jobs" },
+};
+const PARAM_FIELDS = ["activeFromEpoch", "budgetPoints", "halvingInterval", "splitG0Bps", "workerCapBps", "operatorCapBps", "minBountyEth",
+  "maxSubsidizedPerDemander", "maxSubsidizedPerPair", "subsidizeDeclaredRelated"];
+const PROFILE_FIELDS = ["name", "pool", "baseGmu", "maxGmuPerWorkerPerEpoch", "jobsPerEpoch", "activeFromEpoch", "role", "countsUnits", "unitSetRoot", "issuerSetRoot"];
+const isUint = (x, bits) => Number.isSafeInteger(x) && x >= 0 && BigInt(x) < (1n << BigInt(bits));
+const isDecimal = (x) => (typeof x === "string" && /^\d+(\.\d+)?$/.test(x)) || (typeof x === "number" && Number.isFinite(x) && x >= 0);
+
+/// The parameter versions and the profiles of a configuration, each field held to its type, its width
+/// and the policy's own rules, and the profiles to what the built-in modules can do - all before a
+/// transaction is sent (GenesisPolicyV2: registerParams, registerProfile). Nothing is converted: a
+/// boolean is true or false, never the string "false".
+function checkConfiguration(config, fail) {
+  if (typeof config.name !== "string" || config.name === "") fail("the configuration names no deployment");
+  if (!isUint(config.epochDuration, 64) || config.epochDuration === 0) fail("epochDuration must be a positive whole number of seconds");
+  const params = config.params ?? [];
+  if (!Array.isArray(params) || params.length === 0) fail("the configuration has no parameter version");
+  params.forEach((p, i) => {
+    const at = `parameter version ${i + 1}`;
+    if (p === null || typeof p !== "object" || Array.isArray(p)) fail(`${at} is not an object`);
+    for (const k of Object.keys(p)) if (!PARAM_FIELDS.includes(k)) fail(`${at} has a field ${k} that a parameter version does not have`);
+    for (const k of PARAM_FIELDS) if (p[k] === undefined) fail(`${at} lacks ${k}`);
+    if (!isUint(p.activeFromEpoch, 64)) fail(`${at}: activeFromEpoch must be a whole epoch number`);
+    if (!isDecimal(p.budgetPoints) || !isDecimal(p.minBountyEth)) fail(`${at}: budgetPoints and minBountyEth must be decimal amounts`);
+    for (const [k, bits] of [["halvingInterval", 32], ["maxSubsidizedPerDemander", 32], ["maxSubsidizedPerPair", 32]]) {
+      if (!isUint(p[k], bits)) fail(`${at}: ${k} must be a whole number below 2^${bits}`);
+    }
+    if (!isUint(p.splitG0Bps, 16) || p.splitG0Bps > 10000) fail(`${at}: splitG0Bps must be basis points, 0 to 10000`);
+    for (const k of ["workerCapBps", "operatorCapBps"]) if (!isUint(p[k], 16) || p[k] === 0 || p[k] > 10000) fail(`${at}: ${k} must be basis points, 1 to 10000`);
+    if (typeof p.subsidizeDeclaredRelated !== "boolean") fail(`${at}: subsidizeDeclaredRelated must be true or false, not ${JSON.stringify(p.subsidizeDeclaredRelated)}`);
+    const q = paramsStruct(p);
+    if (q.budgetBase >= 1n << 128n || q.minBountyWei >= 1n << 128n) fail(`${at}: an amount does not fit 128 bits`);
+    if (i === 0 && p.activeFromEpoch !== 0) fail("the first parameter version must apply from epoch 0");
+    if (i > 0 && !(p.activeFromEpoch > params[i - 1].activeFromEpoch)) fail("parameter versions must apply from increasing epochs");
+  });
+
+  const profiles = config.profiles ?? [];
+  if (!Array.isArray(profiles)) fail("the profiles are not a list");
+  const names = new Set();
+  const out = profiles.map((f) => {
+    if (f === null || typeof f !== "object" || Array.isArray(f)) fail("a profile is not an object");
+    for (const k of Object.keys(f)) if (!PROFILE_FIELDS.includes(k)) fail(`the profile ${f.name} has a field ${k} that a profile does not have`);
+    if (!MODULES[f.name]) fail(`this version deploys the modules of ${Object.keys(MODULES).join(" and ")} only; ${f.name} is neither`);
+    if (names.has(f.name)) fail(`the profile ${f.name} is listed twice`);
+    names.add(f.name);
+    const p = {
+      ...f, pool: POOLS[f.pool], jobsPerEpoch: f.jobsPerEpoch ?? 0, activeFromEpoch: f.activeFromEpoch ?? 0, role: f.role ?? v2.ROLE.UNCLASSIFIED,
+      countsUnits: f.countsUnits ?? false, unitSetRoot: f.unitSetRoot ?? NONE, issuerSetRoot: f.issuerSetRoot ?? NONE,
+    };
+    if (p.pool === undefined) fail(`the pool of ${f.name} must be g0 or g1, not ${JSON.stringify(f.pool)}`);
+    if (!isUint(p.baseGmu, 64) || p.baseGmu === 0 || !isUint(p.maxGmuPerWorkerPerEpoch, 64) || p.maxGmuPerWorkerPerEpoch < p.baseGmu) {
+      fail(`${f.name}: baseGmu must be positive and the per-worker cap at least one unit, both whole numbers below 2^64`);
+    }
+    if (!isUint(p.jobsPerEpoch, 32)) fail(`${f.name}: jobsPerEpoch must be a whole number below 2^32`);
+    if (p.activeFromEpoch !== 0) fail(`${f.name}: a profile of a new deployment applies from epoch 0`);
+    if (typeof p.countsUnits !== "boolean") fail(`${f.name}: countsUnits must be true or false`);
+    if (!/^0x[0-9a-fA-F]{64}$/.test(p.unitSetRoot) || !/^0x[0-9a-fA-F]{64}$/.test(p.issuerSetRoot)) fail(`${f.name}: unitSetRoot and issuerSetRoot are 32-byte values`);
+    const b = BUILT_IN[f.name];
+    if (p.pool !== b.pool || p.jobsPerEpoch !== b.jobsPerEpoch) {
+      fail(`${f.name}: ${b.what}; its profile must be of pool ${b.pool === v2.POOL_G0 ? "g0" : "g1"} with jobsPerEpoch ${b.jobsPerEpoch}, not pool ${f.pool} with ${p.jobsPerEpoch}`);
+    }
+    if (p.role !== v2.ROLE.UNCLASSIFIED) fail(`${f.name}: the built-in profiles are of role ${v2.ROLE.UNCLASSIFIED} (unclassified), not ${JSON.stringify(f.role)}`);
+    if (p.countsUnits || p.unitSetRoot !== NONE || p.issuerSetRoot !== NONE) fail(`${f.name}: the built-in modules show no task unit; the profile counts none and commits to no set`);
+    return p;
+  });
+  for (const name of Object.keys(MODULES)) if (!names.has(name)) fail(`the configuration has no ${name} profile`);
+
+  // every parameter version and every profile as the policy will be sent them: what the ABI cannot
+  // carry is found here, and not after the first transactions
+  const policy = new ethers.Interface(m2.loadBuild("GenesisPolicyV2").abi);
+  for (const [i, p] of params.entries()) {
+    try { policy.encodeFunctionData("registerParams", [paramsStruct(p)]); } catch (e) { fail(`parameter version ${i + 1} cannot be encoded: ${e.shortMessage ?? e.message}`); }
+  }
+  for (const p of out) {
+    try { policy.encodeFunctionData("registerProfile", [profileSpec(p, ethers.ZeroAddress.replace(/0$/, "1"))]); } catch (e) { fail(`the profile ${p.name} cannot be encoded: ${e.shortMessage ?? e.message}`); }
+  }
+  return { params, profiles: out };
+}
 
 /// A profile of the configuration as the policy takes it, once its module's address is known.
 function profileSpec(f, module) {
@@ -61,32 +144,7 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
   if (BigInt(genesisTime) < BigInt(latest.timestamp) + BigInt(minLeadSeconds)) {
     fail(`genesis ${c.iso(genesisTime)} is less than ${minLeadSeconds} s after the latest block (${c.iso(latest.timestamp)}): the profiles, the parties and the guards must be registered before it`);
   }
-  if (!(Number.isInteger(config.epochDuration) && config.epochDuration > 0)) fail("epochDuration must be a positive number of seconds");
-
-  const params = config.params ?? [];
-  if (params.length === 0 || params[0].activeFromEpoch !== 0) fail("the first parameter version must apply from epoch 0");
-  for (let i = 1; i < params.length; i++) if (!(params[i].activeFromEpoch > params[i - 1].activeFromEpoch)) fail("parameter versions must apply from increasing epochs");
-  for (const p of params) {
-    if (!(Number.isInteger(p.splitG0Bps) && p.splitG0Bps >= 0 && p.splitG0Bps <= 10000) || !bps(p.workerCapBps) || !bps(p.operatorCapBps)) {
-      fail("splitG0Bps, workerCapBps and operatorCapBps must be basis points");
-    }
-    paramsStruct(p);
-  }
-
-  const profiles = (config.profiles ?? []).map((p) => ({
-    ...p, pool: POOLS[p.pool] ?? p.pool, jobsPerEpoch: p.jobsPerEpoch ?? 0, activeFromEpoch: p.activeFromEpoch ?? 0,
-    role: p.role ?? 0, countsUnits: Boolean(p.countsUnits), unitSetRoot: p.unitSetRoot ?? NONE, issuerSetRoot: p.issuerSetRoot ?? NONE,
-  }));
-  for (const name of Object.keys(MODULES)) if (!profiles.some((p) => p.name === name)) fail(`the configuration has no ${name} profile`);
-  const names = new Set();
-  for (const p of profiles) {
-    if (!MODULES[p.name]) fail(`this version deploys the modules of ${Object.keys(MODULES).join(" and ")} only; ${p.name} is neither`);
-    if (names.has(p.name)) fail(`the profile ${p.name} is listed twice`);
-    names.add(p.name);
-    if (p.pool !== v2.POOL_G0 && p.pool !== v2.POOL_G1) fail(`the pool of ${p.name} must be g0 or g1`);
-    if (!(p.baseGmu > 0) || !(p.maxGmuPerWorkerPerEpoch >= p.baseGmu)) fail(`${p.name}: baseGmu must be positive and the per-worker cap at least one unit`);
-    if (p.activeFromEpoch !== 0) fail(`${p.name}: a profile of a new deployment applies from epoch 0`);
-  }
+  const { params, profiles } = checkConfiguration(config, fail);
 
   if (!m2.SEED_SOURCES.includes(config.seedSource)) fail(`unknown seed source ${config.seedSource}`);
   if (config.seedSource === "L1BlockSeedSource" && (await provider.getCode(L1_BLOCK_PREDEPLOY)) === "0x") {
@@ -103,7 +161,9 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
   let funding = 0n;
   const list = [];
   for (const q of parties) {
-    const p = { ...q, address: ethers.getAddress(q.address), admitted: Boolean(q.admitted), operator: q.operator ?? 0, guard: q.guard ?? null };
+    if (q.admitted !== undefined && typeof q.admitted !== "boolean") fail(`the admission of ${q.address} must be true or false, not ${JSON.stringify(q.admitted)}`);
+    if (q.fundEth !== undefined && !isDecimal(q.fundEth)) fail(`the funds for ${q.address} must be a decimal amount`);
+    const p = { ...q, address: ethers.getAddress(q.address), admitted: q.admitted === true, operator: q.operator ?? 0, guard: q.guard ?? null };
     if (seen.has(p.address)) fail(`${p.address} is listed twice`);
     seen.add(p.address);
     if (!(Number.isInteger(p.operator) && p.operator >= 0 && p.operator < 2 ** 32)) fail(`the operator of ${p.address} must be a 32-bit number`);
@@ -193,27 +253,40 @@ function planText(config, p) {
   return lines.join("\n");
 }
 
-/// Deploy, register, read back. Returns the manifest and the deployment record. When something
-/// fails on the way, the error carries what had been sent (`e.partial`).
-async function deployV2({ config, steward, genesisTime, parties, supersedes = null, log = () => {}, minLeadSeconds = 600, rpc = "" }) {
+/// Deploy, register, read back. Returns the manifest and the deployment record. Every transaction is
+/// written down the moment the endpoint has taken it - what it is for, its hash, sender and nonce -
+/// and its outcome after it: confirmed, failed, or unknown when the answer was lost. `journal(event)`
+/// is told each of these as it happens, so that a caller can keep them where a crash does not reach.
+/// When something fails on the way, the error carries every transaction with its state (`e.partial`).
+async function deployV2({ config, steward, genesisTime, parties, supersedes = null, log = () => {}, journal = () => {}, minLeadSeconds = 600, rpc = "" }) {
   const provider = steward.provider;
   const stewardAddress = await steward.getAddress();
   const p = await plan({ config, provider, stewardAddress, genesisTime, parties, supersedes, minLeadSeconds });
   const transactions = [];
   try {
-    const done = async (step, txPromise) => {
-      const rc = await (await txPromise).wait();
-      transactions.push({ step, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed });
+    const track = async (step, tx, extra = {}) => {
+      const entry = { step, txHash: tx.hash, from: tx.from, nonce: tx.nonce, status: "submitted", ...extra };
+      transactions.push(entry);
+      journal({ event: "submitted", ...entry });
+      let rc;
+      try { rc = await tx.wait(); } catch (e) {
+        if (e.receipt) Object.assign(entry, { status: "failed", block: e.receipt.blockNumber, gasUsed: e.receipt.gasUsed });
+        else Object.assign(entry, { status: "unknown", error: e.shortMessage ?? e.message });
+        journal({ event: entry.status, ...entry });
+        throw e;
+      }
+      Object.assign(entry, { status: "confirmed", block: rc.blockNumber, gasUsed: rc.gasUsed });
+      journal({ event: "confirmed", ...entry });
       log(step);
       return rc;
     };
+    const done = async (step, txPromise) => track(step, await txPromise);
     const deployed = {};
     const deploy = async (role, buildName, args) => {
       const build = m2.loadBuild(buildName);
       const contract = await new ethers.ContractFactory(build.abi, build.bytecode, steward).deploy(...args);
-      const rc = await contract.deploymentTransaction().wait();
       const address = await contract.getAddress();
-      transactions.push({ step: `deploy ${buildName}`, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed, address });
+      const rc = await track(`deploy ${buildName}`, contract.deploymentTransaction(), { address });
       deployed[role] = { contract: buildName, address, deployTx: rc.hash, block: rc.blockNumber, codeHash: await g.codeHashOf(provider, address) };
       log(`deployed ${buildName} at ${address}`);
       return contract;
@@ -250,7 +323,7 @@ async function deployV2({ config, steward, genesisTime, parties, supersedes = nu
     // everything had to land before genesis, or it does not apply to epoch 0
     const after = await provider.getBlock("latest");
     if (BigInt(after.timestamp) >= p.genesisTime) {
-      throw new Error(`the registrations ended at ${c.iso(after.timestamp)}, after genesis ${c.iso(p.genesisTime)}: this deployment does not run as planned; deploy again with a later genesis`);
+      throw new Error(`the registrations ended at ${c.iso(after.timestamp)}, after genesis ${c.iso(p.genesisTime)}: this deployment does not run as planned. Every transaction is confirmed and listed; a new deployment needs a later genesis, and a configuration that does not fund again the parties funded here`);
     }
 
     const manifest = {
@@ -331,7 +404,11 @@ async function deployV2({ config, steward, genesisTime, parties, supersedes = nu
     });
     return { manifest, record, ok };
   } catch (e) {
-    e.partial = g.jsonable({ deployment: config.name, chainId: p.chainId, steward: stewardAddress, failedAt: new Date().toISOString(), transactions });
+    const by = (state) => transactions.filter((t) => t.status === state).length;
+    e.partial = g.jsonable({
+      deployment: config.name, chainId: p.chainId, steward: stewardAddress, failedAt: new Date().toISOString(), error: e.shortMessage ?? e.message,
+      counts: { confirmed: by("confirmed"), failed: by("failed"), unknown: by("unknown"), submitted: by("submitted") }, transactions,
+    });
     throw e;
   }
 }

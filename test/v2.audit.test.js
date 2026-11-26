@@ -730,6 +730,18 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
       [0, "no primary type"], [1, "its types do not define EIP712Domain"], [2, "its Permit type is not the frozen one"],
       [3, "it carries schema and kind but no typed data"], [4, "it carries kind but no typed data"], [5, "no primary type"], [6, "no primary type"]]);
     expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    // the record's form decides how it is read: a full record whose typed data is null, false, zero or
+    // empty is not read through the bare message beside it; and a type given in JavaScript as an array
+    // with an empty slot has no field there, whatever the frozen type would supply
+    const falsy = [null, false, 0, ""].map((value) => ({ ...copy(), typedData: value, message: good.typedData.message }));
+    const sparsePermit = copy(); delete sparsePermit.typedData.types.Permit[0];
+    const emptyPermit = copy(); emptyPermit.typedData.types.Permit = new Array(good.typedData.types.Permit.length);
+    const sparseDomain = copy(); delete sparseDomain.typedData.types.EIP712Domain[0];
+    got = sorted(await run([...falsy, sparsePermit, emptyPermit, sparseDomain]));
+    expect(got.unusable.map(([i, why]) => [i, why.replace(/: .*/, "")])).to.deep.equal([
+      [0, "its typed data is not an object"], [1, "its typed data is not an object"], [2, "its typed data is not an object"], [3, "its typed data is not an object"],
+      [4, "its Permit type is not the frozen one"], [5, "its Permit type is not the frozen one"], [6, "its domain type is not the frozen one"]]);
+    expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
     // the members of a field in another order are the same field: the same record
     const reordered = copy(); reordered.typedData.types.Permit = reordered.typedData.types.Permit.map((f) => ({ type: f.type, name: f.name }));
     reordered.typedData.types.EIP712Domain = reordered.typedData.types.EIP712Domain.map((f) => ({ type: f.type, name: f.name }));

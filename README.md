@@ -6,11 +6,11 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.11 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.2.1 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
 builds are committed with their record, its deployment tooling and manifest and the client for a
-v2 deployment - work and confirmation through a delegate included - are built and rehearsed on a
-development network, and it is not deployed.**
+v2 deployment - work and confirmation through a delegate included - are built, corrected after
+the advisor's review of 0.1.10 and rehearsed on a development network, and it is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -51,16 +51,41 @@ or through a link, and now writes to a new file only. The canonical form of a re
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
 
+Release 0.2.1, with design revision 0.2.1 (2026-11-27), corrects what the advisor's reviews of
+releases 0.1.10 and 0.1.11 found - eight groups, each reproduced on release 0.1.11 first
+(`docs/decisions.md` 22). A full signing record is read by its form alone, so a record whose
+typed data is null or empty is not read through the message beside it, by the audit or by the
+client. Before any transaction, the deployment holds every parameter version and profile to what
+the policy takes and the built-in modules can do; a journal, created before anything is sent,
+writes down each transaction when it is taken and its outcome after it, so that one whose answer
+was lost is named and not sent again blindly. The check of a manifest holds each contract to the
+transaction that created it, each log start to its contract's block, and the guards to every
+binding the policy made. The probe asks for its block's hash again at the end, refuses an
+account whose registry cannot be read, and reports a call's gas, its success with the bound and
+its answer apart. The first probe record of the cells of OG and cell-b is kept as an initial
+observation, read again by the advisor on the same endpoint; the corrected probe runs in the
+preflight of round R2b. In the client, before the epoch is opened, the audit job asks the ledger
+without a transaction what it would refuse, and checks that the function of the profile in force
+is AuditV1 bound to this ledger, by its code and not by the profile's name; a refusal after the
+opening says that the opening was sent. Every transaction of a run is written down when the
+endpoint takes it and again with its outcome, and the receipt is held to what the client
+computed. The run record keeps what the run was given apart from the receipt's own route,
+sender, permit and origin, and the signer a permit's record declares apart from the key that
+signed it. The place of `--out` is taken before anything is read or sent. From this release the
+packages are numbered from 0.2.1 (A88). No contract of the ledger, compiled interface or build
+changed - two stand-ins that only the tests deploy did; nothing is deployed on a public chain.
+
 Release 0.1.11, with design revision v0.1.19 (2026-11-27), is the client for a v2 deployment
 (`docs/decisions.md` 21). The client's commands take a v2 manifest: `status`, `verify`, `audit`
 and `seal`; `work` and `bridge` send for the key itself or, with `--permit`, as the delegate a
 participant's permit names - the record that `scripts/sign-permit.js` wrote where the
-participant's key is. Whatever the ledger or the adapter would refuse is refused before anything
-is sent. Each run can leave a record that keeps participant, sender and origin apart and is
-labelled `delegated-by-owner-permit` or `direct-by-key`; it is no evidence of which program
-decided to do the work. An audit that agrees but left receipts undecided has an exit status of
-its own. Every output on a v2 manifest is a new file. No contract, no compiled interface and no
-build changed; nothing is deployed on a public chain.
+participant's key is. What the ledger or the adapter would refuse is meant to be refused before
+anything is sent (narrowed in 0.2.1 to what is known when the client asks, with the opening of
+an epoch a transaction of its own). Each run can leave a record that keeps participant, sender
+and origin apart and is labelled `delegated-by-owner-permit` or `direct-by-key`; it is no
+evidence of which program decided to do the work. An audit that agrees but left receipts
+undecided has an exit status of its own. Every output on a v2 manifest is a new file. No
+contract, no compiled interface and no build changed; nothing is deployed on a public chain.
 
 Release 0.1.10, with design revision v0.1.17 (2026-11-26), is the deployment of ledger v2 as
 local development, as the owner's ruling A87 has it (`docs/decisions.md` 20). v2 gets its own
@@ -72,9 +97,11 @@ against its manifest and the audit both read that manifest. The rehearsal makes 
 deployment with the command. `scripts/cell-probe.js` reads, without a key and without sending,
 what the cell guard would answer for each contract account and the gas of the guard and of the
 signature check against the ledger's bounds; on 2026-11-26 it was run against the cells of OG
-and cell-b on Finchain Sepolia, and both bounds hold for them. Three residual cases of the
-reading of full signing records are closed. No contract of the ledger and no compiled interface
-changed; nothing is deployed on a public chain and nothing is signed.
+and cell-b on Finchain Sepolia, and in the recorded calls the guard allowed both operations and
+the account refused a foreign signature within the gas each call was given (corrected in 0.2.1).
+Three residual cases of the reading of full signing records are closed. No contract of the
+ledger and no compiled interface changed; nothing is deployed on a public chain, no participant
+key was read and no operational permit was signed.
 
 Release 0.1.9, with design revision v0.1.16 (2026-11-26), is the second correction of the audit
 of ledger v2, after the advisor's review of 0.1.8 (`docs/decisions.md` 19): a profile version
@@ -294,9 +321,12 @@ sending from one key collide on nonces, and a key beside an agent is not the age
 On a deployment of ledger v2 the same commands take its manifest. `work` and `bridge` send for the
 key itself, or with `--permit <file>` as the delegate that a participant's permit names - the file
 being the record that `scripts/sign-permit.js` wrote where the participant's key is; the key file
-given to the client is then the delegate's own. Whatever the ledger or the adapter would refuse is
-refused before anything is sent. `--out` writes the run's record, which says how the sending key
-was authorized; on a v2 manifest every `--out` is a new file and a path that exists is refused.
+given to the client is then the delegate's own. What the ledger or the adapter would refuse when
+the client asks is refused before anything is sent; the opening of an epoch is a transaction of
+its own, and each transaction is shown when it is taken and with its outcome. `--out` writes the
+run's record, which keeps what the run was given apart from how the receipt was entered; on a v2
+manifest the file is created before anything is read or sent, holds the journal of the run's
+transactions while it runs, and a path that exists or cannot be created is refused.
 `audit` exits with 5 when the audit agrees with the ledger but left receipts undecided
 (`docs/ledger-v2.md` 13.2).
 

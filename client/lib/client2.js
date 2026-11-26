@@ -5,6 +5,7 @@
 "use strict";
 
 const fs = require("fs");
+const path = require("path");
 const crypto = require("crypto");
 const { ethers } = require("ethers");
 const g = require("./genesis");
@@ -14,7 +15,7 @@ const permitLib = require("./permit");
 const { sealed } = require("./canonical");
 const { CLIENT, endpointHost } = require("./report");
 
-const RUN_SCHEMA = "finchain-pouw.ledger-v2.run/1";
+const RUN_SCHEMA = "finchain-pouw.ledger-v2.run/2";
 const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
 // what a run record says of how its transaction was authorized
 const LABEL = { DELEGATED: "delegated-by-owner-permit", DIRECT: "direct-by-key" };
@@ -23,6 +24,21 @@ const TOKEN_ABI = ["function ownerOf(uint256 tokenId) view returns (address)"];
 /// The audit of the epoch before agrees with the ledger but left receipts undecided: nothing is
 /// found wrong, and nothing is shown right either. Nothing is submitted (docs/decisions.md P71).
 class AuditIncomplete extends Error {}
+
+/// A run that stopped after it had sent something: `transactions` is what it sent, each with its
+/// outcome - confirmed, failed, or unknown when the answer was lost.
+class RunStopped extends Error {
+  constructor(message, transactions, cause) { super(message, cause ? { cause } : undefined); this.transactions = transactions; }
+}
+
+/// The receipt that this run's transaction recorded is not the one the client computed: `result` is
+/// the run as it happened, with the receipt's own fields and `differences`.
+class ReceiptDiffers extends Error {
+  constructor(result) {
+    super(`the receipt ${result.receiptId} that the transaction recorded is not the one this client computed: ${result.differences.join("; ")}`);
+    this.result = result; this.transactions = result.transactions;
+  }
+}
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const V2_INTERFACES = [v2.abi.ledger, v2.abi.adapter, v2.abi.policy].map((fragments) => new ethers.Interface(fragments));
@@ -61,9 +77,21 @@ function readPermitFile(ctx, file) {
   }
   const [entry] = [...known.byDigest.values()];
   if (!entry.signature) throw new Error(`${file}: the record holds no signature - it is the unsigned form that goes into an operation package`);
+  // the key whose ECDSA signature the record holds, recovered from it; the record's signer field is
+  // what the record declares, which the signature does not bind, and it must not contradict the key
+  let signatureKey = null;
+  try { signatureKey = ethers.recoverAddress(entry.digest, entry.signature); } catch { signatureKey = null; }
+  let declaredSigner = null;
+  if (Object.prototype.hasOwnProperty.call(given, "signer") && given.signer !== null) {
+    if (typeof given.signer !== "string" || !ethers.isAddress(given.signer)) throw new Error(`${file}: the record's signer field is not an address`);
+    declaredSigner = ethers.getAddress(given.signer);
+    if (signatureKey !== null && declaredSigner !== signatureKey) {
+      throw new Error(`${file}: the record's signer field names ${declaredSigner}, but its signature is the key ${signatureKey}'s: the field is not bound by the signature, and a record that contradicts itself is not used`);
+    }
+  }
   return {
     file, sha256: sha256(bytes), digest: entry.digest, statement: entry.statement, message: entry.message,
-    tuple: permitLib.permitTuple(entry.statement), signature: entry.signature, signer: given.signer ?? null,
+    tuple: permitLib.permitTuple(entry.statement), signature: entry.signature, signatureKey, declaredSigner,
   };
 }
 
@@ -89,22 +117,131 @@ async function checkPermitNow(ctx, permit, sender, operation) {
   }
 }
 
+// ---------------------------------------------------------------- what a run sends
+
+/// A run's transactions, written down the moment the endpoint takes each one and again with its
+/// outcome. `onEvent` is told each time, and waited for, so that a caller can keep the journal
+/// outside the process before the run goes on.
+function newRun(onEvent = () => {}) { return { transactions: [], onEvent }; }
+
+/// What a run has sent so far, in words, for a message that stops it.
+function sentText(run) {
+  if (run.transactions.length === 0) return "nothing was sent";
+  return `nothing more was sent; this run sent ${run.transactions.map((t) => `${t.step} (tx ${t.txHash ?? "with no hash"}, ${t.status})`).join(" and ")}`;
+}
+
+/// Stop a run: an Error that says what was sent, and carries it when anything was.
+function stop(run, message, cause) {
+  const text = `${message}; ${sentText(run)}`;
+  return run.transactions.length === 0 ? Object.assign(new Error(text), cause ? { cause } : {}) : new RunStopped(text, run.transactions, cause);
+}
+
+/// Send one transaction of a run: `submit` returns the endpoint's answer, which is written down at
+/// once with the hash, the sender and the nonce; then the receipt is waited for and the outcome is
+/// written down. A refusal before the endpoint took the transaction sends nothing; an answer that
+/// was lost leaves the outcome unknown, and the transaction is named for it to be looked up.
+async function sendTx(run, step, from, submit, wait) {
+  let tx;
+  try { tx = await submit(); } catch (e) {
+    const r = refusal(e);
+    if (r || e.code === "CALL_EXCEPTION") throw stop(run, `${step} was refused before it was taken: ${r ? `${r.name}(${r.args.join(", ")})` : e.shortMessage ?? e.message}`, e);
+    const entry = { step, txHash: null, from, nonce: null, status: "unknown", error: e.shortMessage ?? e.message };
+    run.transactions.push(entry);
+    await run.onEvent({ event: "unknown", ...entry });
+    throw stop(run, `${step}: the endpoint gave no answer, and whether it took the transaction is unknown - look up the nonce of ${from}`, e);
+  }
+  const entry = { step, txHash: tx.hash, from: tx.from, nonce: tx.nonce, status: "submitted" };
+  run.transactions.push(entry);
+  await run.onEvent({ event: "submitted", ...entry });
+  let rc;
+  try { rc = await tx.wait(wait); } catch (e) {
+    if (e.receipt) Object.assign(entry, { status: "failed", block: e.receipt.blockNumber, gasUsed: e.receipt.gasUsed });
+    else Object.assign(entry, { status: "unknown", error: e.shortMessage ?? e.message });
+    await run.onEvent({ event: entry.status, ...entry });
+    const r = refusal(e);
+    throw stop(run, entry.status === "failed" ? `${step} failed in block ${entry.block}${r ? `: ${r.name}(${r.args.join(", ")})` : ""}` : `${step}: its receipt was not obtained (${entry.error}); look it up by its hash ${tx.hash}`, e);
+  }
+  Object.assign(entry, { status: "confirmed", block: rc.blockNumber, gasUsed: rc.gasUsed });
+  await run.onEvent({ event: "confirmed", ...entry });
+  return rc;
+}
+
 /// The same call as a transaction would make, asked without one: whatever the contract would refuse
-/// is refused before anything is sent.
-async function dryRun(contract, method, args) {
+/// at this moment is refused before anything more is sent. The chain can change after it is asked;
+/// the transaction is then decided by the contract, as always.
+async function dryRun(contract, method, args, run = newRun()) {
   try { await contract[method].staticCall(...args); } catch (e) {
     const r = refusal(e);
-    throw new Error(`${method} would be refused${r ? `: ${r.name}(${r.args.join(", ")})` : ` (${e.shortMessage ?? e.message})`}; nothing was sent`);
+    throw stop(run, `${method} would be refused${r ? `: ${r.name}(${r.args.join(", ")})` : ` (${e.shortMessage ?? e.message})`}`, e);
   }
 }
 
-/// The receipt that a transaction recorded, with the origin the ledger's event names.
+/// The receipt with its status, and the transaction that recorded it with the origin the ledger's
+/// event names: from this run's receipt, or, for a receipt recorded before, read back from the
+/// ledger's log - "unknown" when that cannot be read.
 async function recorded(ctx, rc, id) {
-  const ev = rc ? g.eventOf(rc, ctx.ledger, "ReceiptRecorded") : null;
-  return {
-    receipt: v2.plainReceipt(await ctx.ledger.receipt(id)), status: v2.plainStatus(await ctx.ledger.status(id)),
-    origin: ev ? ev.args.origin : null, operator: ev ? Number(ev.args.operator) : null,
-  };
+  const out = { receipt: v2.plainReceipt(await ctx.ledger.receipt(id)), status: v2.plainStatus(await ctx.ledger.status(id)) };
+  if (rc) {
+    const ev = g.eventOf(rc, ctx.ledger, "ReceiptRecorded");
+    return { ...out, origin: ev.args.origin, operator: Number(ev.args.operator), recordedIn: { txHash: rc.hash, block: rc.blockNumber, read: "this run's transaction" } };
+  }
+  try {
+    const head = await ctx.provider.getBlockNumber();
+    const [ev] = await g.logs(ctx, ctx.ledger, "ReceiptRecorded", [id], ctx.fromBlock, head);
+    if (ev) return { ...out, origin: ev.args.origin, operator: Number(ev.args.operator), recordedIn: { txHash: ev.transactionHash, block: ev.blockNumber, read: "read back from the ledger's log" } };
+    return { ...out, origin: "unknown", operator: null, recordedIn: { txHash: "unknown", block: "unknown", read: `not found in the ledger's log from block ${ctx.fromBlock}` } };
+  } catch (e) {
+    return { ...out, origin: "unknown", operator: null, recordedIn: { txHash: "unknown", block: "unknown", read: `the ledger's log could not be read (${e.shortMessage ?? e.message})` } };
+  }
+}
+
+/// Where a receipt that this run's transaction recorded is not the one the client computed: each
+/// field that differs, in words. Empty when it is the one.
+function receiptDifferences(receipt, expected) {
+  const out = [];
+  for (const [field, value] of Object.entries(expected)) {
+    const got = receipt[field];
+    const same = typeof value === "string" && typeof got === "string" ? value.toLowerCase() === got.toLowerCase() : value === got;
+    if (!same) out.push(`${field}: computed ${value}, recorded ${got}`);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- the built-in work this client does
+
+const AUDIT_V1_BUILD = path.join(__dirname, "..", "..", "build", "v2", "AuditV1.json");
+const same = (a, b) => typeof a === "string" && typeof b === "string" && ethers.isAddress(a) && ethers.isAddress(b) && ethers.getAddress(a) === ethers.getAddress(b);
+
+/// The g0.ref profile in force in `epoch`, with its function held to the one this client evaluates
+/// before anything is sent: AuditV1 bound to this ledger - its function id, its ledger, its code
+/// against the build of build/v2 with the immutable values aside, and the deployment's AuditV1
+/// where the deployment names one. The profile's name is not the function's identity. What else
+/// the ledger would refuse - recording paused, a profile of another pool or without the job - is
+/// found by the entry asked without a transaction, with the ledger's own reason.
+async function g0Profile(ctx, epoch) {
+  let p;
+  try { p = await ctx.policy.activeProfile(g.profileKey(g.PROFILE_G0_REF), epoch); } catch (e) {
+    const r = refusal(e);
+    throw new Error(`no g0.ref profile is in force in epoch ${epoch}${r ? `: ${r.name}(${r.args.join(", ")})` : ` (${e.shortMessage ?? e.message})`}; nothing was sent`);
+  }
+  const why = [];
+  const named = ctx.deployment?.contracts?.AuditV1;
+  if (named !== undefined && !same(named, p.module)) why.push(`it is not the deployment's AuditV1 ${named}`);
+  const fn = new ethers.Contract(p.module, g.abi.audit, ctx.provider);
+  const ask = async (call) => { try { return await call(); } catch { return null; } };
+  const id = await ask(() => fn.functionId());
+  if (id !== g.AUDIT_V1_FUNCTION_ID) why.push(`its function id is ${id ?? "not readable"}, not audit-v1's`);
+  const reads = await ask(() => fn.ledger());
+  if (!same(reads, ctx.address)) why.push(`it does not read this ledger (${reads ?? "no answer"})`);
+  const build = JSON.parse(fs.readFileSync(AUDIT_V1_BUILD, "utf8"));
+  const code = await ctx.provider.getCode(p.module);
+  if (code.length !== build.deployedBytecode.length || g.maskedCode(code, build.immutableReferences) !== g.maskedCode(build.deployedBytecode, build.immutableReferences)) {
+    why.push("its code is not the AuditV1 build of build/v2");
+  }
+  if (why.length > 0) {
+    throw new Error(`the g0.ref profile in force in epoch ${epoch} names the function at ${p.module}, which this client does not evaluate: ${why.join("; ")}. This client does the audit job of AuditV1 only; nothing was sent`);
+  }
+  return p;
 }
 
 /// Do the current epoch's audit job (g0.ref) for the participant: recompute the epoch before in
@@ -112,17 +249,27 @@ async function recorded(ctx, rc, id) {
 /// permit the delegate sends `submitG0For`; without one the key sends `submitG0` for itself.
 ///   permit  - from readPermitFile, or null
 ///   permits - permits given to the audit of the epoch before (audit2.js permitIndex)
-async function workG0(ctx, signer, { permit = null, permits = [], wait = 1, expectEpoch = null } = {}) {
+///   onEvent - told of each transaction when it is taken and again with its outcome
+/// Before any transaction, everything that can be known before the epoch's seed is checked: the
+/// permit, the profile and its function, and the entry itself asked without a transaction. Opening
+/// the epoch is a transaction of its own and is in the run's record; a refusal after it says so.
+async function workG0(ctx, signer, { permit = null, permits = [], wait = 1, expectEpoch = null, onEvent } = {}) {
   const { participant, sender } = await party(signer, permit, permitLib.OP.SUBMIT_G0);
   const ledger = ctx.ledger.connect(signer);
+  const run = newRun(onEvent);
   const epoch = await ctx.policy.currentEpoch();
   if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the work was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}`);
   const contributionId = v2.g0ContributionId(ctx.domain, g.AUDIT_V1_FUNCTION_ID, epoch, 0, participant);
-  const base = { command: "work", participant, sender, permit, epoch, contributionId };
-  // what is recorded is not sent again: found by its contribution id before anything else is done
+  const base = { command: "work", given: { sendingKey: sender, permit }, participant, epoch, transactions: run.transactions };
+  // what is recorded is not sent again: found by its contribution id before anything else is done.
+  // Finding it needs no permit in force: what this run was given is kept apart from the receipt's own
   const existing = await ctx.ledger.receiptOfContribution(contributionId);
-  if (existing !== 0n) return { ...base, receiptId: existing, ...(await recorded(ctx, null, existing)), txHash: null, block: null, gasUsed: 0n, alreadyRecorded: true, work: null };
+  if (existing !== 0n) {
+    const r = await recorded(ctx, null, existing);
+    return { ...base, sender: r.receipt.sender, contributionId: r.receipt.contributionId, receiptId: existing, ...r, txHash: null, block: null, gasUsed: null, alreadyRecorded: true, work: null, differences: [] };
+  }
   if (permit !== null) await checkPermitNow(ctx, permit, sender, permitLib.OP.SUBMIT_G0);
+  await g0Profile(ctx, epoch);
 
   let work;
   if (epoch === 0n) {
@@ -142,56 +289,101 @@ async function workG0(ctx, signer, { permit = null, permits = [], wait = 1, expe
     }
     work = { audited: epoch - 1n, subject: report.subject, receipts: report.receipts.length, tableHash: report.tableHash, agrees: true, complete: true };
   }
-  // opening an epoch is nobody's act in particular: the sending key sends it directly
-  if ((await ledger.seedOf(epoch)) === ethers.ZeroHash) await (await ledger.openEpoch()).wait(wait);
-  const seed = await ledger.seedOf(epoch);
-  if (seed === ethers.ZeroHash) throw new Error(`epoch ${epoch} has no seed: it turned before it could be opened; run again`);
-  const instance = g.g0Instance(seed, g.AUDIT_V1_FUNCTION_ID, 0, participant);
-  const output = g.auditOutput(instance, g.auditInputHash(epoch, work.subject));
   const key = g.profileKey(g.PROFILE_G0_REF);
-  const [method, args] = permit === null ? ["submitG0", [key, epoch, 0, output]] : ["submitG0For", [permit.tuple, permit.signature, key, epoch, 0, output]];
-  await dryRun(ledger, method, args);
-  const rc = await (await ledger[method](...args)).wait(wait);
+  const entry = (output) => (permit === null ? ["submitG0", [key, epoch, 0, output]] : ["submitG0For", [permit.tuple, permit.signature, key, epoch, 0, output]]);
+  if ((await ledger.seedOf(epoch)) === ethers.ZeroHash) {
+    // the output depends on the seed the opening captures: the entry is asked first with an output
+    // that only decides the verdict, so that every refusal known now comes before the opening
+    const [method, args] = entry(ethers.ZeroHash);
+    await dryRun(ledger, method, args, run);
+    // opening an epoch is nobody's act in particular: the sending key sends it directly
+    await sendTx(run, "openEpoch", sender, () => ledger.openEpoch(), wait);
+  }
+  const seed = await ledger.seedOf(epoch);
+  if (seed === ethers.ZeroHash) throw stop(run, `epoch ${epoch} has no seed: it turned before it could be opened; run again`);
+  const instance = g.g0Instance(seed, g.AUDIT_V1_FUNCTION_ID, 0, participant);
+  const inputHash = g.auditInputHash(epoch, work.subject);
+  const output = g.auditOutput(instance, inputHash);
+  const [method, args] = entry(output);
+  await dryRun(ledger, method, args, run);
+  const rc = await sendTx(run, method, sender, () => ledger[method](...args), wait);
   const id = g.eventOf(rc, ctx.ledger, "ReceiptRecorded").args.id;
-  return { ...base, receiptId: id, ...(await recorded(ctx, rc, id)), instance, output, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed, alreadyRecorded: false, work };
+  const r = await recorded(ctx, rc, id);
+  const differences = receiptDifferences(r.receipt, {
+    contributionId, worker: participant, sender, authorization: permit === null ? ethers.ZeroHash : permit.digest, epoch, pool: v2.POOL_G0, workId: instance, inputHash, outputHash: output,
+  });
+  const result = { ...base, sender: r.receipt.sender, contributionId: r.receipt.contributionId, receiptId: id, ...r, instance, output, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed, alreadyRecorded: false, work, differences };
+  if (differences.length > 0) throw new ReceiptDiffers(result);
+  return result;
 }
 
 /// Confirm a settled submission of an ERC-8414 tender that the participant owns (g1.tender). With a
 /// permit the delegate sends `confirmFor` to the adapter; without one the owner's key sends `confirm`.
-async function confirmTender(ctx, signer, { tokenId, submissionId, permit = null, wait = 1 }) {
+/// The adapter is the module of the g1.tender profile in force, held to this ledger and to the
+/// deployment's adapter where the deployment names one.
+async function confirmTender(ctx, signer, { tokenId, submissionId, permit = null, wait = 1, onEvent }) {
   tokenId = BigInt(tokenId); submissionId = BigInt(submissionId);
   const { participant, sender } = await party(signer, permit, permitLib.OP.CONFIRM_TENDER);
+  const run = newRun(onEvent);
   const epoch = await ctx.policy.currentEpoch();
-  const profile = await ctx.policy.activeProfile(g.profileKey(g.PROFILE_G1_TENDER), epoch);
+  let profile;
+  try { profile = await ctx.policy.activeProfile(g.profileKey(g.PROFILE_G1_TENDER), epoch); } catch (e) {
+    const r = refusal(e);
+    throw new Error(`no g1.tender profile is in force in epoch ${epoch}${r ? `: ${r.name}(${r.args.join(", ")})` : ` (${e.shortMessage ?? e.message})`}; nothing was sent`);
+  }
   const adapter = new ethers.Contract(profile.module, v2.abi.adapter, signer);
+  const named = ctx.deployment?.contracts?.TenderAdapter8414V2;
+  const reads = await adapter.ledger().catch(() => null);
+  if ((named !== undefined && !same(named, profile.module)) || !same(reads, ctx.address)) {
+    throw new Error(`the g1.tender profile in force in epoch ${epoch} names the module ${profile.module}, which ${!same(reads, ctx.address) ? "does not report to this ledger" : `is not the deployment's adapter ${named}`}; nothing was sent`);
+  }
   const source = await adapter.taskToken();
   const owner = await new ethers.Contract(source, TOKEN_ABI, ctx.provider).ownerOf(tokenId);
   if (owner !== participant) {
     throw new Error(`the tender ${tokenId} is owned by ${owner}, not by ${participant}: only its owner, or a delegate under the owner's permit, confirms it; nothing was sent`);
   }
   const contributionId = v2.g1ContributionId(ctx.domain, source, tokenId, submissionId);
-  const base = { command: "bridge", participant, sender, permit, contributionId, tender: { source, tokenId, submissionId, adapter: adapter.target } };
+  const base = { command: "bridge", given: { sendingKey: sender, permit }, participant, tender: { source, tokenId, submissionId, adapter: adapter.target }, transactions: run.transactions };
   const existing = await ctx.ledger.receiptOfContribution(contributionId);
   if (existing !== 0n) {
     const r = await recorded(ctx, null, existing);
-    return { ...base, epoch: r.receipt.epoch, receiptId: existing, ...r, txHash: null, block: null, gasUsed: 0n, alreadyRecorded: true };
+    return { ...base, sender: r.receipt.sender, contributionId: r.receipt.contributionId, epoch: r.receipt.epoch, receiptId: existing, ...r, txHash: null, block: null, gasUsed: null, alreadyRecorded: true, differences: [] };
   }
   if (permit !== null) await checkPermitNow(ctx, permit, sender, permitLib.OP.CONFIRM_TENDER);
   const [method, args] = permit === null ? ["confirm", [tokenId, submissionId]] : ["confirmFor", [permit.tuple, permit.signature, tokenId, submissionId]];
-  await dryRun(adapter, method, args);
-  const rc = await (await adapter[method](...args)).wait(wait);
+  await dryRun(adapter, method, args, run);
+  const rc = await sendTx(run, method, sender, () => adapter[method](...args), wait);
   const id = g.eventOf(rc, adapter, "TenderConfirmed").args.receiptId;
   const r = await recorded(ctx, rc, id);
-  return { ...base, epoch: r.receipt.epoch, receiptId: id, ...r, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed, alreadyRecorded: false };
+  const differences = receiptDifferences(r.receipt, {
+    contributionId, counterparty: participant, sender, authorization: permit === null ? ethers.ZeroHash : permit.digest, pool: v2.POOL_G1,
+  });
+  const result = { ...base, sender: r.receipt.sender, contributionId: r.receipt.contributionId, epoch: r.receipt.epoch, receiptId: id, ...r, txHash: rc.hash, block: rc.blockNumber, gasUsed: rc.gasUsed, alreadyRecorded: false, differences };
+  if (differences.length > 0) throw new ReceiptDiffers(result);
+  return result;
 }
 
-/// The record of one run of `work` or `bridge`: which run sent which transaction, for whom, under
-/// what. Participant, sender and origin are kept apart, and the label says how the sending key was
-/// authorized - it says nothing about which program decided to do the work (A74, condition 7).
+/// The record of one run of `work` or `bridge`. What this run was given and sent is kept apart
+/// from what the receipt itself shows: the label, the sender, the permit and the origin are the
+/// receipt's, as the ledger recorded it - by this run's transaction, or before it. Participant,
+/// sender and origin are kept apart, and the label says how the receipt was entered - it says
+/// nothing about which program decided to do the work (A74, condition 7).
 function runRecord(ctx, r, { rpc = "", recordedAt = new Date().toISOString(), host = null } = {}) {
   const d = ctx.deployment ?? {};
-  const delegated = r.permit !== null;
-  const m = delegated ? r.permit.message : null;
+  const given = r.given.permit;
+  const permitOf = (p) => {
+    const m = p.message;
+    return {
+      digest: p.digest, account: m.account, delegate: m.delegate, scope: permitLib.scopeNames(m.scope), notBeforeEpoch: m.notBeforeEpoch, notAfterEpoch: m.notAfterEpoch,
+      nonce: m.nonce, guard: m.guard, guardBindingVersion: m.guardBindingVersion, signatureKey: p.signatureKey, declaredSigner: p.declaredSigner, recordSha256: p.sha256,
+    };
+  };
+  const authorization = r.receipt.authorization;
+  const delegated = authorization !== ethers.ZeroHash;
+  // the permit the receipt was recorded under: its statement where this run was given that permit
+  const permit = !delegated ? null
+    : given !== null && given.digest === authorization ? permitOf(given)
+      : { digest: authorization, statement: "not given to this run: the audit reads it from the receipt's transaction" };
   return sealed(g.jsonable({
     schema: RUN_SCHEMA,
     environment: d.environment ?? "unspecified",
@@ -204,36 +396,39 @@ function runRecord(ctx, r, { rpc = "", recordedAt = new Date().toISOString(), ho
     client: CLIENT,
     ...(host ? { host } : {}),
     command: r.command,
+    given: { sendingKey: r.given.sendingKey, permit: given === null ? null : permitOf(given) },
+    transactions: r.transactions,
+    alreadyRecorded: r.alreadyRecorded,
     label: delegated ? LABEL.DELEGATED : LABEL.DIRECT,
     participant: r.participant,
     sender: r.sender,
     origin: r.origin,
-    permit: delegated ? {
-      digest: r.permit.digest, account: m.account, delegate: m.delegate, scope: permitLib.scopeNames(m.scope), notBeforeEpoch: m.notBeforeEpoch,
-      notAfterEpoch: m.notAfterEpoch, nonce: m.nonce, guard: m.guard, guardBindingVersion: m.guardBindingVersion, signer: r.permit.signer,
-      recordSha256: r.permit.sha256,
-    } : null,
+    permit,
     epoch: r.epoch,
     receiptId: r.receiptId,
     contributionId: r.contributionId,
-    alreadyRecorded: r.alreadyRecorded,
-    txHash: r.txHash,
-    block: r.block,
+    txHash: r.recordedIn.txHash,
+    block: r.recordedIn.block,
     gasUsed: r.gasUsed,
-    receipt: { worker: r.receipt.worker, counterparty: r.receipt.counterparty, sender: r.receipt.sender, authorization: r.receipt.authorization },
+    recordedIn: r.recordedIn.read,
+    receipt: { worker: r.receipt.worker, counterparty: r.receipt.counterparty, sender: r.receipt.sender, authorization },
     status: {
       verdict: g.VERDICT_NAME[r.status.verdict] ?? String(r.status.verdict), eligibility: v2.INELIGIBLE_NAME[r.status.ineligible] ?? String(r.status.ineligible),
       relation: g.RELATION_NAME[r.status.relation] ?? String(r.status.relation), gmuMeasured: r.status.gmuMeasured, gmuSubsidized: r.status.gmuSubsidized,
     },
+    differences: r.differences,
     ...(r.command === "work" ? { work: r.work } : {}),
     ...(r.command === "bridge" ? { tender: r.tender } : {}),
     reading: [
+      r.alreadyRecorded
+        ? "The receipt was recorded before this run, which found it by its contribution id and sent nothing. What this run was given is under given; the label, the sender, the permit and the origin are the receipt's own, and its transaction is as recordedIn says."
+        : "This run sent the transactions listed, each written down when the endpoint took it and again with its outcome; the last recorded the receipt.",
       delegated
-        ? "The sending key acted under the participant's permit, within the operations and epochs it names; when the receipt was recorded the ledger checked the permit and, for an account with code, the account's signature and its guard."
-        : "The sending key is the participant: it sent for itself.",
+        ? "The receipt was entered by its sender under the participant's permit, whose digest is its authorization: when it was recorded the ledger checked the permit and, for an account with code, that the account accepted the signature and its guard. That an account accepts a signature does not show that only its current owner could make it."
+        : "The receipt was entered by the participant's own key, for itself.",
       "Participant, sender and origin are recorded apart: the participant is the worker or the demander of record, the sender called the entry, the origin is the transaction's top-level sender.",
-      "This record says which run of the reference client sent the transaction, started by whoever holds the sending key. It is no evidence that the participant's own software initiated the work, or of who ran a model.",
-      ...(r.alreadyRecorded ? ["The receipt was recorded before this run, which found it by its contribution id and sent nothing; the origin is not read back for it."] : []),
+      ...(given !== null ? ["Of the permit given, signatureKey is the key whose ECDSA signature the record holds, recovered from it (null when the signature is not one), and declaredSigner is what the record's signer field says, which the signature does not bind; the client refuses a record where the two differ."] : []),
+      "This record says which run of the reference client sent the transactions, started by whoever holds the sending key. It is no evidence that the participant's own software initiated the work, or of who ran a model.",
     ],
   }));
 }
@@ -242,18 +437,59 @@ function runRecord(ctx, r, { rpc = "", recordedAt = new Date().toISOString(), ho
 /// it agrees with the ledger but left receipts undecided, 2 when it differs (docs/decisions.md P71).
 const auditExitStatus = (report) => (report.ok ? 0 : report.agrees ? 5 : 2);
 
-/// Create a file with `text`, or fail: an official output of the v2 client never replaces a file
-/// (docs/decisions.md P68, A87). A link at the path is a path that exists.
-function createFile(file, text) {
-  try { fs.writeFileSync(file, text, { flag: "wx" }); } catch (e) {
-    if (e.code === "EEXIST") throw new Error(`${file} exists already: nothing is overwritten, and the record was not written`);
-    throw e;
+// ---------------------------------------------------------------- the output of a command
+
+/// Take the place of an output before anything is read or sent: the file is created, so that a path
+/// that exists - a link included - or that cannot be created is refused while nothing has been sent.
+/// An official output of the v2 client never replaces a file it did not create (P68, A87).
+function reserveOutput(file) {
+  let fd;
+  try { fd = fs.openSync(file, "wx", 0o644); } catch (e) {
+    if (e.code === "EEXIST") throw new Error(`--out ${file} exists already: an output of the v2 client is a new file and nothing is overwritten; nothing was sent`);
+    if (e.code === "ENOENT") throw new Error(`--out ${file}: the directory ${path.dirname(file)} does not exist; nothing was sent`);
+    throw new Error(`--out ${file} cannot be created (${e.code ?? e.message}); nothing was sent`);
   }
-}
-function refuseExisting(file) {
-  let there = true;
-  try { fs.lstatSync(file); } catch (e) { if (e.code !== "ENOENT") throw e; there = false; }
-  if (there) throw new Error(`--out ${file} exists already: an output of the v2 client is a new file and nothing is overwritten`);
+  return { file, fd, events: 0, done: false };
 }
 
-module.exports = { RUN_SCHEMA, LABEL, AuditIncomplete, refusal, readPermitFile, checkPermitNow, workG0, confirmTender, runRecord, auditExitStatus, createFile, refuseExisting };
+/// While a run goes on, its output holds the journal: one event per line, each written through to
+/// the disk when it happens, so that what was sent is kept whatever happens after it.
+function appendEvent(out, event) {
+  fs.writeSync(out.fd, `${JSON.stringify(g.jsonable({ at: new Date().toISOString(), ...event }))}\n`);
+  fs.fsyncSync(out.fd);
+  out.events += 1;
+}
+
+/// The record takes the place of the journal at the end. With a journal, the record is written to a
+/// new file beside it first and then put in the output's place, so that a failure to write it
+/// leaves the journal as it was.
+function finishOutput(out, text) {
+  if (out.events === 0) {
+    fs.writeSync(out.fd, text, 0);
+    fs.fsyncSync(out.fd);
+    fs.closeSync(out.fd);
+  } else {
+    const temporary = `${out.file}.${process.pid}.record`;
+    try {
+      fs.writeFileSync(temporary, text, { flag: "wx" });
+      fs.renameSync(temporary, out.file);
+    } catch (e) { throw new Error(`the record could not be written (${e.message}); the journal of the run is in ${out.file}`); }
+    fs.closeSync(out.fd);
+  }
+  out.done = true;
+}
+
+/// A command that stops: its output is left with the journal when anything was written to it, and
+/// removed when it is still the empty file this run created.
+function releaseOutput(out) {
+  if (out.done) return null;
+  try { fs.closeSync(out.fd); } catch { /* closed already */ }
+  if (out.events > 0) return out.file;
+  try { if (fs.statSync(out.file).size === 0) fs.unlinkSync(out.file); } catch { /* gone already */ }
+  return null;
+}
+
+module.exports = {
+  RUN_SCHEMA, LABEL, AuditIncomplete, RunStopped, ReceiptDiffers, refusal, readPermitFile, checkPermitNow, workG0, confirmTender, receiptDifferences,
+  runRecord, auditExitStatus, reserveOutput, appendEvent, finishOutput, releaseOutput,
+};

@@ -7,7 +7,8 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { execFileSync, spawnSync } = require("child_process");
+const http = require("http");
+const { execFileSync, spawnSync, spawn } = require("child_process");
 const { expect } = require("chai");
 const t = require("./v2.helpers");
 const { ethers, h, g, v2, permit, PROFILE } = t;
@@ -71,7 +72,7 @@ describe("Ledger v2: the client, directly and through a delegate", () => {
       const cellPermit = signPermit(dir, "cell.json", d, w.owner.file,
         { account: w.cell.target, delegate: delegate.address, scope: "submit-g0", guard: w.guard.target, guardBindingVersion: 1 });
       const p = c2.readPermitFile(ctx, cellPermit);
-      expect([p.message.account, p.message.delegate, p.signer]).to.deep.equal([w.cell.target, delegate.address, w.owner.wallet.address]);
+      expect([p.message.account, p.message.delegate, p.signatureKey, p.declaredSigner]).to.deep.equal([w.cell.target, delegate.address, w.owner.wallet.address, w.owner.wallet.address]);
 
       // refused before anything is sent: nothing reaches the chain from the delegate's key
       const nonce = await ethers.provider.getTransactionCount(delegate.address);
@@ -112,6 +113,9 @@ describe("Ledger v2: the client, directly and through a delegate", () => {
       expect([run.schema, run.label, run.participant, run.sender, run.origin, run.permit.digest, run.permit.scope, run.endpointHost])
         .to.deep.equal([c2.RUN_SCHEMA, "delegated-by-owner-permit", w.cell.target, delegate.address, delegate.address, p.digest, ["submit-g0"], "rpc.example.org"]);
       expect(run.permit.recordSha256).to.equal(require("crypto").createHash("sha256").update(fs.readFileSync(cellPermit)).digest("hex"));
+      // the run's transactions: the opening of the epoch and the entry, each with its outcome
+      expect(run.transactions.map((x) => [x.step, x.from, x.status])).to.deep.equal([["openEpoch", delegate.address, "confirmed"], ["submitG0For", delegate.address, "confirmed"]]);
+      expect([run.txHash, run.recordedIn, run.given.sendingKey, run.given.permit.digest]).to.deep.equal([r.txHash, "this run's transaction", delegate.address, p.digest]);
       expect(run.reading.some((x) => x.includes("no evidence that the participant's own software initiated the work"))).to.equal(true);
       expect([canonical.reportHash(run), canonical.resultHash(run)]).to.deep.equal([run.reportHash, run.resultHash]);
       expect(JSON.stringify(run).includes("a-secret")).to.equal(false);
@@ -199,10 +203,172 @@ describe("Ledger v2: the client, directly and through a delegate", () => {
       expect([e.status, e.stderr.includes("expected finchain-pouw.deployment/1 or finchain-pouw.deployment/2")]).to.deep.equal([1, true]);
       // the exit status of the audit command: a difference is not the same as what was not read again
       expect([{ ok: true, agrees: true }, { ok: false, agrees: true }, { ok: false, agrees: false }].map(c2.auditExitStatus)).to.deep.equal([0, 5, 2]);
-      // the file helper itself: created, or refused with the file left as it was
-      c2.createFile(path.join(dir, "new.json"), "{}\n");
-      expect(() => c2.createFile(taken, "other\n")).to.throw("exists already: nothing is overwritten");
+      // the output helpers themselves: a place taken, or refused with the file left as it was
+      const fresh = c2.reserveOutput(path.join(dir, "new.json"));
+      c2.finishOutput(fresh, "{}\n");
+      expect(fs.readFileSync(path.join(dir, "new.json"), "utf8")).to.equal("{}\n");
+      expect(() => c2.reserveOutput(taken)).to.throw("exists already");
       expect(fs.readFileSync(taken, "utf8")).to.equal("kept\n");
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("checks before the epoch is opened what it can know, does only the function it evaluates, and says what it sent when it stops (L56)", async () => {
+    const [, owner, , delegate] = await ethers.getSigners();
+    const ready = async (change) => {
+      const d = await t.deploy({ start: false, admit: [owner] });
+      if (change) await change(d);
+      await h.setTime(d.genesisTime);
+      const ctx = await a2.connect({ name: "fixture", environment: "local-devnet", ledger: d.ledgerAddress, policy: d.policy.target, deployBlock: 0, chainId: d.chainId }, ethers.provider, { tag: "latest" });
+      const s = await t.signed(d, owner, owner.address, { delegate: delegate.address, scope: 1 });
+      const p = { file: "inline", sha256: null, digest: s.digest, statement: s.st, message: s.st.message, tuple: s.tuple, signature: s.signature, signatureKey: owner.address, declaredSigner: null };
+      return { d, ctx, p };
+    };
+    // conditions that hold before the run begins: each refused with nothing sent, the epoch left unopened
+    const cases = [
+      ["paused", (d) => d.policy.setPaused(true), "submitG0For would be refused: Paused()"],
+      ["retired", (d) => d.policy.retireProfile(g.profileKey(g.PROFILE_G0_REF), 0), "no g0.ref profile is in force in epoch 0: NoActiveProfile"],
+      ["of pool G1", (d) => d.policy.registerProfile(d.spec(g.PROFILE_G0_REF, 1, d.audit.target, 10, 10, 0)), "submitG0For would be refused: WrongPool()"],
+      ["another function", (d) => d.policy.registerProfile(d.spec(g.PROFILE_G0_REF, 0, d.echo.target, 10, 10, 1)), "which this client does not evaluate: its function id is"],
+    ];
+    for (const [what, change, text] of cases) {
+      const { d, ctx, p } = await ready(async (x) => (await change(x)).wait());
+      const nonce = await ethers.provider.getTransactionCount(delegate.address);
+      const e = await refused(c2.workG0(ctx, delegate, { permit: p }), text);
+      expect(String(e.message), what).to.contain("nothing was sent");
+      expect([await ethers.provider.getTransactionCount(delegate.address), await d.ledger.seedOf(0), await d.ledger.receiptCount()], what).to.deep.equal([nonce, ethers.ZeroHash, 0n]);
+    }
+    // a module that is not this ledger's AuditV1 is refused for its code and its ledger as well
+    const other = await (await ethers.getContractFactory("contracts/v2/functions/AuditV1.sol:AuditV1")).deploy(delegate.address);
+    const { d: d2, ctx: ctx2, p: p2 } = await ready(async (x) => (await x.policy.registerProfile(x.spec(g.PROFILE_G0_REF, 0, other.target, 10, 10, 1))).wait());
+    await refused(c2.workG0(ctx2, delegate, { permit: p2 }), `it does not read this ledger (${delegate.address})`);
+    // and a deployment that names its AuditV1 is held to it
+    const named = { ...ctx2, deployment: { ...ctx2.deployment, contracts: { AuditV1: d2.audit.target } } };
+    await refused(c2.workG0(named, delegate, { permit: p2 }), `it is not the deployment's AuditV1 ${d2.audit.target}`);
+
+    // a run that stops after it opened the epoch says so, and carries what it sent
+    const { d, ctx, p } = await ready();
+    const events = [];
+    const onEvent = async (e) => { events.push([e.event, e.step]); if (e.event === "confirmed" && e.step === "openEpoch") await (await d.policy.setPaused(true)).wait(); };
+    const stopped = await refused(c2.workG0(ctx, delegate, { permit: p, onEvent }), "submitG0For would be refused: Paused()");
+    expect(stopped).to.be.instanceOf(c2.RunStopped);
+    expect(String(stopped.message)).to.contain("nothing more was sent; this run sent openEpoch (tx 0x");
+    expect([stopped.transactions.map((x) => [x.step, x.status]), events]).to.deep.equal([[["openEpoch", "confirmed"]], [["submitted", "openEpoch"], ["confirmed", "openEpoch"]]]);
+    expect(await d.ledger.receiptCount()).to.equal(0n);
+    // the same run when nothing changes: the epoch is open, and only the entry is sent
+    await (await d.policy.setPaused(false)).wait();
+    const r = await c2.workG0(ctx, delegate, { permit: p });
+    expect([r.transactions.map((x) => x.step), r.receipt.contributionId, r.contributionId, r.differences]).to.deep.equal([["submitG0For"], r.contributionId, v2.g0ContributionId(ctx.domain, g.AUDIT_V1_FUNCTION_ID, 0, 0, owner.address), []]);
+    // the receipt is held to what the client computed, field by field
+    expect(c2.receiptDifferences({ contributionId: "0xAB", epoch: 1n, sender: "0x00" }, { contributionId: "0xab", epoch: 1n, sender: "0x01" })).to.deep.equal(["sender: computed 0x01, recorded 0x00"]);
+  });
+
+  it("keeps what a run was given apart from what the receipt shows, and records no signer it did not verify (L57)", async () => {
+    const w = await world();
+    const { d, ctx, dir, delegate } = w;
+    try {
+      const record = async (owner, nonce, signer) => {
+        const st = permit.statement("Permit", d.chainId, d.ledgerAddress, { account: owner.address, delegate: delegate.address, scope: 1, notBeforeEpoch: 0, notAfterEpoch: 100, nonce, guard: ethers.ZeroAddress, guardBindingVersion: 0 });
+        const value = { schema: "finchain-pouw.signed-statement/1", kind: "Permit", typedData: permit.typedData(st), digest: permit.digestOf(st), signature: await permit.sign(owner, st) };
+        if (signer !== undefined) value.signer = signer;
+        return value;
+      };
+      const file = (name, value) => { const f = path.join(dir, name); fs.writeFileSync(f, JSON.stringify(value)); return f; };
+      // a wallet works for itself; then a delegate comes with a permit of the wallet's that was never used and is revoked
+      const first = await c2.workG0(ctx, w.w1);
+      const unused = c2.readPermitFile(ctx, file("unused.json", await record(w.w1, 41, w.w1.address)));
+      await (await d.ledger.connect(w.w1).revokePermit(unused.digest)).wait();
+      const nonce = await ethers.provider.getTransactionCount(delegate.address);
+      const found = await c2.workG0(ctx, delegate, { permit: unused });
+      expect([found.alreadyRecorded, await ethers.provider.getTransactionCount(delegate.address)]).to.deep.equal([true, nonce]);
+      const run = c2.runRecord(ctx, found);
+      // the receipt's own: entered by the wallet for itself; read back from the ledger's log
+      expect([run.label, run.sender, run.permit, run.origin, run.txHash, run.recordedIn, run.gasUsed, run.transactions])
+        .to.deep.equal(["direct-by-key", w.w1.address, null, w.w1.address, first.txHash, "read back from the ledger's log", null, []]);
+      // what this run was given: the delegate and the revoked permit, which the receipt was not recorded under
+      expect([run.given.sendingKey, run.given.permit.digest, run.receipt.authorization]).to.deep.equal([delegate.address, unused.digest, ethers.ZeroHash]);
+      expect(run.reading[0]).to.contain("recorded before this run");
+      // a receipt recorded under a permit that is not the one given: its digest, and no statement claimed for it
+      const used = c2.readPermitFile(ctx, file("used.json", await record(w.w2, 1)));
+      const byDelegate = await c2.workG0(ctx, delegate, { permit: used });
+      const other = c2.readPermitFile(ctx, file("other.json", await record(w.w2, 2)));
+      const again = c2.runRecord(ctx, await c2.workG0(ctx, delegate, { permit: other }));
+      expect([again.label, again.permit.digest, again.permit.statement.startsWith("not given to this run"), again.txHash])
+        .to.deep.equal(["delegated-by-owner-permit", used.digest, true, byDelegate.txHash]);
+      // the signer field is what the record declares: checked against the signature's key, recorded under its name
+      expect([used.signatureKey, used.declaredSigner]).to.deep.equal([w.w2.address, null]);
+      await refused(record(w.w2, 3, w.other.address).then((v) => c2.readPermitFile(ctx, file("forged.json", v))),
+        `the record's signer field names ${w.other.address}, but its signature is the key ${w.w2.address}'s`);
+      await refused(record(w.w2, 3, "someone").then((v) => c2.readPermitFile(ctx, file("word.json", v))), "the record's signer field is not an address");
+      // a full record whose typed data is null, false, zero or empty is not read through the message beside it
+      const whole = await record(w.w2, 4, w.w2.address);
+      for (const [name, value] of [["null", null], ["false", false], ["zero", 0], ["empty", ""]]) {
+        await refused(Promise.resolve().then(() => c2.readPermitFile(ctx, file(`typed-${name}.json`, { ...whole, typedData: value, message: whole.typedData.message }))), "its typed data is not an object");
+      }
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("takes the place of --out before anything is sent, and keeps each transaction as it is taken (L58)", async () => {
+    const [steward] = await ethers.getSigners();
+    const d = await t.deploy({ start: false });
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pouw-v2-out-"));
+    const hre = require("hardhat");
+    // the in-process network behind an endpoint on the loopback, for the command line
+    const server = http.createServer((req, res) => {
+      let body = ""; req.on("data", (x) => { body += x; });
+      req.on("end", async () => {
+        const one = async (q) => { try { return { jsonrpc: "2.0", id: q.id, result: await hre.network.provider.request({ method: q.method, params: q.params ?? [] }) }; } catch (e) { return { jsonrpc: "2.0", id: q.id, error: { code: e.code ?? -32000, message: e.message, data: e.data } }; } };
+        const input = JSON.parse(body);
+        const out = Array.isArray(input) ? await Promise.all(input.map(one)) : await one(input);
+        res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(out));
+      });
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const pouw = (...args) => new Promise((resolve) => {
+      const child = spawn(process.execPath, [path.join(root, "client", "pouw.js"), ...args], { cwd: root, env: { ...process.env, POUW_POLL_MS: "50" }, stdio: ["ignore", "pipe", "pipe"] });
+      let stdout = ""; let stderr = "";
+      child.stdout.on("data", (x) => { stdout += x; }); child.stderr.on("data", (x) => { stderr += x; });
+      child.on("close", (status) => resolve({ status, stdout, stderr }));
+    });
+    try {
+      const key = keyOf(dir, "worker");
+      await (await steward.sendTransaction({ to: key.wallet.address, value: ethers.parseEther("1") })).wait();
+      await (await d.policy.setAdmission(key.wallet.address, true)).wait();
+      await (await d.policy.declareOperator(key.wallet.address, 9)).wait();
+      await h.setTime(d.genesisTime);
+      const manifest = path.join(dir, "manifest.json");
+      fs.writeFileSync(manifest, JSON.stringify({ schema: "finchain-pouw.deployment/2", name: "out-test", environment: "local-devnet", chainId: Number(d.chainId),
+        ledger: d.ledgerAddress, policy: d.policy.target, deployBlock: 0, rpc: `http://127.0.0.1:${server.address().port}` }));
+      const nonce = await ethers.provider.getTransactionCount(key.wallet.address);
+      // a directory that does not exist: refused before anything is read or sent
+      const absent = path.join(dir, "absent", "run.json");
+      const a = await pouw("work", "--manifest", manifest, "--key-file", key.file, "--out", absent, "--json");
+      expect([a.status, a.stderr.includes("does not exist; nothing was sent"), fs.existsSync(absent)]).to.deep.equal([1, true, false]);
+      expect([await ethers.provider.getTransactionCount(key.wallet.address), await d.ledger.receiptCount()]).to.deep.equal([nonce, 0n]);
+      // a run refused before it sends leaves no file behind
+      await (await d.policy.setPaused(true)).wait();
+      const refusedOut = path.join(dir, "refused.json");
+      const b = await pouw("work", "--manifest", manifest, "--key-file", key.file, "--out", refusedOut, "--json");
+      expect([b.status, b.stderr.includes("submitG0 would be refused: Paused()"), fs.existsSync(refusedOut)]).to.deep.equal([1, true, false]);
+      await (await d.policy.setPaused(false)).wait();
+      // a run that sends: each transaction on the standard error when taken and with its outcome; the record in the file
+      const out = path.join(dir, "run.json");
+      const c = await pouw("work", "--manifest", manifest, "--key-file", key.file, "--out", out, "--json");
+      expect(c.status, c.stderr).to.equal(0);
+      expect(["submitted openEpoch", "confirmed openEpoch", "submitted submitG0", "confirmed submitG0"].map((x) => c.stderr.includes(x))).to.deep.equal([true, true, true, true]);
+      const written = JSON.parse(fs.readFileSync(out, "utf8"));
+      expect([written.schema, written.transactions.map((x) => [x.step, x.status]), written.label, written.recordedIn])
+        .to.deep.equal([c2.RUN_SCHEMA, [["openEpoch", "confirmed"], ["submitG0", "confirmed"]], "direct-by-key", "this run's transaction"]);
+      expect(written.transactions.map((x) => x.nonce)).to.deep.equal([nonce, nonce + 1]);
+      // the journal while a run goes on, and what is left of it when the run stops
+      const journal = c2.reserveOutput(path.join(dir, "stopped.json"));
+      c2.appendEvent(journal, { event: "submitted", step: "openEpoch", txHash: written.transactions[0].txHash, from: key.wallet.address, nonce });
+      expect(c2.releaseOutput(journal)).to.equal(path.join(dir, "stopped.json"));
+      expect(JSON.parse(fs.readFileSync(path.join(dir, "stopped.json"), "utf8").trim()).txHash).to.equal(written.transactions[0].txHash);
+      const empty = c2.reserveOutput(path.join(dir, "empty.json"));
+      expect([c2.releaseOutput(empty), fs.existsSync(path.join(dir, "empty.json"))]).to.deep.equal([null, false]);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
