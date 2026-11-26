@@ -78,12 +78,13 @@ async function deploy({ params = {}, duration = DAY, admit = [], operators = {},
   const genesisTime = (await h.now()) + 1000n;
   const at = async (name, ...args) => (await ethers.getContractFactory(name)).deploy(...args);
   const policy = await at("GenesisPolicyV2", steward.address, genesisTime, duration, { ...DEFAULT_PARAMS, ...params });
-  const seedSource = await at(seed === "fixed" ? "FixedSeedSource" : "PrevBlockSeedSource");
+  const seedSource = await at(seed === "fixed" ? "FixedSeedSource" : "contracts/v2/seed/PrevBlockSeedSource.sol:PrevBlockSeedSource");
   if (seed === "fixed") await seedSource.set(ethers.id("seed material 0"));
   const ledger = await at("GenesisLedgerV2", await policy.getAddress(), await seedSource.getAddress());
   const ledgerAddress = await ledger.getAddress();
-  // the audit function of 0.1.3, as it is: it reads `configHash` and `auditSubject`, which v2 keeps
-  const audit = await at("AuditV1", ledgerAddress);
+  // the audit function of 0.1.3 compiled inside the v2 boundary and bound to this ledger (A87): the
+  // same function, which reads `configHash` and `auditSubject` as v2 keeps them
+  const audit = await at("contracts/v2/functions/AuditV1.sol:AuditV1", ledgerAddress);
   const echo = await at("EchoFunction");
   const taskToken = await at("TaskToken", "Task Tenders", "TASK");
   const adapter = await at("TenderAdapter8414V2", ledgerAddress, await taskToken.getAddress(), PROFILE.TENDER);

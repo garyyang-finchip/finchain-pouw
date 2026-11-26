@@ -12,11 +12,16 @@
 // `finalized` block lags the way a rollup's does. The node mines a block at intervals, not one per
 // transaction.
 //
-// Two deployments are made, because two things are accepted separately:
+// Three deployments are made, because three things are accepted separately:
 //   1. operator wallets  - two wallets of one operator work two epochs: a controlled self-test,
 //                          then a standard epoch. This is round R2a as it is configured.
 //   2. contract accounts - two agents whose on-chain identity is a contract account take part as
 //                          themselves, through their accounts; their keys alone are somebody else.
+//   3. ledger v2         - deployed by scripts/deploy-v2.js from the builds of build/v2, superseding
+//                          deployment 1, with the cell guard bound to a stand-in for a FOGA cell, and
+//                          checked from the outside against its manifest. The v2 commands that work
+//                          through a delegate are not built yet; test/v2.deploy.test.js works such a
+//                          deployment in process.
 //
 // Keys are made by scripts/keys.js in a temporary directory outside the repository and deleted at
 // the end. One evidence record is written under evidence/.
@@ -33,6 +38,8 @@ const os = require("os");
 const path = require("path");
 const { ethers } = require("ethers");
 const g = require("../client/lib/genesis");
+const a2 = require("../client/lib/audit2");
+const m2 = require("../client/lib/manifest2");
 const canonical = require("../client/lib/canonical");
 const c = require("./lib/common");
 const { TENDER_ABI, eventIn } = require("./lib/tender");
@@ -155,7 +162,7 @@ async function main() {
   console.log("keys");
   const refusedInside = await run("scripts/keys.js", [path.join(OUT, "keys"), "steward"]);
   check("keys are not made inside the repository's checkout", refusedInside.status === 1 && refusedInside.stderr.includes("inside this repository") && !fs.existsSync(path.join(OUT, "keys")));
-  const names = ["steward", "wallet-a", "wallet-b", "agent-x", "agent-y"];
+  const names = ["steward", "wallet-a", "wallet-b", "agent-x", "agent-y", "delegate"];
   const made = must(await run("scripts/keys.js", [KEYS, ...names, "--json"]), "scripts/keys.js").json;
   const address = Object.fromEntries(made.keys.map((k) => [k.name, k.address]));
   const again = must(await run("scripts/keys.js", [KEYS, ...names, "--json"]), "scripts/keys.js").json;
@@ -408,16 +415,69 @@ async function main() {
   console.log("");
   console.log((await run("client/pouw.js", ["audit", 0, "--manifest", manifest2Path])).stdout.trimEnd());
 
+  // ================================================================ 3. ledger v2
+  console.log("\n3. ledger v2");
+  // a stand-in for a FOGA cell: the views the cell guard reads, and the owner's signature rule
+  const cellArtifact = artifact("v2/testing/MockFogaCell.sol/MockFogaCell.json");
+  const cellDeploy = await new ethers.ContractFactory(cellArtifact.abi, cellArtifact.bytecode, chainOperator).deploy(X.key.address);
+  await cellDeploy.deploymentTransaction().wait();
+  const cell = await cellDeploy.getAddress();
+  const OUT3 = path.join(OUT, "v2");
+  const config3 = {
+    schema: "finchain-pouw.deploy-config/2", name: "local-run-v2", environment: "local-devnet", labels: ["controlled-self-test", "cell-account-integration"],
+    chainId, rpc: RPC, logChunk: 40, epochDuration: r2.epochDuration, seedSource: r2.seedSource,
+    taskToken8414: { address: taskToken.target, deployBlock: taskTokenBlock },
+    supersedes: { manifest: path.relative(OUT3, manifestPath) },
+    params: r2.params.map((v) => ({ ...v, operatorCapBps: 5000 })),
+    profiles: r2.profiles,
+    parties: [
+      { name: "a stand-in for a FOGA cell", address: cell, admitted: true, operator: 1, guard: "FogaCellGuard" },
+      { key: "wallet-a", admitted: true, operator: 1 },
+      { key: "delegate", fundEth: "0.005" },
+    ],
+    notes: ["The parameters and profiles of round R2a with an operator cap, on ledger v2. One cell stand-in behind the cell guard, one wallet, and a delegate key funded for gas; all of one operator."],
+  };
+  const config3Path = path.join(OUT3, "config.json");
+  c.writeJson(config3Path, config3);
+  const manifest3Path = path.join(OUT3, "manifest.json");
+  const deploy3Args = ["--config", config3Path, "--keys", KEYS, "--genesis", "+15m", "--out", OUT3];
+  const nonce3 = await provider.getTransactionCount(address.steward);
+  const planned3 = show(must(await run("scripts/deploy-v2.js", deploy3Args), "scripts/deploy-v2.js (plan)"));
+  check("v2: without --yes the deployment is planned and nothing is sent; the plan names what it supersedes and what the cell guard would answer",
+    planned3.stdout.includes("plan only") && planned3.stdout.includes("replaces  local-run, ledger") && planned3.stdout.includes("the cell guard would allow it now")
+    && (await provider.getTransactionCount(address.steward)) === nonce3 && !fs.existsSync(manifest3Path));
+  const deployed3 = must(await run("scripts/deploy-v2.js", [...deploy3Args, "--yes"]), "scripts/deploy-v2.js");
+  console.log(`      | ${deployed3.stdout.trimEnd().split("\n").slice(-6).join("\n      | ")}`);
+  const manifest3Bytes = fs.readFileSync(manifest3Path);
+  const manifest3 = JSON.parse(manifest3Bytes.toString("utf8"));
+  const deployment3 = c.readJson(/record +(\S+)/.exec(deployed3.stdout)[1]);
+  check("v2: deployed from build/v2 and read back as configured - code, wiring, log starts, the guard and its code hash, the policy",
+    deployed3.stdout.includes("DEPLOYED:") && deployment3.ok === true && deployment3.verification.deployment.every((x) => x.ok) && deployment3.verification.policy.every((x) => x.ok)
+    && Object.keys(deployment3.builds).every((f) => f.startsWith("build/v2/")));
+  check("v2: the manifest names the deployment it supersedes by name, ledger and the SHA-256 of its manifest, and the guard bound to the cell",
+    manifest3.supersedes.name === "local-run" && manifest3.supersedes.ledger === manifest.contracts.GenesisLedger
+    && manifest3.supersedes.manifestSha256 === c.sha256File(path.relative(root, manifestPath))
+    && manifest3.guards[cell]?.contract === "FogaCellGuard" && manifest3.guards[cell].guard === manifest3.contracts.FogaCellGuard && manifest3.guards[cell].bindingVersion === 1);
+  const second3 = await run("scripts/deploy-v2.js", [...deploy3Args, "--yes"]);
+  check("v2: a second deployment over an existing manifest is refused, and the manifest is left as it was",
+    second3.status === 1 && second3.stderr.includes("exists") && Buffer.compare(fs.readFileSync(manifest3Path), manifest3Bytes) === 0);
+  // the check from the outside: the manifest and the endpoint, at the endpoint's finalized block
+  const endpointProvider = c.connectRpc(RPC);
+  const check3 = await m2.verifyDeployment(await a2.connect(manifest3, endpointProvider, { tag: "finalized" }));
+  check("v2: the deployment checked from the outside against its manifest, at the finalized block", check3.ok === true);
+  log("deployed by scripts/deploy-v2.js from build/v2: policy, seed source, ledger, audit function, adapter, cell guard; two profiles; two parameter versions; a cell stand-in bound to the cell guard; superseding deployment 1",
+    { manifest: "out/local-run/v2/manifest.json", ledger: manifest3.contracts.GenesisLedgerV2, transactions: deployment3.transactions.length, gasUsed: deployment3.gasUsed });
+
   // ---------------------------------------------------------------- evidence
   const ok = checks.every((x) => x.ok);
   const recordedAt = new Date().toISOString();
   const sources = [...filesUnder("contracts"), ...filesUnder("build"), ...filesUnder("client"), ...filesUnder("scripts"), R2_CONFIG, "hardhat.config.js", "package.json", "package-lock.json"];
   const gasOf = (list, step) => list.filter((s) => s.step === step);
   const record = {
-    schema: "finchain-pouw.local-run/2",
+    schema: "finchain-pouw.local-run/3",
     environment: "local-devnet",
     recordedAt,
-    what: "Rehearsal of round R2 with the commands of a public deployment: keys, deployment from the committed builds, verification, an operator's round over two epochs (controlled self-test, then standard) with a settled block that lags, close records, audits; then two contract accounts taking part as themselves on a deployment of their own",
+    what: "Rehearsal of round R2 with the commands of a public deployment: keys, deployment from the committed builds, verification, an operator's round over two epochs (controlled self-test, then standard) with a settled block that lags, close records, audits; then two contract accounts taking part as themselves on a deployment of their own; then ledger v2 deployed from its own builds, superseding the first deployment, and checked against its manifest",
     ok,
     host: c.hostInfo(),
     tools: { hardhat: versionOf("hardhat"), ethers: ethers.version, solc: versionOf("solc") },
@@ -426,6 +486,7 @@ async function main() {
     checks,
     operatorWallets: { configuration: config, deployment, verification: verified.json, rounds, audits },
     contractAccounts: { identities, configuration: config2, deployment: deployment2, steps: g.jsonable(steps), audits: [audit2.json] },
+    ledgerV2: { configuration: config3, deployment: deployment3, verification: g.jsonable({ ok: check3.ok, block: check3.pin.number, checks: check3.checks }) },
     gasUsed: {
       deployment: deployment.gasUsed,
       work: rounds.flatMap((r) => gasOf(r.did, "work").map((s) => s.gasUsed)),
@@ -433,6 +494,7 @@ async function main() {
       close: rounds.flatMap((r) => gasOf(r.did, "close").map((s) => s.gasUsed)),
       workThroughAccount: [wx.gasUsed, wy.gasUsed],
       bridgeThroughAccount: [bx.gasUsed, bo.gasUsed],
+      deploymentV2: deployment3.gasUsed,
     },
     transcript,
     notes: [
@@ -442,6 +504,7 @@ async function main() {
       `Blocks were mined every ${BLOCK_MS} ms, not one per transaction: transactions waited in the pool as they do on a public chain. Epochs are the two hours of the round's configuration, on the node's clock.`,
       "The contract accounts are the test account of contracts/testing: one owner key and an execute call. They show that the kernel and the client treat an account as the party; they are not an agent's node, and nothing here was done through one.",
       "The test tenders settle a fixed result and carry no task.",
+      "The v2 deployment of part 3 is made and checked; nothing is worked on it here, because the v2 commands that act through a delegate are not built yet. Its cell is a stand-in from contracts/v2/testing with the views the cell guard reads; no FOGA build product is used, and a real cell is read on its own chain by a read-only probe.",
     ],
   };
   const out = path.join(root, "evidence", `local-run-${c.stamp(new Date(recordedAt))}.json`);

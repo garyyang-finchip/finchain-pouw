@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const { execFileSync } = require("child_process");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const t = require("./v2.helpers");
 const { deployableV2, buildOfV2, buildRecordV2, V2_COMPILER_PACKAGE, CODE_SIZE_LIMIT } = require("../scripts/export-abi");
 
 const root = path.join(__dirname, "..");
@@ -33,6 +34,9 @@ const importsOf = (file) => [...fs.readFileSync(path.join(root, file), "utf8").m
   .map((m) => slash(path.normalize(path.join(path.dirname(file), m[1]))));
 const inV2 = (file) => file.startsWith("contracts/v2/");
 const inVendor = (file) => file.startsWith("contracts/vendor/");
+const kernelBuild = (name) => JSON.parse(fs.readFileSync(path.join(root, "build", `${name}.json`), "utf8"));
+/// an interface of v2 as the kernel's would name it: the one type the copies name differently is the ledger's
+const asKernelAbi = (abi) => JSON.parse(JSON.stringify(abi).replaceAll('"contract IGenesisLedgerV2"', '"contract IGenesisLedger"'));
 const buildInfos = () => fs.readdirSync(path.join(root, "artifacts", "build-info")).map((f) => JSON.parse(fs.readFileSync(path.join(root, "artifacts", "build-info", f), "utf8")));
 
 describe("Ledger v2: its compile boundary and its builds", () => {
@@ -93,8 +97,67 @@ describe("Ledger v2: its compile boundary and its builds", () => {
     }
   });
 
+  it("has v2's own copies of the kernel's audit function and seed sources: the kernel's text and the kernel's answers (A87)", async () => {
+    const { ethers } = hre;
+    const copies = { "functions/AuditV1.sol": "AuditV1", "seed/L1BlockSeedSource.sol": "L1BlockSeedSource", "seed/PrevBlockSeedSource.sol": "PrevBlockSeedSource" };
+    const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+    // the text: the same lines apart from the compiler pragma, the imports, the type of the ledger and
+    // the note, placed right before the declaration, that says the file is a copy
+    for (const [rel, name] of Object.entries(copies)) {
+      const own = read(`contracts/v2/${rel}`);
+      const note = new RegExp(`^/// @dev    v2's own copy of the kernel's contract of the same name[\\s\\S]*?(?=^contract ${name} is )`, "m");
+      expect(note.test(own), `${rel}: says that it is a copy`).to.equal(true);
+      const asKernel = own.replace(note, "").replace("pragma solidity 0.8.39;", "pragma solidity 0.8.24;")
+        .replace(/"\.\.\/external\/(I\w+)\.sol"/g, '"../interfaces/$1.sol"').replace(/\bIGenesisLedgerV2\b/g, "IGenesisLedger");
+      expect(asKernel, `contracts/v2/${rel} is not the kernel's contracts/${rel}`).to.equal(read(`contracts/${rel}`));
+    }
+    const make = async (name, ...args) => (await ethers.getContractFactory(name)).deploy(...args);
+    const kernel = (rel, name) => `contracts/${rel}:${name}`;
+    const own = (rel, name) => `contracts/v2/${rel}:${name}`;
+    // the answers of the audit function: the kernel's AuditV1 asks a v2 ledger what it asks its own,
+    // by the same selectors, so the two can be bound to the same ledger and asked the same questions
+    const [, w1] = await ethers.getSigners();
+    const d = await t.deploy({ admit: [w1] });
+    const theirs = await make(kernel("functions/AuditV1.sol", "AuditV1"), d.ledgerAddress);
+    const asked = [];
+    const same = async (epoch) => {
+      const instance = ethers.id(`an instance in epoch ${epoch}`);
+      expect(await d.audit.subjectOf(epoch)).to.equal(await theirs.subjectOf(epoch));
+      expect([...(await d.audit.evaluate(epoch, 0, w1.address, instance))]).to.deep.equal([...(await theirs.evaluate(epoch, 0, w1.address, instance))]);
+      // and a job that does not exist is refused in the same words
+      const refusal = (c) => ethers.provider.call({ to: c.target, data: c.interface.encodeFunctionData("evaluate", [epoch, 1, w1.address, instance]) })
+        .then(() => "answered", (e) => t.errorOf(e));
+      const [a, b] = [await refusal(d.audit), await refusal(theirs)];
+      expect(a).to.deep.equal({ name: "UndefinedJob", args: [1n] });
+      expect(b).to.deep.equal(a);
+      asked.push(epoch);
+    };
+    expect([await d.audit.FUNCTION_ID(), await d.audit.functionId()]).to.deep.equal([await theirs.FUNCTION_ID(), await theirs.functionId()]);
+    expect(await d.audit.FUNCTION_ID()).to.equal(t.g.AUDIT_V1_FUNCTION_ID);
+    await same(0n);
+    await t.submitDirect(d, w1);
+    await t.h.toEpoch(d, 1);
+    await t.submitDirect(d, w1);
+    await same(1n);
+    expect(asked).to.deep.equal([0n, 1n]);
+    // the answers of the seed sources, at the same block
+    const prev = [await make(kernel("seed/PrevBlockSeedSource.sol", "PrevBlockSeedSource")), await make(own("seed/PrevBlockSeedSource.sol", "PrevBlockSeedSource"))];
+    const n = await ethers.provider.getBlockNumber();
+    const parent = (await ethers.provider.getBlock(n - 1)).hash;
+    for (const c of prev) expect(await c.seedMaterial({ blockTag: n })).to.equal(parent);
+    const predeploy = "0x4200000000000000000000000000000000000015";
+    const mock = await make("MockL1Block");
+    await t.h.network.provider.send("hardhat_setCode", [predeploy, await ethers.provider.getCode(mock.target)]);
+    const l1 = await ethers.getContractAt("MockL1Block", predeploy);
+    await (await l1.set(7000003, ethers.id("l1 block 7000003"))).wait();
+    const material = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["uint64", "bytes32"], [7000003, ethers.id("l1 block 7000003")]));
+    const l1Sources = [await make(kernel("seed/L1BlockSeedSource.sol", "L1BlockSeedSource")), await make(own("seed/L1BlockSeedSource.sol", "L1BlockSeedSource"))];
+    for (const c of l1Sources) expect(await c.seedMaterial()).to.equal(material);
+  });
+
   it("ships v2 builds that are what the v2 sources compile to, by the v2 compiler and from v2 sources alone", () => {
-    expect(Object.keys(deployableV2)).to.deep.equal(["GenesisPolicyV2", "GenesisLedgerV2", "TenderAdapter8414V2", "FogaCellGuard"]);
+    expect(Object.keys(deployableV2)).to.deep.equal(["GenesisPolicyV2", "GenesisLedgerV2", "TenderAdapter8414V2", "FogaCellGuard",
+      "AuditV1", "L1BlockSeedSource", "PrevBlockSeedSource"]);
     for (const [name, rel] of Object.entries(deployableV2)) {
       const shipped = fs.readFileSync(path.join(root, "build", "v2", `${name}.json`), "utf8");
       expect(shipped, `build/v2/${name}.json is stale: run npm run export-abi`).to.equal(`${JSON.stringify(buildOfV2(name), null, 2)}\n`);
@@ -111,8 +174,10 @@ describe("Ledger v2: its compile boundary and its builds", () => {
       for (const [start, length] of build.immutableReferences) {
         expect(build.deployedBytecode.slice(2 + 2 * start, 2 + 2 * (start + length)), `${name}: an immutable position that is not blank in the build`).to.match(/^0+$/);
       }
-      // the compiled interface a client holds is the interface of this build
-      expect(build.abi).to.deep.equal(JSON.parse(fs.readFileSync(path.join(root, "client", "abi", `${name}.json`), "utf8")));
+      // the compiled interface a client holds is the interface of this build; a copy of a kernel
+      // contract declares the interface of the kernel's build, the ledger's type as it is named apart
+      if (fs.existsSync(path.join(root, "build", `${name}.json`))) expect(asKernelAbi(build.abi)).to.deep.equal(kernelBuild(name).abi);
+      else expect(build.abi).to.deep.equal(JSON.parse(fs.readFileSync(path.join(root, "client", "abi", `${name}.json`), "utf8")));
       expect(rel.includes("/testing/")).to.equal(false);
     }
     // the builds of the kernel stay where they were, and none of v2 is among them

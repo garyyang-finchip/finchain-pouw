@@ -99,8 +99,10 @@ describe("Boundaries: what the kernel is and is not", () => {
       expect(/\b(85422|8454)\b/.test(text), `${rel} names a Finchain chain id`).to.equal(false);
       expect(/delegatecall|selfdestruct|upgradeTo/.test(text), `${rel} has an upgrade or destruction path`).to.equal(false);
     }
-    // the one address in the code is the OP Stack's L1Block predeploy, inside the seed source written for OP Stack chains
-    expect(seen).to.deep.equal(["contracts/seed/L1BlockSeedSource.sol: 0x4200000000000000000000000000000000000015"]);
+    // the one address in the code is the OP Stack's L1Block predeploy, inside the seed source written
+    // for OP Stack chains and inside v2's own copy of it (A87)
+    expect(seen).to.deep.equal(["contracts/seed/L1BlockSeedSource.sol: 0x4200000000000000000000000000000000000015",
+      "contracts/v2/seed/L1BlockSeedSource.sol: 0x4200000000000000000000000000000000000015"]);
   });
 
   it("is written in one language: no CJK text in any file of the repository", () => {

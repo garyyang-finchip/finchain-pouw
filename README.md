@@ -6,10 +6,11 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.1.9 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.1.10 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
-builds are committed with their record, the client audits an epoch of it as a library, the
-owner has ruled what a v2 deployment takes (Q33), and it is not deployed.**
+builds are committed with their record, the client audits an epoch of it as a library, its
+deployment tooling and manifest are built and rehearsed on a development network, and it is not
+deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -49,6 +50,19 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.1.10, with design revision v0.1.17 (2026-11-26), is the deployment of ledger v2 as
+local development, as the owner's ruling A87 has it (`docs/decisions.md` 20). v2 gets its own
+copies of the audit function and of the seed sources, compiled inside its boundary and held by a
+test to the kernel's text and answers. `scripts/deploy-v2.js` deploys v2 from `build/v2/`; its
+manifest names every contract with its code, where each log starts, the guard of each contract
+account with the guard's code hash, and the deployment it supersedes; the check of a deployment
+against its manifest and the audit both read that manifest. The rehearsal makes such a
+deployment with the command. `scripts/cell-probe.js` reads, without a key and without sending,
+what the cell guard would answer for each contract account and the gas of the guard and of the
+signature check against the ledger's bounds; it has been run against stand-ins only. Three
+residual cases of the reading of full signing records are closed. No contract of the ledger and
+no compiled interface changed; nothing is deployed on a public chain and nothing is signed.
 
 Release 0.1.9, with design revision v0.1.16 (2026-11-26), is the second correction of the audit
 of ledger v2, after the advisor's review of 0.1.8 (`docs/decisions.md` 19): a profile version
@@ -173,6 +187,7 @@ client/                the reference client: pouw.js, lib/, abi/
   lib/ledger2.js         the encodings and the allocation of ledger v2, off chain
   lib/audit2.js          the audit of an epoch of ledger v2 at one block; a library, not yet a command
   lib/report2.js         the record of that audit
+  lib/manifest2.js       the manifest of a v2 deployment, and the check of a deployment against it
 test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
   sign-permit.js         one statement of ledger v2, signed off line from a key file; no network;
@@ -180,8 +195,12 @@ scripts/               the tooling of a deployment and a round
   report-hash.py         the two hashes of a record, computed again from its file
   keys.js                key files for a deployment's parties, made on the host that uses them
   deploy.js              a deployment from a configuration file and build/, with a read-back
+  deploy-v2.js           a deployment of ledger v2 from a configuration file and build/v2/, with a
+                         read-back; its manifest and record are created and overwrite nothing
   round.js               an operator's round: test tenders, confirmations, audit jobs, close records
   identity-check.js      who is who on a chain whose agents are contract accounts (read-only)
+  cell-probe.js          what the cell guard would answer for each contract account, and the gas
+                         of the guard and the signature check against the bounds (read-only)
   local-run.js           the rehearsal of round R2 on a development network
   export-abi.js          client/abi, build/ and build/v2/ from the compilers' output
 deployments/           the manifest format; the configuration and the manifest of round R2a
@@ -208,16 +227,18 @@ npm run local-run   # the rehearsal of round R2 on a development network; writes
 
 To run the client or to deploy - a worker, a demander, an auditor or the host of a round needs
 nothing else - install without the build tools: `npm ci --omit=dev` brings in `ethers` and its
-dependencies only. A deployment is made from `build/` and needs no compiler.
+dependencies only. A deployment is made from `build/`, or for ledger v2 from `build/v2/`, and
+needs no compiler.
 
 The rehearsal starts its own development node and runs round R2 on it with the commands of a
-public deployment, each as a process of its own: keys, the identity check, the deployment from the
-committed builds and the configuration of round R2a, the check of the deployed code, an operator's
-round over a controlled self-test epoch and a standard one - behind an endpoint whose finalized
-block lags, as a rollup's does - close records and audits. It then makes a second deployment in
-which two contract accounts take part as themselves. Keys are made for the run outside the
-checkout and deleted after it. It ends with `PASS` and the number of checks, and prints the
-epochs' tables as an auditor sees them.
+public deployment, each as a process of its own: keys, the identity check, the deployment from
+the committed builds and the configuration of round R2a, the check of the deployed code, an
+operator's round over a controlled self-test epoch and a standard one - behind an endpoint whose
+finalized block lags, as a rollup's does - close records and audits. It then makes a second
+deployment in which two contract accounts take part as themselves, and a third, of ledger v2
+from its own builds, which supersedes the first and is checked against its manifest from the
+outside. Keys are made for the run outside the checkout and deleted after it. It ends with
+`PASS` and the number of checks, and prints the epochs' tables as an auditor sees them.
 
 The same tests and the same rehearsal can be run on a hosted runner from a clean checkout
 (`.github/workflows/ci.yml`): Actions, `ci`, "Run workflow". It first ran there on 2026-11-24,

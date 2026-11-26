@@ -34,6 +34,16 @@ const expand = (p) => path.resolve(p === "~" || p.startsWith("~/") ? path.join(o
 const inRepository = (p) => { const rel = path.relative(root, p); return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel)); };
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 const writeJson = (file, value) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`); };
+/// Write a record that must not replace anything: the file is created, or the write fails and
+/// nothing is written (docs/decisions.md P68, A87).
+function createJson(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  try { fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" }); } catch (e) {
+    if (e.code === "EEXIST") throw new Error(`${file} exists already: nothing is overwritten, and the record was not written`);
+    throw e;
+  }
+  return file;
+}
 /// Make sure records can be written to `dir` - before the transactions they record are sent, not after.
 function writableDir(dir) {
   const probe = path.join(dir, `.write-test-${process.pid}`);
@@ -110,6 +120,6 @@ function run(main, name, refusal = () => null) {
 }
 
 module.exports = {
-  root, parse, need, expand, inRepository, readJson, writeJson, writableDir, stamp, freshPath, iso, sha256File, version, sleep, endpointHost, hostInfo,
+  root, parse, need, expand, inRepository, readJson, writeJson, createJson, writableDir, stamp, freshPath, iso, sha256File, version, sleep, endpointHost, hostInfo,
   connectRpc, readKeyFile, keyFileOf, walletOf, addressOf, parseTime, run,
 };

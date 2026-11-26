@@ -1,0 +1,35 @@
+{
+  "contractName": "PrevBlockSeedSource",
+  "sourceName": "contracts/v2/seed/PrevBlockSeedSource.sol",
+  "compiler": {
+    "version": "0.8.39+commit.ce47f2c8",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "cancun",
+    "viaIR": false
+  },
+  "sources": {
+    "contracts/v2/external/ISeedSource.sol": "0xb833a767260e261a704cafaa914977d09fcb70e84f1d773dac834eb954e15ff3",
+    "contracts/v2/seed/PrevBlockSeedSource.sol": "0x9ad087275b955846e55ad001c937901488bd7ebefceba42272a6dafaa14fd7d9"
+  },
+  "abi": [
+    {
+      "inputs": [],
+      "name": "seedMaterial",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b5060ab80601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106025575f3560e01c8062117fa0146029575b5f5ffd5b602f6041565b60405190815260200160405180910390f35b5f604b6001436051565b40905090565b81810381811115606f57634e487b7160e01b5f52601160045260245ffd5b9291505056fea2646970667358221220d71f2238776cf819a109999b680c97c3205b484e463a8a5979991af1e00abc3264736f6c63430008270033",
+  "deployedBytecode": "0x6080604052348015600e575f5ffd5b50600436106025575f3560e01c8062117fa0146029575b5f5ffd5b602f6041565b60405190815260200160405180910390f35b5f604b6001436051565b40905090565b81810381811115606f57634e487b7160e01b5f52601160045260245ffd5b9291505056fea2646970667358221220d71f2238776cf819a109999b680c97c3205b484e463a8a5979991af1e00abc3264736f6c63430008270033",
+  "immutableReferences": []
+}

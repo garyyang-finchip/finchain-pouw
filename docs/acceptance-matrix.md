@@ -1,6 +1,6 @@
 # Acceptance and Failure Matrix
 
-Design revision v0.1.16, with software release 0.1.9, after the reviews of v0.1.4 to v0.1.7,
+Design revision v0.1.17, with software release 0.1.10, after the reviews of v0.1.4 to v0.1.7,
 the owner's adoption of the recommendations on Q17 to Q29, the run of round R2a with its review,
 the owner's rulings of 2026-11-25 and the review of the local implementation of ledger v2
 (`decisions.md` A55-A86).
@@ -172,8 +172,9 @@ public deployment, each as a separate process: the key script, the identity chec
 from the committed builds and the R2a configuration, `pouw verify`, the round command, `pouw
 audit`. The script itself puts in place what an OP Stack chain has (the L1Block predeploy, an
 ERC-8414 contract), funds the steward, moves the clock, and holds back the endpoint's finalized
-block for a while. Two deployments are made, because two things are accepted separately. Its
-checks, all of which must hold for the record to say `ok`:
+block for a while. Three deployments are made, because three things are accepted separately;
+the third, from release 0.1.10, is of ledger v2 from its own builds and is made and checked but
+not worked. Its checks, all of which must hold for the record to say `ok`:
 
 | Check | Rows |
 | --- | --- |
@@ -195,6 +196,7 @@ checks, all of which must hold for the record to say `ok`:
 | through `--account` the worker of record is the account; the same key by itself is another worker, measured and not subsidized; a key the account does not obey is refused | T6, T3 |
 | a tender owned by an account is not confirmed by the account's key; through the account it is; a tender older than the deployment is measured and earns nothing | T6, D11, D15 |
 | the audit of the accounts' epoch agrees with the ledger: two accounts and one key are three workers of record | T6, N5 |
+| ledger v2: without `--yes` planned and nothing sent, the plan naming what it supersedes and what the cell guard would answer; deployed from `build/v2` and read back as configured; the manifest names the superseded deployment and the guard; a second deployment over the manifest is refused and the manifest stays; checked from the outside at the finalized block | `ledger-v2.md` L48 to L50 |
 
 ## 9. Round R2 on Finchain Sepolia
 
@@ -432,13 +434,14 @@ No increment and no acceptance shows, and none will claim:
 
 ## 15. Ledger v2: the test matrix, as run on a local network
 
-The next version of the ledger (`ledger-v2.md`) has a test matrix of its own, of 47 rows, in
+The next version of the ledger (`ledger-v2.md`) has a test matrix of its own, of 51 rows, in
 section 14 of that document, with the result of each row and the limits of what a pass covers.
 On 2026-11-25 every row had at least one test that carried its id and passed, on the in-process
 network; the whole suite was 131 tests with release 0.1.4, of which 83 are the kernel's, 137
 with release 0.1.5, 143 with release 0.1.6, 151 with release 0.1.7, whose eight new tests are
-the rows L36 to L43, and is 154 with release 0.1.8, whose three are the rows L44 to L46, and is
-155 with release 0.1.9, whose one is the row L47. The six that 0.1.5 added carry no row: three
+the rows L36 to L43, 154 with release 0.1.8, whose three are the rows L44 to L46, 155 with
+release 0.1.9, whose one is the row L47, and is 162 with release 0.1.10, whose seven are the rows
+L48 to L51 and three without a row. The six that 0.1.5 added carry no row: three
 hold the frozen interfaces, and three are regressions on the signing script's output path, on a
 statement verified at each submission and on an array with an empty slot (`decisions.md` 15.4,
 15.7). The six that 0.1.6 adds carry no row either: they hold the compile boundary of v2 and its
@@ -446,7 +449,7 @@ builds (`decisions.md` 16). The advisor ran the 131 tests again on its own and f
 of that release in its output (`decisions.md` 15.2). From release 0.1.6 on the rows are run on
 the builds of the v2 compiler, solc 0.8.39, and no longer on those of solc 0.8.24.
 
-The ids L1 to L47 are those of that document. They are not row L1 of section 11 here, the
+The ids L1 to L51 are those of that document. They are not row L1 of section 11 here, the
 linked chain of evidence: where both could be meant, the document is named.
 
 | Rows of `ledger-v2.md` 14 | What they cover | Tests |
@@ -459,9 +462,12 @@ linked chain of evidence: where both could be meant, the document is named.
 | L36 to L43 | the audit of an epoch of ledger v2, as a library: every kind of receipt the client can read again re-decided; the next epoch under a changed policy; the permit behind a delegated receipt, from its transaction or given to the run; what the rules would have refused, found; one block; the record and its hashes; a function and a module the client does not read, listed as undecided and held as far as the rules reach | `v2.audit` |
 | L44 to L46 | the corrections of release 0.1.8: a log that does not reach back is refused, not audited as a shorter history; the entry's own call is held to its receipt in full; signing records are read by their own domain - and, from 0.1.9, as they are, with each structural fault named | `v2.audit` |
 | L47 | the correction of release 0.1.9: a profile version the policy replaced while it was still ahead is replayed as the policy replays it | `v2.audit` |
+| L48 to L50 | the deployment of release 0.1.10: from the builds of `build/v2`, read back and checked from the outside against its manifest, then worked and audited from it; a manifest that is not what is on chain; a plan that cannot run as written | `v2.deploy` |
+| L51 | the probe of release 0.1.10: what the cell guard would answer for each contract account, and the gas of the guard and of the signature check against their bounds, read at one block | `v2.probe` |
 
 None of these rows is an acceptance of round R2b or of round R3 (`decisions.md` A80): nothing of
-ledger v2 is deployed, and of the client for a v2 deployment the audit alone is built, as a
-library (`decisions.md` 17, corrected in 18 and 19). Its interfaces are frozen (`decisions.md`
-A81) and its builds are committed as candidates (`build/v2/`). The rows marked "Sepolia, round
-R2b" in sections 1 to 7 stay as they are.
+ledger v2 is deployed on a public chain, the deployment tooling is rehearsed on a development
+network only (`decisions.md` 20), and of the client for a v2 deployment the audit and the check
+of a deployment are built as libraries (`decisions.md` 17, corrected in 18 to 20). Its
+interfaces are frozen (`decisions.md` A81) and its builds are committed as candidates
+(`build/v2/`). The rows marked "Sepolia, round R2b" in sections 1 to 7 stay as they are.

@@ -50,12 +50,12 @@ async function deploy({ params = {}, duration = DAY, admit = [], operators = {},
   const genesisTime = (await now()) + 1000n;
   const Policy = await ethers.getContractFactory("GenesisPolicy");
   const policy = await Policy.deploy(steward.address, genesisTime, duration, { ...DEFAULT_PARAMS, ...params });
-  const Seed = await ethers.getContractFactory(seed === "fixed" ? "FixedSeedSource" : "PrevBlockSeedSource");
+  const Seed = await ethers.getContractFactory(seed === "fixed" ? "FixedSeedSource" : "contracts/seed/PrevBlockSeedSource.sol:PrevBlockSeedSource");
   const seedSource = await Seed.deploy();
   if (seed === "fixed") await seedSource.set(ethers.id("seed material 0"));
   const Ledger = await ethers.getContractFactory("GenesisLedger");
   const ledger = await Ledger.deploy(await policy.getAddress(), await seedSource.getAddress());
-  const Audit = await ethers.getContractFactory("AuditV1");
+  const Audit = await ethers.getContractFactory("contracts/functions/AuditV1.sol:AuditV1");
   const audit = await Audit.deploy(await ledger.getAddress());
   const TaskToken = await ethers.getContractFactory("TaskToken");
   const taskToken = await TaskToken.deploy("Task Tenders", "TASK");

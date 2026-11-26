@@ -46,7 +46,7 @@ describe("G0: protocol work on per-worker instances", () => {
     const mock = await Mock.deploy();
     await h.network.provider.send("hardhat_setCode", [predeploy, await ethers.provider.getCode(await mock.getAddress())]);
     const l1 = await ethers.getContractAt("MockL1Block", predeploy);
-    const Source = await ethers.getContractFactory("L1BlockSeedSource");
+    const Source = await ethers.getContractFactory("contracts/seed/L1BlockSeedSource.sol:L1BlockSeedSource");
     const source = await Source.deploy();
     const material = (number, hash) => ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["uint64", "bytes32"], [number, hash]));
 

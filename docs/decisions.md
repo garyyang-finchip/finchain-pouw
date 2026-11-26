@@ -12,15 +12,23 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
-Design revision v0.1.16 comes with software release 0.1.9. It records one ruling, A87: on
+Design revision v0.1.17 comes with software release 0.1.10 and records no new ruling. It is the
+delivery that A87 opened, as local development: v2's own copies of `AuditV1` and of the two
+seed sources inside the v2 boundary, the deployment tooling and the manifest of v2, rehearsed on
+a development network, and the read-only probe of contract accounts that `ledger-v2.md` 11.7
+asks for before round R2b. It also closes three residual cases of the reading of full signing
+records (section 20). Three choices of this repository are put to the owner with it, P77 to
+P79. No contract of the ledger and no compiled interface changes; nothing is deployed on a
+public chain and nothing is signed.
+
+Design revision v0.1.16 came with software release 0.1.9. It recorded one ruling, A87: on
 2026-11-26 at 02:38 (UTC+8) the owner adopted, in words of his own, the advisor's
-recommendations on P71 to P76, P69, Q33/P70, Q32 and P68 (section 19.1). Q32 and Q33 are ruled;
-the deployment tooling of v2 and its manifest may now be developed. The release is the second
-correction of the audit library: the advisor's review of 0.1.8 found one regression that the
-new history checks had introduced and one part of the reading of signing records still open;
-both are reproduced here and corrected, and the wording the review listed is settled (section
-19). No contract, no compiled interface and no build changes; nothing is deployed and nothing
-is signed.
+recommendations on P71 to P76, P69, Q33/P70, Q32 and P68 (section 19.1). Q32 and Q33 were
+ruled, and the deployment tooling of v2 and its manifest could be developed. The release was
+the second correction of the audit library: the advisor's review of 0.1.8 found one regression
+that the new history checks had introduced and one part of the reading of signing records
+still open; both were reproduced and corrected, and the wording the review listed was settled
+(section 19). No contract, no compiled interface and no build changed.
 
 Design revision v0.1.15 came with software release 0.1.8 and recorded no new ruling. It was
 the correction that the advisor's functional review of release 0.1.7 asked for: three faults of
@@ -1646,3 +1654,81 @@ tooling, and the manifest with `supersedes` and the guards' code hashes; then th
 the v2 client on it, work and confirmation through a delegate, and the run record. The
 isolated check of Q32 is a task of its own that holds nothing up. The production module and
 the two discussion drafts continue beside them.
+
+## 20. The deployment of ledger v2, as local development
+
+### 20.1 What this revision is
+
+Release 0.1.9 was uploaded on 2026-11-26 as one commit,
+`3cd586ab8669c0bbb15ae90e1612c333c79a6bc6`; the executor compared `main` with its own copy file
+by file and found them equal. A87 let the deployment tooling and the manifest of v2 proceed as
+local development, on the basis of Q33/P70. This revision is that development and nothing
+beyond it: nothing is deployed on a public chain, no key of a host is used and nothing is
+signed. It changes no contract of the ledger, no compiled interface and none of the four v2
+builds of release 0.1.9.
+
+### 20.2 What was built
+
+| Part | What it is | Rows |
+| --- | --- | --- |
+| v2's own copies of `AuditV1`, `L1BlockSeedSource` and `PrevBlockSeedSource` | `contracts/v2/functions/` and `contracts/v2/seed/`, compiled by the v2 compiler, with their builds in `build/v2/` and in its build record. A test holds each copy to the kernel's text apart from the compiler pragma, the imports, the ledger's type and a note that says it is a copy; holds its interface to the kernel build's; and holds the answers of copy and kernel to be the same on one ledger at one block. The tests' v2 fixture uses the copies | a test without a row |
+| The deployment | `scripts/deploy-v2.js` with `scripts/lib/deploy2.js`: configuration `finchain-pouw.deploy-config/2`, the plan and its text, the sequence, the read-back, the record `finchain-pouw.deployment-record/2`. The manifest and the record are created and never replace a file (P68) | L48, L50 |
+| The manifest and its check | `client/lib/manifest2.js`: the manifest of schema `finchain-pouw.deployment/2` (`ledger-v2.md` 1) and the check of a deployment against it at one block. The audit of `ledger-v2.md` 13.1 connects from the same manifest | L48, L49 |
+| The probe of contract accounts | `scripts/cell-probe.js` with `scripts/lib/cellprobe.js`: read-only, at one block, by `eth_call` with a state override (`ledger-v2.md` 11.7) | L51 |
+| The rehearsal | `npm run local-run` has a third part: a v2 deployment made by the command, superseding the rehearsal's first deployment, and checked from the outside at the finalized block; five more checks | - |
+| The reading of full signing records | three residual cases closed (20.3) | L46 |
+
+### 20.3 The three residual cases of V018-02
+
+Each was reproduced on the tree of 0.1.9 before the correction, by a probe of the reading of
+given permits with a record of the signing script, edited.
+
+| Case | On 0.1.9 | Now |
+| --- | --- | --- |
+| A record that carries a mark of a full record but not its typed data: `schema` and a top-level `domain` without a message; a signing record without `typedData`; a domain of another chain beside bare fields | read through the bare path, and accepted in this domain | a full record is anything that carries a mark of one - `schema`, `kind`, `typedData`, or a top-level `domain`, `types` or `primaryType` - and is never read as a bare message: without its typed data it is unusable |
+| A full record without `primaryType`, or without the `EIP712Domain` type | accepted, the missing part supplied | unusable: all four parts of its typed data are the record's own |
+| The fields of a type with their members in another order | unusable, the types being compared as text | read: a field is a name and a type, compared in the frozen order; a field with a third member is unusable |
+
+### 20.4 Findings, and this repository's choices
+
+1. **The copies have the kernel's names.** The test framework refuses a contract name that two
+   sources declare. The copies keep the names A87 asks to keep unchanged and by which the
+   manifest names a deployment's builds; the kernel's tests now name the kernel's contracts by
+   path, and the tests' v2 fixture names the copies so.
+2. **The tenders' log needs a start the manifest states.** The audit reads the history of a
+   tender from `tenderDeployBlock`. The kernel's deployment fell back to block 0 where the
+   configuration said nothing; for v2 the configuration has to state the block.
+3. **`eth_estimateGas` with a state override cannot be relied on.** The development network
+   refuses it, and endpoints differ. A state override in `eth_call` is the common form; a meter
+   of 51 bytes, assembled by the probe from a listing that a test holds, measures the call from
+   inside it, and a test holds the meter to a transaction's own figure.
+4. **The deployed cells cannot be read from here.** The executor's workspace has no route to
+   Finchain Sepolia. The probe is a command for the owner to run, read-only and with no key.
+
+| Id | Proposal | Why | Status |
+| --- | --- | --- | --- |
+| P77 | The manifest of a v2 deployment, schema `finchain-pouw.deployment/2`, and its configuration, schema `finchain-pouw.deploy-config/2`, as `ledger-v2.md` 1 describes them: the four log starts named; the guards by account, each with its binding version, its first epoch and its code hash as the policy recorded them; `supersedes` with the name, chain and ledger of the superseded deployment and the SHA-256 of its manifest file; the ERC-8414 contract's deploy block required; the profiles of a new deployment from epoch 0; a guard named as the cell guard or by address, and only for an account with code | Finding 2. The manifest is what the check of a deployment and the audit read, and each member is one that a check needs | Proposed; owner ruling pending |
+| P78 | The probe measures by `eth_call` with a state override: the guard's committed build and a meter placed at two unused addresses for one call, and refused where there is code; the meter's figure includes the access of the callee, as the ledger's own call does | Finding 3. Nothing is deployed for a measurement, and the build measured is the one a deployment uses | Proposed; owner ruling pending |
+| P79 | v2's copies keep the kernel's contract names; the kernel's tests name the kernel's contracts by path, and the tests' v2 fixture uses the copies | Finding 1 | Proposed; owner ruling pending |
+
+### 20.5 What was verified
+
+| What | Result |
+| --- | --- |
+| The tests | 162 pass, none fails: the 155 of release 0.1.9, of which L46 carries more cases, and seven new ones |
+| The rows L1 to L51 | every row has a passing test that carries its id |
+| The three residual cases | on the tree of 0.1.9 as the second column of 20.3 says; on this release as the third |
+| The contracts, the four v2 builds of 0.1.9, the kernel's six builds and the compiled interfaces | byte for byte those of `3cd586a` |
+| The compiler's list of known bugs | read again on 2026-11-26: both files with the hashes of the reading of 2026-11-25 |
+| A clean copy | `npm ci`, `npm test`, `npm run export-abi`: 162 tests pass and the builds are rewritten byte for byte as committed |
+| The rehearsal | 46 of 46 checks, with release 0.1.10 from a clean copy; its record is under `evidence/` |
+| The changes that should break the tests | 27 new ones, all killed; M82 reworded for the new comparison of types and rerun with the six others on the reading of full records, all killed; the rest as recorded, not rerun |
+
+### 20.6 What comes next
+
+The client for a v2 deployment: `status`, `verify` and `audit` as commands on its manifest,
+work and confirmation through a delegate, and the run record with its label. Then the operation
+package of round R2b: its configuration, the deployment on Finchain Sepolia superseding the
+deployment of round R2a, the one signature, and the round. Before that package, the probe is run
+against the cells of OG and cell-b, read-only. The production module and the two discussion
+drafts continue beside them, and the isolated check of Q32 is a task of its own.

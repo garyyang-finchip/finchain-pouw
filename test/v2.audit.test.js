@@ -714,6 +714,27 @@ describe("The reference client: the audit of an epoch of ledger v2", () => {
     const spelled = copy(); spelled.typedData.message.scope = 1; spelled.typedData.message.nonce = "0x1"; spelled.typedData.domain.chainId = Number(d.chainId);
     got = sorted(await run([spelled]));
     expect([got.supplied, got.unusable, got.evidence]).to.deep.equal([1, [], a2.PERMIT_EVIDENCE.SUPPLIED]);
+
+    // a full record never falls back to the bare reading, and every part of its typed data is its own:
+    // the primary type and the domain type are not supplied for it, and a record that carries a mark
+    // of a full record without its typed data is not read as a bare message - whatever domain it names
+    const noPrimary = copy(); delete noPrimary.typedData.primaryType;
+    const noDomainType = copy(); delete noDomainType.typedData.types.EIP712Domain;
+    const thirdMember = copy(); thirdMember.typedData.types.Permit[0].note = "a member a field does not have";
+    const noTypedData = copy(); noTypedData.message = noTypedData.typedData.message; delete noTypedData.typedData;
+    const kindOnly = { kind: "Permit", message: good.typedData.message, signature: good.signature };
+    const topDomain1 = { schema: good.schema, kind: "Permit", domain: { ...good.typedData.domain, chainId: "1" }, ...good.typedData.message };
+    const domainAndFields = { domain: { ...good.typedData.domain, chainId: "1" }, ...good.typedData.message, signature: good.signature };
+    got = sorted(await run([noPrimary, noDomainType, thirdMember, noTypedData, kindOnly, topDomain1, domainAndFields]));
+    expect(got.unusable.map(([i, why]) => [i, why.replace(/: .*/, "")])).to.deep.equal([
+      [0, "no primary type"], [1, "its types do not define EIP712Domain"], [2, "its Permit type is not the frozen one"],
+      [3, "it carries schema and kind but no typed data"], [4, "it carries kind but no typed data"], [5, "no primary type"], [6, "no primary type"]]);
+    expect([got.ok, got.supplied, got.foreign, got.evidence]).to.deep.equal([true, 0, [], a2.PERMIT_EVIDENCE.NOT_AVAILABLE]);
+    // the members of a field in another order are the same field: the same record
+    const reordered = copy(); reordered.typedData.types.Permit = reordered.typedData.types.Permit.map((f) => ({ type: f.type, name: f.name }));
+    reordered.typedData.types.EIP712Domain = reordered.typedData.types.EIP712Domain.map((f) => ({ type: f.type, name: f.name }));
+    got = sorted(await run([reordered]));
+    expect([got.supplied, got.unusable, got.evidence]).to.deep.equal([1, [], a2.PERMIT_EVIDENCE.SUPPLIED]);
     // a stated digest that is not the record's own
     const wrongDigest = copy(); wrongDigest.digest = ethers.id("some other digest");
     got = sorted(await run([wrongDigest]));

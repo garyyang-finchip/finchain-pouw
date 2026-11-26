@@ -63,7 +63,32 @@ from the policy's events.
 
 A later version of the contracts is another deployment with another manifest, which names the
 deployment it supersedes; the earlier manifest stays, because the earlier ledger stays readable
-and auditable (`docs/decisions.md`, A35). That field is specified with the version that needs it.
+and auditable (`docs/decisions.md`, A35). That field, `supersedes`, comes with the manifest of
+ledger v2 below.
+
+## The manifest of a ledger v2 deployment
+
+A deployment of ledger v2 (`docs/ledger-v2.md`) has a manifest of schema
+`finchain-pouw.deployment/2`, written by `scripts/deploy-v2.js`. Its members beside those of the
+table above, whose meaning stays:
+
+| Field | Meaning |
+| --- | --- |
+| `contracts`, `code` | the roles `GenesisPolicyV2`, `SeedSource`, `GenesisLedgerV2`, `AuditV1`, `TenderAdapter8414V2`, and `FogaCellGuard` where the deployment binds it; every build from `build/v2/`, the seed source being v2's own copy of `L1BlockSeedSource` or `PrevBlockSeedSource` |
+| `deployBlock`, `policyDeployBlock` | the block of the policy, the first contract: the policy's log is read from it |
+| `ledgerDeployBlock` | the block of the ledger: its log is read from it |
+| `tenderDeployBlock` | the block of the ERC-8414 contract, which the configuration must state: the tenders' log is read from it |
+| `guards` | for each contract account bound to a guard: the guard, the build where it is the deployment's own, the guard's code hash as the policy recorded it, the binding version and its first epoch |
+| `supersedes` | the deployment this one supersedes: its name, chain and ledger, and the SHA-256 of its manifest file. Nothing of it is read beyond its code, and nothing of it is changed |
+
+`client/lib/manifest2.js` checks a deployment against such a manifest at one block, and the audit
+of an epoch of ledger v2 connects from it. Its configuration is of schema
+`finchain-pouw.deploy-config/2`: that of the kernel with an operator cap in each parameter
+version, the start of the tenders' log, a guard per contract account, and `supersedes.manifest`,
+the path of the superseded manifest relative to the configuration. Its record is
+`finchain-pouw.deployment-record/2`. The manifest and the record are created and never replace a
+file. No v2 deployment exists on a public chain yet; the rehearsal makes one on a development
+network.
 
 ## Making a deployment
 

@@ -1,6 +1,6 @@
 {
   "schema": "finchain-pouw.build-record/1",
-  "what": "The builds of ledger v2 (docs/ledger-v2.md 1; docs/decisions.md A82): made from contracts/v2 alone, by a compiler of their own. The kernel's six builds under build/ are not part of this record and are not made again.",
+  "what": "The builds of ledger v2 (docs/ledger-v2.md 1; docs/decisions.md A82, A87): made from contracts/v2 alone, by a compiler of their own, including v2's own copies of the kernel's audit function and seed sources. The kernel's six builds under build/ are not part of this record and are not made again.",
   "boundary": "contracts/v2",
   "compiler": {
     "package": "solc@0.8.39",
@@ -117,6 +117,80 @@
       "runtimeCodeSha256": "adf1a9ca9b6c936e611ad0e57918931db325f74360a54a4d86ea0028e26c1ae2",
       "buildFile": "build/v2/FogaCellGuard.json",
       "buildFileSha256": "156a9abe18361b29eaec7029989a3fd014d8812cd6d4ba0befd77d4f487d1001"
+    },
+    "AuditV1": {
+      "sourceName": "contracts/v2/functions/AuditV1.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/TypesV2.sol",
+        "contracts/v2/external/IG0Function.sol",
+        "contracts/v2/functions/AuditV1.sol",
+        "contracts/v2/interfaces/IGenesisLedgerV2.sol"
+      ],
+      "creationCodeBytes": 1252,
+      "runtimeCodeBytes": 1113,
+      "underTheCodeSizeLimitBy": 23463,
+      "immutableValues": 3,
+      "creationCodeSha256": "cd279fda19555abf3d2455a638838b99f1f05f38f18d1131477d88de83dc4d1f",
+      "runtimeCodeSha256": "03c05a0f1175be2de9727d6b292a2086ed707fe257dce89b3a9c5c0eebaf67db",
+      "buildFile": "build/v2/AuditV1.json",
+      "buildFileSha256": "0c228d9288b93d8ee415476a998bba36d5c04e094d0b723b1d05c854ba97381a"
+    },
+    "L1BlockSeedSource": {
+      "sourceName": "contracts/v2/seed/L1BlockSeedSource.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/external/ISeedSource.sol",
+        "contracts/v2/seed/L1BlockSeedSource.sol"
+      ],
+      "creationCodeBytes": 532,
+      "runtimeCodeBytes": 504,
+      "underTheCodeSizeLimitBy": 24072,
+      "immutableValues": 0,
+      "creationCodeSha256": "36c58770edbf8cb5b630f04f530df7807792a458e92c754eac8bd011e68d0e41",
+      "runtimeCodeSha256": "658acc17ff9de82bdb60661c777d908832d23474a507dce37dfddd27aadf04f4",
+      "buildFile": "build/v2/L1BlockSeedSource.json",
+      "buildFileSha256": "a865e9bf8881d832d64ac31de6ca5086367d60d6f4c6120f2203607dee36c3fd"
+    },
+    "PrevBlockSeedSource": {
+      "sourceName": "contracts/v2/seed/PrevBlockSeedSource.sol",
+      "compiler": {
+        "version": "0.8.39+commit.ce47f2c8",
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "viaIR": false
+      },
+      "sources": [
+        "contracts/v2/external/ISeedSource.sol",
+        "contracts/v2/seed/PrevBlockSeedSource.sol"
+      ],
+      "creationCodeBytes": 197,
+      "runtimeCodeBytes": 171,
+      "underTheCodeSizeLimitBy": 24405,
+      "immutableValues": 0,
+      "creationCodeSha256": "4ed6c8d09ccf7cab765aeb223a92de1107de6b5e64881a1d19c556bae65bad84",
+      "runtimeCodeSha256": "3aec93044afe21dbcafe5a7aee4a9d56677e4d6f7b67edd3a434476b093f36b7",
+      "buildFile": "build/v2/PrevBlockSeedSource.json",
+      "buildFileSha256": "93b571b80034bd6dcf38cf69f6aadd344fe5bea651607ce7592e943d92987776"
     }
   }
 }

@@ -128,7 +128,11 @@ function plainProfile(p) {
 async function connect(deployment, runner, { tag = "finalized", logChunk, pin = null } = {}) {
   logChunk = Number(logChunk ?? deployment.logChunk ?? 0);
   const provider = runner.provider ?? runner;
-  const ledger = new ethers.Contract(deployment.ledger, v2.abi.ledger, runner);
+  // a v2 manifest names its contracts by role (manifest2.js); a bare deployment names the ledger
+  const ledgerAddress = deployment.ledger ?? deployment.contracts?.GenesisLedgerV2;
+  const policyAddress = deployment.policy ?? deployment.contracts?.GenesisPolicyV2;
+  if (!ledgerAddress) throw new Error("the deployment names no ledger");
+  const ledger = new ethers.Contract(ledgerAddress, v2.abi.ledger, runner);
   const read = (what, call) => (pin ? g.stateRead(pin, what, () => call(g.at(pin))) : call({}));
   if (pin && (await g.stateRead(pin, "the ledger's code", () => provider.getCode(ledger.target, pin.number))) === "0x") {
     throw new Error(`no contract at the ledger's address ${ledger.target} at block ${pin.number}`);
@@ -144,7 +148,7 @@ async function connect(deployment, runner, { tag = "finalized", logChunk, pin = 
   if (factDomain !== v2.factDomain(chainId, address)) throw new Error(`fact domain ${factDomain} is not the v2 fact domain of chain ${chainId} and this address`);
   const policy = new ethers.Contract(await read("the ledger's policy", (o) => ledger.policy(o)), v2.abi.policy, runner);
   const same = (a, b) => a === undefined || ethers.getAddress(a) === ethers.getAddress(b);
-  if (!same(deployment.policy, await policy.getAddress())) throw new Error("the deployment's policy is not the ledger's policy");
+  if (!same(policyAddress, await policy.getAddress())) throw new Error("the deployment's policy is not the ledger's policy");
   return {
     deployment, provider, runner, ledger, policy, chainId, domain, factDomain, address,
     seedSource: await read("the ledger's seed source", (o) => ledger.seedSource(o)),
@@ -319,17 +323,31 @@ async function auditSubjectFor(ctx, epoch, pin = null) {
 ///    `signature` - is read, by agreement, as a permit for this chain and this ledger, in the
 ///    shorthand the signing script accepts (operation names for the scope, guard fields left out
 ///    for an account without code);
-///  - a record of `scripts/sign-permit.js`, or any typed data that carries its own `domain`, is
-///    read as what it says and nothing is filled in, converted or dropped for it: its primary type
-///    is Permit and its types define it as the frozen type; its domain has the frozen fields and no
-///    other; its message has the eight fields, each a value of its declared type; its stated digest,
-///    where it has one, is the digest of that typed data. A record that fails any of this is
-///    unusable, whatever a repaired version of it would have been. A record that passes and whose
-///    domain is another chain or another ledger is foreign. Neither is read in this domain instead.
+///  - a full record is anything that carries a mark of one: `schema`, `kind`, `typedData`, or at
+///    its top level `domain`, `types` or `primaryType`. It is read as what it says and nothing is
+///    filled in, converted or dropped for it, and it never falls back to the bare reading: a
+///    signing record without its typed data, or typed data without a part, is unusable. Its
+///    typed data has all four parts: a primary type that is Permit; types that define Permit and
+///    EIP712Domain as the frozen types and nothing else, each field a name and a type in the
+///    frozen order; a domain with the four frozen fields and no other; a message with the eight
+///    fields and no other, each a value of its declared type. Its stated digest, where it has
+///    one, is the digest of that typed data. A record that fails any of this is unusable,
+///    whatever a repaired version of it would have been. A record that passes and whose domain
+///    is another chain or another ledger is foreign. Neither is read in this domain instead.
 ///
 /// Foreign and unusable records are listed and used for nothing.
 const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
 const DOMAIN_FIELDS = ["name", "version", "chainId", "verifyingContract"];
+// what makes a given item a full record, which is then never read as a bare message
+const FULL_RECORD_MARKS = ["schema", "kind", "typedData", "domain", "types", "primaryType"];
+
+/// Whether a list of typed-data fields is `frozen` as a type: the same fields, each a name and a type
+/// and nothing else, in the same order. The order of the members inside a field is no part of a type.
+function sameFields(given, frozen) {
+  if (!Array.isArray(given) || given.length !== frozen.length) return false;
+  return given.every((f, i) => f !== null && typeof f === "object" && !Array.isArray(f)
+    && Object.keys(f).length === 2 && f.name === frozen[i].name && f.type === frozen[i].type);
+}
 
 /// A typed-data value of `type` as it is, or the reason it is not one: addresses as address strings,
 /// unsigned integers as whole numbers (a number, a bigint, a decimal or 0x string) within the width.
@@ -351,14 +369,16 @@ function typedValueFault(value, type) {
 /// The structural check of a full typed-data record. Returns the record's own digest, computed from
 /// its own domain and message as given, or throws with the first fault found.
 function ownDigestOfTyped(typed) {
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const fail = (why) => { throw new Error(why); };
-  if (typed.primaryType !== undefined && typed.primaryType !== "Permit") fail(`primary type ${typed.primaryType} is not Permit`);
+  if (typed === null || typeof typed !== "object" || Array.isArray(typed)) fail("its typed data is not an object");
+  if (typed.primaryType === undefined) fail("no primary type: a full record names it");
+  if (typed.primaryType !== "Permit") fail(`primary type ${typed.primaryType} is not Permit`);
   const types = typed.types;
-  if (types === undefined || typeof types !== "object") fail("no types: a full record defines its types");
+  if (types === undefined || types === null || typeof types !== "object") fail("no types: a full record defines its types");
   if (types.Permit === undefined) fail("its types do not define Permit");
-  if (!same(types.Permit, permitLib.TYPES.Permit)) fail("its Permit type is not the frozen one");
-  if (types.EIP712Domain !== undefined && !same(types.EIP712Domain, permitLib.DOMAIN_TYPE)) fail("its domain type is not the frozen one");
+  if (!sameFields(types.Permit, permitLib.TYPES.Permit)) fail("its Permit type is not the frozen one");
+  if (types.EIP712Domain === undefined) fail("its types do not define EIP712Domain: a full record defines its domain type");
+  if (!sameFields(types.EIP712Domain, permitLib.DOMAIN_TYPE)) fail("its domain type is not the frozen one");
   const extraTypes = Object.keys(types).filter((k) => k !== "Permit" && k !== "EIP712Domain");
   if (extraTypes.length > 0) fail(`its types define ${extraTypes.join(", ")}, which Permit does not use`);
   const d = typed.domain;
@@ -383,10 +403,19 @@ function ownDigestOfTyped(typed) {
 function permitIndex(ctx, permits = []) {
   const byDigest = new Map(); const foreign = []; const unusable = [];
   permits.forEach((given, index) => {
-    const typed = given?.typedData ?? (given?.domain !== undefined && given?.message !== undefined ? given : null);
     const refuse = (why) => unusable.push({ index, why });
+    const isObject = given !== null && typeof given === "object" && !Array.isArray(given);
+    const full = isObject && FULL_RECORD_MARKS.some((k) => given[k] !== undefined);
     if (given?.schema !== undefined && given.schema !== RECORD_SCHEMA) return refuse(`schema ${given.schema} is not ${RECORD_SCHEMA}`);
     if (given?.kind !== undefined && given.kind !== "Permit") return refuse(`a ${given.kind}, not a Permit`);
+    // a full record is read whole or not at all: its typed data is under `typedData`, or it is itself
+    // typed data; a record that carries a mark of one and neither is not read as a bare message
+    let typed = null;
+    if (full) {
+      if (given.typedData !== undefined) typed = given.typedData;
+      else if (given.domain !== undefined || given.types !== undefined || given.primaryType !== undefined) typed = given;
+      else return refuse(`it carries ${FULL_RECORD_MARKS.filter((k) => given[k] !== undefined).join(" and ")} but no typed data: a signing record is read with its typed data, never as a bare message`);
+    }
     const stated = given?.digest !== undefined ? String(given.digest).toLowerCase() : null;
     let message = typed ? typed.message : given?.message ?? given;
     let own = null;

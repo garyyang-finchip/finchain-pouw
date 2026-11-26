@@ -43,12 +43,17 @@ const deployable = {
 };
 
 // the contracts of ledger v2 that a deployment is made of, all from contracts/v2 and all compiled
-// by the v2 compiler; nothing under contracts/v2/testing is ever one
+// by the v2 compiler; nothing under contracts/v2/testing is ever one. The last three are v2's own
+// copies of the kernel's audit function and seed sources (docs/decisions.md A87, Q33): their
+// builds carry the kernel's names and declare the kernel's interfaces.
 const deployableV2 = {
   GenesisPolicyV2: "contracts/v2/GenesisPolicyV2.sol/GenesisPolicyV2.json",
   GenesisLedgerV2: "contracts/v2/GenesisLedgerV2.sol/GenesisLedgerV2.json",
   TenderAdapter8414V2: "contracts/v2/TenderAdapter8414V2.sol/TenderAdapter8414V2.json",
   FogaCellGuard: "contracts/v2/guards/FogaCellGuard.sol/FogaCellGuard.json",
+  AuditV1: "contracts/v2/functions/AuditV1.sol/AuditV1.json",
+  L1BlockSeedSource: "contracts/v2/seed/L1BlockSeedSource.sol/L1BlockSeedSource.json",
+  PrevBlockSeedSource: "contracts/v2/seed/PrevBlockSeedSource.sol/PrevBlockSeedSource.json",
 };
 // the package the v2 compiler comes from, as hardhat.config.js names it
 const V2_COMPILER_PACKAGE = "solc-0.8.39";
@@ -157,7 +162,7 @@ function buildRecordV2() {
   }
   return {
     schema: "finchain-pouw.build-record/1",
-    what: "The builds of ledger v2 (docs/ledger-v2.md 1; docs/decisions.md A82): made from contracts/v2 alone, by a compiler of their own. The kernel's six builds under build/ are not part of this record and are not made again.",
+    what: "The builds of ledger v2 (docs/ledger-v2.md 1; docs/decisions.md A82, A87): made from contracts/v2 alone, by a compiler of their own, including v2's own copies of the kernel's audit function and seed sources. The kernel's six builds under build/ are not part of this record and are not made again.",
     boundary: "contracts/v2",
     compiler: v2Compiler(),
     codeSizeLimit: CODE_SIZE_LIMIT,
