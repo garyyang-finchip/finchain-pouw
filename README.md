@@ -6,11 +6,12 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.2.1 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.2.2 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
 builds are committed with their record, its deployment tooling and manifest and the client for a
 v2 deployment - work and confirmation through a delegate included - are built, corrected after
-the advisor's review of 0.1.10 and rehearsed on a development network, and it is not deployed.**
+the advisor's reviews and rehearsed on a development network; the operation package of round R2b
+is prepared for review (`docs/r2b-operation.md`), and ledger v2 is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -50,6 +51,20 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.2.2, with design revision 0.2.2 (2026-11-28), closes the three points the advisor's
+review of 2026-11-28 found still open in 0.2.1, each reproduced there first (`docs/decisions.md`
+23). A deployment whose journal cannot be written stops and lists every transaction it took on the
+standard error, where each event of the journal is shown first. The start of the tenders' log is
+held to the ERC-8414 contract's own history - no code before it, or its creation transaction -
+and is reported as not verified otherwise. A direct entry is labelled by its evidence: by the
+participant's key, by the participant's account, or not known. `pouw check-permit` checks a
+signed permit read-only at one block, as the ledger checks it when its delegate sends. With it
+comes the operation package of round R2b on Finchain Sepolia - configuration, roles, transactions
+and fees, preflight, runbook, expected figures, acceptance table and recovery - rehearsed on a
+development network. The probe's first record is now confirmed to be the host's file, byte for
+byte. No contract of the ledger, compiled interface or build changed; nothing is deployed, signed
+or sent.
 
 Release 0.2.1, with design revision 0.2.1 (2026-11-27), corrects what the advisor's reviews of
 releases 0.1.10 and 0.1.11 found - eight groups, each reproduced on release 0.1.11 first
@@ -326,8 +341,10 @@ the client asks is refused before anything is sent; the opening of an epoch is a
 its own, and each transaction is shown when it is taken and with its outcome. `--out` writes the
 run's record, which keeps what the run was given apart from how the receipt was entered; on a v2
 manifest the file is created before anything is read or sent, holds the journal of the run's
-transactions while it runs, and a path that exists or cannot be created is refused.
-`audit` exits with 5 when the audit agrees with the ledger but left receipts undecided
+transactions while it runs, and a path that exists or cannot be created is refused. `check-permit`
+checks a signed permit read-only at one block, as the ledger checks it when its delegate sends,
+before any work under it; it reads no key and sends nothing. `audit` exits with 5 when the audit
+agrees with the ledger but left receipts undecided
 (`docs/ledger-v2.md` 13.2).
 
 ## What the rounds show, and what they do not

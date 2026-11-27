@@ -54,7 +54,7 @@ not belong together.
 | `contracts.GenesisPolicy`, `contracts.SeedSource` | must equal what the ledger reports. An audit can do without them; `pouw verify` cannot |
 | `contracts.AuditV1`, `contracts.TenderAdapter8414` | the modules as deployed. For an audit, the modules in force are read from the policy's own events, per epoch; `pouw verify` requires both and checks that the profiles in force name them |
 | `code.<role>` | for each of the five contracts: the build it was deployed from (`build/<contract>.json`), the hash of the code at its address, the deployment transaction and its block. `pouw verify` compares the code on chain with the build, the immutable values aside, and with this hash; a manifest that leaves one of the five out fails the check, because nothing would then be known about that contract |
-| `external.taskToken8414` | the ERC-8414 contract the adapter reads: its address, the block it was deployed in - no tender's history begins earlier - and the hash of its code when the adapter was pointed at it |
+| `external.taskToken8414` | the ERC-8414 contract the adapter reads: its address, the block it was deployed in - no tender's history begins earlier - the transaction that created it where the configuration names one (`deployTx`), and the hash of its code when the adapter was pointed at it |
 | `clock` | the genesis time and the epoch length. They are immutable in the policy; `pouw verify` checks them |
 
 What a manifest is not: it holds no key, no parameter and no profile. Parameters, profiles,
@@ -77,7 +77,7 @@ table above, whose meaning stays:
 | `contracts`, `code` | the roles `GenesisPolicyV2`, `SeedSource`, `GenesisLedgerV2`, `AuditV1`, `TenderAdapter8414V2`, and `FogaCellGuard` where the deployment binds it; every build from `build/v2/`, the seed source being v2's own copy of `L1BlockSeedSource` or `PrevBlockSeedSource` |
 | `deployBlock`, `policyDeployBlock` | where the policy's log is read from: the block of the policy, the first contract, or an earlier one; never a later one. `code.GenesisPolicyV2.block` is the exact block, held to the deployment transaction |
 | `ledgerDeployBlock` | where the ledger's log is read from: the ledger's block or an earlier one; `code.GenesisLedgerV2.block` is the exact block |
-| `tenderDeployBlock` | where the tenders' log is read from: the block of the ERC-8414 contract, which the configuration must state, and the same as `external.taskToken8414.deployBlock` |
+| `tenderDeployBlock` | where the tenders' log is read from: the block of the ERC-8414 contract, which the configuration must state, and the same as `external.taskToken8414.deployBlock`. It is held to the chain, not only to that field: the contract had no code at the block before it, or its creation transaction is at or after it; otherwise the start is reported as not verified, and the deployment refuses it |
 | `guards` | for each contract account bound to a guard: the guard, the build where it is the deployment's own, the guard's code hash as the policy recorded it, the binding version and its first epoch. Every account the policy bound a guard to must be here: one left out is a finding |
 | `supersedes` | the deployment this one supersedes: its name, chain and ledger, and the SHA-256 of its manifest file, which is a commitment and is not checked against that file. Nothing of the superseded deployment is read beyond its code, and nothing of it is changed |
 
@@ -88,8 +88,10 @@ version, the start of the tenders' log, a guard per contract account, and `super
 the path of the superseded manifest relative to the configuration. Its record is
 `finchain-pouw.deployment-record/2`. The manifest and the record are created and never replace a
 file, and from release 0.2.1 a journal created before anything is sent holds every transaction
-the moment it is taken, its outcome after it, and in the end the manifest and the record. No v2
-deployment exists on a public chain yet; the rehearsal makes one on a development network.
+the moment it is taken, its outcome after it, and in the end the manifest and the record; from
+release 0.2.2 each event is also shown on the standard error first, and a journal that cannot be
+written stops the deployment, which then lists the transactions it took there. No v2 deployment
+exists on a public chain yet; the rehearsal makes one on a development network.
 
 ## Making a deployment
 
@@ -107,6 +109,7 @@ that lists every transaction and the hash of every build used. `docs/r2-runbook.
 
 | File | What it is |
 | --- | --- |
+| `finchain-sepolia-r2b.config.json` | the configuration of round R2b on Finchain Sepolia (`finchain-pouw.deploy-config/2`, `docs/r2b-operation.md`): ledger v2, the parameters of round R2a with an operator cap of 5000, the OG and cell-b as Cell Accounts under one operator behind the cell guard, a delegate of each, the ERC-8414 contract's log held to its creation transaction, and round R2a superseded. Prepared and rehearsed; not deployed |
 | `finchain-sepolia-r2.config.json` | the configuration of round R2a on Finchain Sepolia: two-hour epochs, a 10 / 90 split, epoch 0 as a controlled self-test and a standard version from epoch 1, two wallets of one operator (`docs/decisions.md`, A34) |
 | `finchain-sepolia.identities.json` | public addresses for `scripts/identity-check.js` and `scripts/cell-probe.js`, with the environment they are of (`public-testnet`, from release 0.1.11): the two FOGA cells on Finchain Sepolia, each with its Cell Account and its owner-wallet address, and the tender of their recorded business loop |
 | `finchain-sepolia-r2.json` | the manifest of round R2a on Finchain Sepolia, byte for byte as `scripts/deploy.js` wrote it on the host of the round: chain 85422, ledger `0x7180CdDA4aE494f551d196146E6fcCB717675F1a`, genesis time 1795489148 (2026-11-24T02:59:08Z). It is the input of the hosted audit (`docs/r2-runbook.md`, step 7). An earlier deployment from the same configuration was left unused; its manifest is not here, and its records are submitted apart from this deployment's |

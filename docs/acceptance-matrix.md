@@ -1,9 +1,10 @@
 # Acceptance and Failure Matrix
 
-Design revision 0.2.1, with software release 0.2.1, after the reviews of v0.1.4 to v0.1.7, the
+Design revision 0.2.2, with software release 0.2.2, after the reviews of v0.1.4 to v0.1.7, the
 owner's adoption of the recommendations on Q17 to Q29, the run of round R2a with its review, the
-owner's rulings of 2026-11-25, the review of the local implementation of ledger v2 and the reviews
-of releases 0.1.10 and 0.1.11 (`decisions.md` A55-A88).
+owner's rulings of 2026-11-25, the review of the local implementation of ledger v2, the reviews of
+releases 0.1.10 and 0.1.11 and the review of 2026-11-28 (`decisions.md` A55-A88). The acceptance
+table of round R2b itself is in `r2b-operation.md` 8.
 Sections 1 to 10 are those of v0.1.3 - the rows of the kernel and of round R2 - with four rows
 added for the next version of the ledger (D18 to D21, A64), which pass on a local network from
 release 0.1.4, and with the rows of the client's audit at one block (N9, D22, R11 to R14).
@@ -444,16 +445,17 @@ with release 0.1.5, 143 with release 0.1.6, 151 with release 0.1.7, whose eight 
 the rows L36 to L43, 154 with release 0.1.8, whose three are the rows L44 to L46, 155 with
 release 0.1.9, whose one is the row L47, 162 with release 0.1.10, whose seven are the rows L48
 to L51 and three without a row, 165 with release 0.1.11, whose three are the rows L52 to L54,
-and is 170 with release 0.2.1, whose five are a second test of L51 and the rows L55 to L58, with
-more cases in L46, L49, L50, L51, L52 and L54. The six that 0.1.5 added carry no row: three hold
-the frozen interfaces, and three are regressions on the signing script's output path, on a
-statement verified at each submission and on an array with an empty slot (`decisions.md` 15.4,
-15.7). The six that 0.1.6 adds carry no row either: they hold the compile boundary of v2 and its
-builds (`decisions.md` 16). The advisor ran the 131 tests again on its own and found all 35 ids
-of that release in its output (`decisions.md` 15.2). From release 0.1.6 on the rows are run on
-the builds of the v2 compiler, solc 0.8.39, and no longer on those of solc 0.8.24.
+170 with release 0.2.1, whose five are a second test of L51 and the rows L55 to L58, with more
+cases in L46, L49, L50, L51, L52 and L54, and is 174 with release 0.2.2, whose four are the rows
+L59 to L62. The six that 0.1.5 added carry no row: three hold the frozen interfaces, and three
+are regressions on the signing script's output path, on a statement verified at each submission
+and on an array with an empty slot (`decisions.md` 15.4, 15.7). The six that 0.1.6 adds carry no
+row either: they hold the compile boundary of v2 and its builds (`decisions.md` 16). The advisor
+ran the 131 tests again on its own and found all 35 ids of that release in its output
+(`decisions.md` 15.2). From release 0.1.6 on the rows are run on the builds of the v2 compiler,
+solc 0.8.39, and no longer on those of solc 0.8.24.
 
-The ids L1 to L58 are those of that document. They are not row L1 of section 11 here, the
+The ids L1 to L62 are those of that document. They are not row L1 of section 11 here, the
 linked chain of evidence: where both could be meant, the document is named.
 
 | Rows of `ledger-v2.md` 14 | What they cover | Tests |
@@ -469,6 +471,7 @@ linked chain of evidence: where both could be meant, the document is named.
 | L48 to L50 | the deployment of release 0.1.10: from the builds of `build/v2`, read back and checked from the outside against its manifest, then worked and audited from it; a manifest that is not what is on chain; a plan that cannot run as written | `v2.deploy` |
 | L51 | the probe of release 0.1.10: what the cell guard would answer for each contract account, and the gas of the guard and of the signature check against their bounds, read at one block | `v2.probe` |
 | L46, L49 to L51, L55 | the corrections of release 0.2.1: a full record read by its form alone; a manifest held to the deployment transactions, the block of the check and every guard binding; a configuration held to the policy and the built-in modules before any transaction; the probe's block rechecked, an unreadable registry refused, a call's gas, success and answer apart; a journal of every transaction, with a lost answer named as unknown | `v2.audit`, `v2.deploy`, `v2.probe` |
+| L59 to L62 | release 0.2.2: a deployment whose journal cannot be written stops and lists what it took; the tenders' log start held to the contract's history; the route of a direct entry by its evidence; the operation package of round R2b rehearsed, with the read-only check of its permits | `v2.deploy`, `v2.client`, `v2.r2b` |
 | L56 to L58 | the corrections of the client in release 0.2.1: what the audit job checks before the epoch is opened and the function it does, a run that stops after sending saying what it sent, the receipt held to the computed fields; the record of a receipt found apart from what the run was given, the declared signer apart from the key that signed; the place of `--out` taken first and the journal of a run | `v2.client` |
 | L52 to L54 | the client of release 0.1.11: a cell's audit job and a tender's confirmation through a delegate under the participant's permit, everything the ledger or the adapter would refuse refused before sending; the run record and its label; the command line on a v2 manifest and on a kernel's, and the audit's exit statuses | `v2.client` |
 

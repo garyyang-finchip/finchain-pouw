@@ -172,7 +172,7 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(await failing({ ...manifest, deployBlock: manifest.deployBlock + 1 })).to.deep.equal([starts]);
     const head = await ethers.provider.getBlockNumber();
     expect(await failing({ ...manifest, tenderDeployBlock: head + 1000, external: { taskToken8414: { ...manifest.external.taskToken8414, deployBlock: head + 1000 } } }))
-      .to.deep.equal([starts]);
+      .to.deep.equal([starts, "the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block"]);
     // earlier starts only cost time: a log read from before its contract is still the whole log
     const early = await m2.verifyDeployment(await a2.connect({ ...manifest, ledgerDeployBlock: manifest.policyDeployBlock - 1, policyDeployBlock: 0, deployBlock: 0 }, ethers.provider, { tag: "latest" }));
     expect(early.ok, JSON.stringify(early.checks.filter((x) => !x.ok))).to.equal(true);
@@ -216,6 +216,7 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     expect(await failing({ ...withoutRebind(manifest), external: { taskToken8414: { ...manifest.external.taskToken8414, codeHash: ethers.id("other") } } }))
       .to.deep.equal(["the ERC-8414 contract's code is what it was when the adapter was pointed at it"]);
     expect(await failing({ ...withoutRebind(manifest), external: {} })).to.deep.equal(["the tenders' log starts where the manifest says the ERC-8414 contract was deployed",
+      "the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block",
       "the adapter reads the manifest's ERC-8414 contract", "the manifest records the ERC-8414 contract's code"]);
   });
 
@@ -276,7 +277,8 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
     await refused(plan({ ...good, seedSource: "L1BlockSeedSource" }), "not an OP Stack chain");
     await h.network.provider.send("hardhat_setCode", [d2.L1_BLOCK_PREDEPLOY, kept]);
     await refused(plan({ ...good, taskToken8414: { address: w.outsider.address, deployBlock: 0 } }), "no contract at the ERC-8414 address");
-    await refused(plan({ ...good, taskToken8414: { address: w.taskToken.target } }), "taskToken8414.deployBlock");
+    await refused(plan({ ...good, taskToken8414: { address: w.taskToken.target } }), "taskToken8414.deployBlock must be the block the ERC-8414 contract was deployed in");
+    await refused(plan({ ...good, taskToken8414: { address: w.taskToken.target, deployBlock: 10 ** 9 } }), "taskToken8414.deployBlock must be the block the ERC-8414 contract was deployed in");
     await refused(plan(good, { parties: [{ address: w.w1.address }, { address: w.w1.address }] }), "listed twice");
     await refused(plan(good, { parties: [{ address: w.w1.address, operator: 2 ** 32 }] }), "32-bit number");
     await refused(plan(good, { parties: [{ address: w.w1.address, guard: "FogaCellGuard" }] }), "has no code: an account without code needs no guard");
@@ -358,5 +360,115 @@ describe("Ledger v2: the deployment, made from build/v2 and checked against its 
       expect(text.includes("deploy again")).to.equal(false);
       expect(text.includes("c.writeJson(")).to.equal(false);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("holds the tenders' log start to the ERC-8414 contract's history, not to the manifest alone (L60)", async () => {
+    const w = await world();
+    const tokenTx = w.taskToken.deploymentTransaction().hash;
+    const tokenBlock = (await ethers.provider.getTransactionReceipt(tokenTx)).blockNumber;
+    const { manifest } = await d2.deployV2({ config: config(w.taskToken.target), steward: w.steward, genesisTime: (await h.now()) + 1000n, parties: partiesOf(w), supersedes: w.supersedes });
+    const at = (start, extra = {}) => ({ ...manifest, tenderDeployBlock: start, external: { taskToken8414: { ...manifest.external.taskToken8414, deployBlock: start, ...extra } } });
+    const verify = async (m) => m2.verifyDeployment(await a2.connect(m, ethers.provider, { tag: "latest" }));
+    const history = "the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block";
+    // the two fields moved later together agree with each other, and leave out the contract's first block
+    const moved = await verify(at(tokenBlock + 1));
+    expect(moved.checks.filter((x) => !x.ok).map((x) => [x.what, x.detail])).to.deep.equal([[history, `it had code at block ${tokenBlock}: what it emitted before block ${tokenBlock + 1} would be left out`]]);
+    // its own block, or any earlier one, holds the whole history
+    for (const start of [tokenBlock, tokenBlock - 1, 0]) {
+      const r = await verify(at(start));
+      expect(r.ok, `${start}: ${JSON.stringify(r.checks.filter((x) => !x.ok))}`).to.equal(true);
+    }
+    // an endpoint that does not serve the state of the block before the start: not verified, unless the transaction that created it is named
+    const unserved = { getCode: async () => { throw new Error("missing trie node"); }, getTransactionReceipt: (x) => ethers.provider.getTransactionReceipt(x) };
+    const without = await m2.historyCovered(unserved, w.taskToken.target, tokenBlock, null);
+    expect([without.ok, without.verified, without.detail.startsWith(`not verified: the code at block ${tokenBlock - 1} is not served`)]).to.deep.equal([false, false, true]);
+    expect(await m2.historyCovered(unserved, w.taskToken.target, tokenBlock, tokenTx)).to.deep.equal({ ok: true, verified: true, detail: `created by ${tokenTx} in block ${tokenBlock}, at or after block ${tokenBlock}` });
+    expect((await m2.historyCovered(unserved, w.taskToken.target, tokenBlock + 1, tokenTx)).ok).to.equal(false);
+    expect((await m2.historyCovered(unserved, w.taskToken.target, tokenBlock, manifest.code.GenesisLedgerV2.deployTx)).verified).to.equal(false);
+    // the plan holds the configuration to the chain before anything is sent, and records how
+    const now = await h.now();
+    const plan = (taskToken8414) => d2.plan({ config: config(w.taskToken.target, { taskToken8414 }), provider: ethers.provider, stewardAddress: w.steward.address,
+      genesisTime: now + 1000n, parties: partiesOf(w), supersedes: w.supersedes });
+    const refused = async (promise, why) => {
+      let error = null;
+      try { await promise; } catch (e) { error = e; }
+      expect(String(error?.message), why).to.contain(why);
+    };
+    await refused(plan({ address: w.taskToken.target, deployBlock: tokenBlock + 1 }), `taskToken8414.deployBlock ${tokenBlock + 1}: it had code at block ${tokenBlock}`);
+    await refused(plan({ address: w.taskToken.target, deployBlock: tokenBlock, deployTx: "0x12" }), "taskToken8414.deployTx must be a transaction hash");
+    await refused(plan({ address: w.taskToken.target, deployBlock: tokenBlock, block: 3 }), "taskToken8414 has no field block");
+    const ok = await plan({ address: w.taskToken.target, deployBlock: tokenBlock, deployTx: tokenTx });
+    expect([ok.tokenTx, ok.tokenHistory.ok]).to.deep.equal([tokenTx, true]);
+    const { manifest: named, record } = await d2.deployV2({ config: config(w.taskToken.target, { taskToken8414: { address: w.taskToken.target, deployBlock: tokenBlock, deployTx: tokenTx } }),
+      steward: w.steward, genesisTime: (await h.now()) + 1000n, parties: partiesOf(w), supersedes: w.supersedes });
+    expect([named.external.taskToken8414.deployTx, record.tenderHistory.found]).to.deep.equal([tokenTx, `no code at block ${tokenBlock - 1}: all of its history is at or after block ${tokenBlock}`]);
+  });
+
+  it("keeps every transaction it took when the journal cannot be written, and sends nothing more (L59)", async () => {
+    const w = await world();
+    const hre = require("hardhat");
+    const http = require("http");
+    const { spawn } = require("child_process");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pouw-v2-journal-"));
+    const server = http.createServer((req, res) => {
+      let body = ""; req.on("data", (x) => { body += x; });
+      req.on("end", async () => {
+        const one = async (q) => { try { return { jsonrpc: "2.0", id: q.id, result: await hre.network.provider.request({ method: q.method, params: q.params ?? [] }) }; } catch (e) { return { jsonrpc: "2.0", id: q.id, error: { code: e.code ?? -32000, message: e.message, data: e.data } }; } };
+        const input = JSON.parse(body);
+        const out = Array.isArray(input) ? await Promise.all(input.map(one)) : await one(input);
+        res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(out));
+      });
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      // a steward of its own, with a key file, for the command
+      const keys = path.join(dir, "keys"); fs.mkdirSync(keys);
+      const steward = ethers.Wallet.createRandom();
+      fs.writeFileSync(path.join(keys, "steward.key"), `${steward.privateKey}\n`, { mode: 0o600 });
+      await (await w.steward.sendTransaction({ to: steward.address, value: ethers.parseEther("10") })).wait();
+      const cfg = path.join(dir, "config.json");
+      fs.writeFileSync(cfg, JSON.stringify({ ...config(w.taskToken.target), parties: partiesOf(w) }));
+      // the disk fills once the journal has its first line: the second write fails with ENOSPC
+      const preload = path.join(dir, "full-disk.js");
+      const attempts = path.join(dir, "attempts.txt");
+      fs.writeFileSync(preload, `const fs = require("fs"); const append = fs.appendFileSync; let n = 0;
+fs.appendFileSync = function (file, ...rest) {
+  if (String(file).endsWith(".journal.jsonl") && ++n >= 2) { const e = new Error("ENOSPC: no space left on device, write"); e.code = "ENOSPC"; throw e; }
+  return append.call(this, file, ...rest);
+};
+process.on("exit", () => fs.writeFileSync(${JSON.stringify(attempts)}, String(n)));\n`);
+      const out = path.join(dir, "out");
+      const nonce = await ethers.provider.getTransactionCount(steward.address);
+      const r = await new Promise((resolve) => {
+        const child = spawn(process.execPath, [path.join(c.root, "scripts", "deploy-v2.js"), "--config", cfg, "--keys", keys, "--genesis", "+15m", "--out", out,
+          "--rpc", `http://127.0.0.1:${server.address().port}`, "--yes"], { env: { ...process.env, NODE_OPTIONS: `--require ${preload}` }, stdio: ["ignore", "pipe", "pipe"] });
+        let stdout = ""; let stderr = "";
+        child.stdout.on("data", (x) => { stdout += x; }); child.stderr.on("data", (x) => { stderr += x; });
+        child.on("close", (status) => resolve({ status, stdout, stderr }));
+      });
+      // one transaction was taken before the write failed; nothing more was sent
+      expect(r.status, r.stderr).to.equal(1);
+      expect(await ethers.provider.getTransactionCount(steward.address)).to.equal(nonce + 1);
+      const sent = (await ethers.provider.getBlock("latest", true)).prefetchedTransactions.find((x) => x.from === steward.address);
+      expect(sent.nonce).to.equal(nonce);
+      // the standard error has it, with its hash and nonce, before and after the failure, and says to look it up
+      expect(r.stderr).to.contain(`journal: submitted deploy GenesisPolicyV2: tx ${sent.hash}, from ${steward.address}, nonce ${nonce}`);
+      expect(r.stderr).to.contain("could not be written (ENOSPC): nothing more is sent");
+      // the stopped run's own list, apart from the journal's lines
+      expect(r.stderr.split("\n")).to.include(`  submitted deploy GenesisPolicyV2: tx ${sent.hash}, from ${steward.address}, nonce ${nonce}`);
+      expect(r.stderr).to.contain(`look up: deploy GenesisPolicyV2 - tx ${sent.hash}, nonce ${nonce}`);
+      // the journal was tried twice - its first line and the write that failed - and never again
+      expect(fs.readFileSync(attempts, "utf8")).to.equal("2");
+      // the journal keeps its first line and is not written to again; the record of the stop is a file of its own
+      const files = fs.readdirSync(out);
+      const journal = files.find((f) => f.endsWith(".journal.jsonl"));
+      expect(fs.readFileSync(path.join(out, journal), "utf8").trim().split("\n").map((l) => JSON.parse(l).event)).to.deep.equal(["planned"]);
+      const failed = JSON.parse(fs.readFileSync(path.join(out, files.find((f) => f.startsWith("deployment-failed"))), "utf8"));
+      expect(failed.transactions.map((x) => [x.txHash, x.status])).to.deep.equal([[sent.hash, "submitted"]]);
+      expect(files.includes("manifest.json")).to.equal(false);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

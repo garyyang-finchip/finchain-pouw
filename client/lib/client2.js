@@ -12,13 +12,25 @@ const g = require("./genesis");
 const v2 = require("./ledger2");
 const a2 = require("./audit2");
 const permitLib = require("./permit");
+const m2 = require("./manifest2");
 const { sealed } = require("./canonical");
 const { CLIENT, endpointHost } = require("./report");
 
 const RUN_SCHEMA = "finchain-pouw.ledger-v2.run/2";
 const RECORD_SCHEMA = "finchain-pouw.signed-statement/1";
 // what a run record says of how its transaction was authorized
-const LABEL = { DELEGATED: "delegated-by-owner-permit", DIRECT: "direct-by-key" };
+/// How a receipt was entered, from the receipt and its transaction: under a permit, by the
+/// participant's own key (the transaction's origin is the participant), by the participant's account
+/// itself (a contract account calling the entry, through its execute or otherwise, in a transaction
+/// another key sent), or not known (a direct entry whose origin could not be read).
+const LABEL = { DELEGATED: "delegated-by-owner-permit", DIRECT: "direct-by-key", ACCOUNT: "direct-by-account", UNKNOWN: "direct-route-unknown" };
+
+/// The label of a receipt, by the evidence only.
+function labelOf(receipt, origin) {
+  if (receipt.authorization !== ethers.ZeroHash) return LABEL.DELEGATED;
+  if (typeof origin !== "string" || !ethers.isAddress(origin)) return LABEL.UNKNOWN;
+  return ethers.getAddress(origin) === ethers.getAddress(receipt.sender) ? LABEL.DIRECT : LABEL.ACCOUNT;
+}
 const TOKEN_ABI = ["function ownerOf(uint256 tokenId) view returns (address)"];
 
 /// The audit of the epoch before agrees with the ledger but left receipts undecided: nothing is
@@ -115,6 +127,39 @@ async function checkPermitNow(ctx, permit, sender, operation) {
     const r = refusal(e);
     throw new Error(`the ledger refuses the permit now${r ? `: ${r.name}(${r.args.join(", ")})` : ` (${e.shortMessage ?? e.message})`}; nothing was sent`);
   }
+}
+
+/// A signed permit checked at one block without a transaction, as the ledger would check it when its
+/// delegate sends: the caller, the scope, the epochs, the nonce and the revocation, the account's
+/// signature - by ERC-1271 for an account with code - and the guard, each under the gas bound the
+/// ledger gives it. This is the path of a valid permit; a measurement of the refusal of a foreign
+/// signature (the probe) does not stand for it. The block is taken once, every read is made at its
+/// number, and its hash is asked for again at the end. No key is read and nothing is sent.
+async function permitCheck(ctx, permit, { delegate = null, operation, pin = null } = {}) {
+  pin = pin ?? ctx.pin ?? await g.pinBlock(ctx.provider, ctx.tag);
+  const sender = ethers.getAddress(delegate ?? permit.message.delegate);
+  const at = { blockTag: pin.number };
+  let accepted = false; let digest = null; let refused = null;
+  try { digest = await ctx.ledger.checkPermit(permit.tuple, permit.signature, sender, operation, at); accepted = true; } catch (e) {
+    const r = refusal(e);
+    refused = r ? `${r.name}(${r.args.join(", ")})` : (e.shortMessage ?? e.message);
+  }
+  let gasEstimate = null;
+  try {
+    gasEstimate = await ctx.provider.estimateGas({ from: sender, to: ctx.address, data: ctx.ledger.interface.encodeFunctionData("checkPermit", [permit.tuple, permit.signature, sender, operation]), blockTag: pin.number });
+  } catch { gasEstimate = null; }
+  const account = permit.message.account;
+  const hasCode = (await ctx.provider.getCode(account, pin.number)) !== "0x";
+  const guard = permit.message.guard !== ethers.ZeroAddress ? await m2.cellGuardReading(ctx.provider, account, { blockTag: pin.number }) : null;
+  await g.recheck(ctx.provider, pin);
+  return {
+    block: { number: pin.number, hash: pin.hash, timestamp: pin.timestamp, finality: pin.finality, observedAt: pin.observedAt, hashRechecked: true },
+    epoch: await ctx.policy.currentEpoch(at).catch(() => null), // null before the genesis: the ledger refuses every permit then (NotStarted)
+    permit: { digest: permit.digest, account, delegate: permit.message.delegate, scope: permitLib.scopeNames(permit.message.scope), notBeforeEpoch: permit.message.notBeforeEpoch,
+      notAfterEpoch: permit.message.notAfterEpoch, nonce: permit.message.nonce, guard: permit.message.guard, guardBindingVersion: permit.message.guardBindingVersion,
+      signatureKey: permit.signatureKey, declaredSigner: permit.declaredSigner, recordSha256: permit.sha256 },
+    sender, operation: permitLib.scopeNames(operation), accountHasCode: hasCode, accepted, digestReturned: digest, refused, gasEstimate, guard,
+  };
 }
 
 // ---------------------------------------------------------------- what a run sends
@@ -399,7 +444,7 @@ function runRecord(ctx, r, { rpc = "", recordedAt = new Date().toISOString(), ho
     given: { sendingKey: r.given.sendingKey, permit: given === null ? null : permitOf(given) },
     transactions: r.transactions,
     alreadyRecorded: r.alreadyRecorded,
-    label: delegated ? LABEL.DELEGATED : LABEL.DIRECT,
+    label: labelOf(r.receipt, r.origin),
     participant: r.participant,
     sender: r.sender,
     origin: r.origin,
@@ -423,9 +468,12 @@ function runRecord(ctx, r, { rpc = "", recordedAt = new Date().toISOString(), ho
       r.alreadyRecorded
         ? "The receipt was recorded before this run, which found it by its contribution id and sent nothing. What this run was given is under given; the label, the sender, the permit and the origin are the receipt's own, and its transaction is as recordedIn says."
         : "This run sent the transactions listed, each written down when the endpoint took it and again with its outcome; the last recorded the receipt.",
-      delegated
-        ? "The receipt was entered by its sender under the participant's permit, whose digest is its authorization: when it was recorded the ledger checked the permit and, for an account with code, that the account accepted the signature and its guard. That an account accepts a signature does not show that only its current owner could make it."
-        : "The receipt was entered by the participant's own key, for itself.",
+      {
+        [LABEL.DELEGATED]: "The receipt was entered by its sender under the participant's permit, whose digest is its authorization: when it was recorded the ledger checked the permit and, for an account with code, that the account accepted the signature and its guard. That an account accepts a signature does not show that only its current owner could make it.",
+        [LABEL.DIRECT]: "The receipt was entered directly, with no permit, in a transaction whose origin is the participant: the participant's own key sent it.",
+        [LABEL.ACCOUNT]: "The receipt was entered directly, with no permit, by the participant's account itself in a transaction another key sent (the origin): a contract account calling the entry, through its execute or otherwise. It was not the participant's own key that sent it.",
+        [LABEL.UNKNOWN]: "The receipt was entered directly, with no permit, by its sender, the participant; the origin of its transaction could not be read, so whether a key or a contract account sent it is not known.",
+      }[labelOf(r.receipt, r.origin)],
       "Participant, sender and origin are recorded apart: the participant is the worker or the demander of record, the sender called the entry, the origin is the transaction's top-level sender.",
       ...(given !== null ? ["Of the permit given, signatureKey is the key whose ECDSA signature the record holds, recovered from it (null when the signature is not one), and declaredSigner is what the record's signer field says, which the signature does not bind; the client refuses a record where the two differ."] : []),
       "This record says which run of the reference client sent the transactions, started by whoever holds the sending key. It is no evidence that the participant's own software initiated the work, or of who ran a model.",
@@ -490,6 +538,6 @@ function releaseOutput(out) {
 }
 
 module.exports = {
-  RUN_SCHEMA, LABEL, AuditIncomplete, RunStopped, ReceiptDiffers, refusal, readPermitFile, checkPermitNow, workG0, confirmTender, receiptDifferences,
+  RUN_SCHEMA, LABEL, labelOf, permitCheck, AuditIncomplete, RunStopped, ReceiptDiffers, refusal, readPermitFile, checkPermitNow, workG0, confirmTender, receiptDifferences,
   runRecord, auditExitStatus, reserveOutput, appendEvent, finishOutput, releaseOutput,
 };

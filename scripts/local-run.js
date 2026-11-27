@@ -491,6 +491,14 @@ async function main() {
   const pouw3 = (args, key, extra = []) => run("client/pouw.js", [...args, "--manifest", manifest3Path, "--json", ...(key ? ["--key-file", keyFile(key)] : []), ...extra]);
   const permitCell = path.join(OUT3, "permit-cell.json");
   const runs3 = [];
+  // the signed permit checked read-only before the first work, as the operation package of round R2b does it
+  const nonceD3 = await provider.getTransactionCount(address.delegate);
+  const pc3 = await pouw3(["check-permit"], null, ["--permit", permitCell, "--operation", "submit-g0", "--tag", "latest", "--out", path.join(OUT3, "permit-check-cell.json")]);
+  const pcOut3 = await pouw3(["check-permit"], null, ["--permit", permitCell, "--operation", "confirm-tender", "--tag", "latest"]);
+  check("v2: pouw check-permit: the cell's signed permit accepted read-only at one block, the cell guard allowing it, no key read and nothing sent; an operation outside its scope refused",
+    pc3.status === 0 && pc3.json?.schema === "finchain-pouw.ledger-v2.permit-check/1" && pc3.json.accepted === true && pc3.json.guard?.allows === true
+    && pc3.json.block.hashRechecked === true && pcOut3.status === 2 && pcOut3.json?.refused?.startsWith("OutOfScope")
+    && (await provider.getTransactionCount(address.delegate)) === nonceD3 && fs.existsSync(path.join(OUT3, "permit-check-cell.json")));
   const wc = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--out", path.join(OUT3, "run-work-cell-0.json")]), "pouw work --permit (the cell)").json;
   check("v2: pouw work --permit: the cell's audit job, sent by the delegate under the cell's permit; the cell is the worker of record, the run record says delegated-by-owner-permit and lists the opening of the epoch and the entry",
     wc.label === "delegated-by-owner-permit" && wc.participant === cell && wc.sender === address.delegate && wc.origin === address.delegate

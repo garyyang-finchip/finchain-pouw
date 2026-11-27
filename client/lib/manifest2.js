@@ -32,6 +32,34 @@ function logStarts(m) {
   };
 }
 
+/// Whether a log read from `start` holds the whole history of the contract at `address`: it does
+/// when `start` is block 0, when the contract had no code at the block before `start` - so that
+/// everything it ever emitted is at or after `start`, however and by whom it was created - or, when
+/// that block's state is not served, when `deployTx` names the transaction that created it, mined
+/// at or after `start`. Two fields of a manifest that agree with each other show neither. Returns
+/// `{ ok, verified, detail }`: `verified` false when the history could not be established either way.
+async function historyCovered(provider, address, start, deployTx = null) {
+  if (start === 0) return { ok: true, verified: true, detail: "from block 0: nothing comes before it" };
+  let before;
+  try { before = await provider.getCode(address, start - 1); } catch (e) { before = { error: e.shortMessage ?? e.message }; }
+  if (typeof before === "string") {
+    return before === "0x"
+      ? { ok: true, verified: true, detail: `no code at block ${start - 1}: all of its history is at or after block ${start}` }
+      : { ok: false, verified: true, detail: `it had code at block ${start - 1}: what it emitted before block ${start} would be left out` };
+  }
+  if (deployTx) {
+    let rc = null;
+    try { rc = await provider.getTransactionReceipt(deployTx); } catch { rc = null; }
+    if (rc && rc.status === 1 && rc.contractAddress && ethers.getAddress(rc.contractAddress) === ethers.getAddress(address)) {
+      return rc.blockNumber >= start
+        ? { ok: true, verified: true, detail: `created by ${deployTx} in block ${rc.blockNumber}, at or after block ${start}` }
+        : { ok: false, verified: true, detail: `created by ${deployTx} in block ${rc.blockNumber}, before block ${start}: its early history would be left out` };
+    }
+    return { ok: false, verified: false, detail: `not verified: the code at block ${start - 1} is not served (${before.error}), and ${deployTx} is not a successful transaction that created ${address}` };
+  }
+  return { ok: false, verified: false, detail: `not verified: the code at block ${start - 1} is not served (${before.error}), and no transaction that created the contract is named` };
+}
+
 /// Check a deployment of ledger v2 against its manifest at one block. `ctx` is a connection made with
 /// audit2.js `connect` from the manifest itself. Returns `{ ok, checks, code, epoch, started, info,
 /// pin }`: `checks` are the statements checked and whether each holds; `info` reports what is not
@@ -92,6 +120,11 @@ async function verifyDeployment(ctx, { pin = null, build = loadBuild } = {}) {
   check("the tenders' log starts where the manifest says the ERC-8414 contract was deployed",
     m.external?.taskToken8414?.deployBlock !== undefined && s.tender === m.external.taskToken8414.deployBlock,
     `tenderDeployBlock ${s.tender}, external.taskToken8414.deployBlock ${m.external?.taskToken8414?.deployBlock}`);
+  // that the two agree shows only that the manifest is consistent: the start is held to the chain
+  const tenderHistory = m.external?.taskToken8414?.address && Number.isInteger(s.tender) && s.tender <= pin.number
+    ? await historyCovered(ctx.provider, m.external.taskToken8414.address, s.tender, m.external.taskToken8414.deployTx ?? null)
+    : { ok: false, verified: false, detail: "the manifest names no ERC-8414 contract or no start" };
+  check("the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block", tenderHistory.ok, tenderHistory.detail);
 
   const ledgerAddress = ctx.ledger.target;
   check("the ledger is the manifest's GenesisLedgerV2", eq(m.contracts?.GenesisLedgerV2, ledgerAddress), ledgerAddress);
@@ -210,4 +243,4 @@ async function cellGuardReading(provider, account, { blockTag = "latest" } = {})
   return out;
 }
 
-module.exports = { MANIFEST_SCHEMA, ROLES, SEED_SOURCES, GUARDS, loadBuild, guardAbi, logStarts, verifyDeployment, cellGuardReading };
+module.exports = { MANIFEST_SCHEMA, ROLES, SEED_SOURCES, GUARDS, loadBuild, guardAbi, logStarts, historyCovered, verifyDeployment, cellGuardReading };

@@ -371,4 +371,40 @@ describe("Ledger v2: the client, directly and through a delegate", () => {
       fs.rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("labels a direct entry by its evidence: the participant's key, the participant's account, or not known (L61)", async () => {
+    const w = await world();
+    const { d, ctx, dir, delegate } = w;
+    try {
+      // the cell's own audit job, entered by the cell account itself: its owner makes it call the ledger through execute
+      await (await w.steward.sendTransaction({ to: w.owner.wallet.address, value: ethers.parseEther("1") })).wait();
+      await (await d.ledger.openEpoch()).wait();
+      const seed = await d.ledger.seedOf(0);
+      const { subject } = await a2.auditSubjectFor(ctx, 0n);
+      const instance = g.g0Instance(seed, g.AUDIT_V1_FUNCTION_ID, 0, w.cell.target);
+      const output = g.auditOutput(instance, g.auditInputHash(0n, subject));
+      const call = d.ledger.interface.encodeFunctionData("submitG0", [g.profileKey(g.PROFILE_G0_REF), 0, 0, output]);
+      const sent = await (await w.cell.connect(w.owner.wallet).execute(d.ledgerAddress, 0, call)).wait();
+      // a delegate with a permit of the cell finds the receipt and sends nothing; the record names how it was entered
+      const cellPermit = signPermit(dir, "cell.json", d, w.owner.file,
+        { account: w.cell.target, delegate: delegate.address, scope: "submit-g0", guard: w.guard.target, guardBindingVersion: 1 });
+      const nonce = await ethers.provider.getTransactionCount(delegate.address);
+      const found = c2.runRecord(ctx, await c2.workG0(ctx, delegate, { permit: c2.readPermitFile(ctx, cellPermit) }));
+      expect(await ethers.provider.getTransactionCount(delegate.address)).to.equal(nonce);
+      expect([found.label, found.participant, found.sender, found.origin, found.txHash, found.permit])
+        .to.deep.equal(["direct-by-account", w.cell.target, w.cell.target, w.owner.wallet.address, sent.hash, null]);
+      expect(found.reading[1]).to.contain("by the participant's account itself in a transaction another key sent");
+      expect(found.reading[1]).to.contain("It was not the participant's own key that sent it");
+      // a wallet's own entry: its key sent it
+      const direct = c2.runRecord(ctx, await c2.workG0(ctx, w.w1));
+      expect([direct.label, direct.origin, direct.sender]).to.deep.equal(["direct-by-key", w.w1.address, w.w1.address]);
+      // an origin that could not be read leaves the route unknown, and a permit's digest decides before anything else
+      const receipt = { authorization: ethers.ZeroHash, sender: w.cell.target };
+      expect([c2.labelOf(receipt, "unknown"), c2.labelOf(receipt, null), c2.labelOf(receipt, w.cell.target), c2.labelOf(receipt, w.owner.wallet.address),
+        c2.labelOf({ ...receipt, authorization: ethers.id("permit") }, "unknown")])
+        .to.deep.equal(["direct-route-unknown", "direct-route-unknown", "direct-by-key", "direct-by-account", "delegated-by-owner-permit"]);
+      const unknown = c2.runRecord(ctx, { ...await c2.workG0(ctx, delegate, { permit: c2.readPermitFile(ctx, cellPermit) }), origin: "unknown" });
+      expect([unknown.label, unknown.reading[1].includes("could not be read")]).to.deep.equal(["direct-route-unknown", true]);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
 });

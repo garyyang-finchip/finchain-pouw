@@ -12,6 +12,7 @@ const a2 = require("./lib/audit2");
 const m2 = require("./lib/manifest2");
 const r2 = require("./lib/report2");
 const c2 = require("./lib/client2");
+const permitLib = require("./lib/permit");
 
 const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
 
@@ -28,6 +29,11 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
   The same commands take the manifest of a deployment of ledger v2 (schema finchain-pouw.deployment/2).
   There work and bridge send either for the key itself or, with --permit, as the delegate named in the
   participant's permit; the audit is that of docs/ledger-v2.md 13.1; and every --out creates a new file.
+  Ledger v2 only:
+  pouw check-permit --permit <file> --operation submit-g0|confirm-tender [--delegate <address>]
+                                       check a signed permit at one block as the ledger would when its
+                                       delegate sends (default: the permit's delegate). No key, nothing sent;
+                                       exit 0 accepted, 2 refused
 
   --manifest <path>    deployment manifest                       (or POUW_MANIFEST)
   --rpc <url>          JSON-RPC endpoint                          (or POUW_RPC, else the manifest's rpc)
@@ -349,11 +355,39 @@ async function verify2(opts, ctx, rpc) {
   return result.ok ? 0 : 2;
 }
 
+/// The read-only check of a signed permit, ledger v2: at one block, as the ledger would check it when
+/// its delegate sends. No key is read and nothing is sent.
+async function checkPermit(opts) {
+  const { ctx, rpc } = await open(opts, { pinned: true });
+  if (!ctx.v2) throw new Error("check-permit is for a deployment of ledger v2");
+  const permit = c2.readPermitFile(ctx, need(opts.permit, "--permit"));
+  const operation = { "submit-g0": permitLib.OP.SUBMIT_G0, "confirm-tender": permitLib.OP.CONFIRM_TENDER }[need(opts.operation, "--operation (submit-g0 or confirm-tender)")];
+  if (operation === undefined) throw new Error("--operation is submit-g0 or confirm-tender");
+  const r = await c2.permitCheck(ctx, permit, { delegate: opts.delegate ?? null, operation });
+  const m = ctx.manifest;
+  const record = g.withHashes(g.jsonable({
+    schema: "finchain-pouw.ledger-v2.permit-check/1", environment: m.environment ?? "unspecified", labels: m.labels ?? [], deployment: m.name ?? "unnamed",
+    chainId: ctx.chainId, ledger: ctx.address, endpointHost: (() => { try { return new URL(rpc).host; } catch { return "unknown"; } })(),
+    recordedAt: new Date().toISOString(), client: CLIENT, ...r,
+    reading: [
+      "Read-only: no key was read and no transaction was sent. The permit was checked at the block named, as the ledger checks it when its delegate sends: the caller, the scope, the epochs, the nonce and the revocation, the account's signature (ERC-1271 for an account with code) and the guard, each under the ledger's own gas bound.",
+      "This is the path of the valid permit. The probe's measurement of the refusal of a foreign signature is another path and does not stand for it. A check is of its block: the chain can change after it, and the transaction is then decided by the ledger.",
+      "gasEstimate is the endpoint's estimate of the whole view call at that block, where the endpoint gives one; it is not the gas left to the callee.",
+    ],
+  }));
+  const text = [`permit ${r.permit.digest} of ${r.permit.account} for ${r.sender}, ${r.operation.join(",")}: ${r.accepted ? "ACCEPTED" : `REFUSED, ${r.refused}`}`,
+    `  read at block ${r.block.number} ${r.block.hash} (${r.block.finality}), epoch ${r.epoch}; the hash asked for again at the end`,
+    `  account ${r.accountHasCode ? "with code" : "without code"}; signature key ${r.permit.signatureKey ?? "not an ECDSA signature"}; guard ${r.permit.guard} binding ${r.permit.guardBindingVersion}${r.guard ? `, which would ${r.guard.allows ? "allow" : "refuse"} it` : ""}`,
+    `  gas estimate of the view call ${r.gasEstimate ?? "not given by the endpoint"}`].join("\n");
+  emitRecord(opts, record, text);
+  return r.accepted ? 0 : 2;
+}
+
 async function main() {
   const opts = parse(process.argv.slice(2));
   const command = opts._[0];
   if (opts.help || !command) { console.log(USAGE); return opts.help ? 0 : 1; }
-  const commands = { status, work, bridge, seal, audit, verify };
+  const commands = { status, work, bridge, seal, audit, verify, "check-permit": checkPermit };
   if (!commands[command]) throw new Error(`unknown command ${command}\n\n${USAGE}`);
   return (await commands[command](opts)) ?? 0;
 }

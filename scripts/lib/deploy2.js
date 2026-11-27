@@ -156,6 +156,12 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
   if (!(Number.isInteger(tokenBlock) && tokenBlock >= 0 && tokenBlock <= latest.number)) {
     fail("taskToken8414.deployBlock must be the block the ERC-8414 contract was deployed in: the audit reads the tenders' log from it");
   }
+  const tokenTx = config.taskToken8414.deployTx ?? null;
+  if (tokenTx !== null && !(typeof tokenTx === "string" && /^0x[0-9a-fA-F]{64}$/.test(tokenTx))) fail("taskToken8414.deployTx must be a transaction hash");
+  for (const k of Object.keys(config.taskToken8414)) if (!["address", "deployBlock", "deployTx"].includes(k)) fail(`taskToken8414 has no field ${k}`);
+  // the block is held to the chain, not taken as given: the tenders' log must hold the contract's whole history
+  const tokenHistory = await m2.historyCovered(provider, taskToken, tokenBlock, tokenTx);
+  if (!tokenHistory.ok) fail(`taskToken8414.deployBlock ${tokenBlock}: ${tokenHistory.detail}`);
 
   const seen = new Set();
   let funding = 0n;
@@ -216,7 +222,7 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
   }
   return {
     chainId, steward: stewardAddress, stewardBalance: balance, genesisTime: BigInt(genesisTime), epochDuration: BigInt(config.epochDuration),
-    latestBlock: { number: latest.number, timestamp: latest.timestamp }, params, profiles, parties: list, funding, taskToken, tokenBlock,
+    latestBlock: { number: latest.number, timestamp: latest.timestamp }, params, profiles, parties: list, funding, taskToken, tokenBlock, tokenTx, tokenHistory,
     deploysGuard, cells, supersedes: superseded, gas, gasCost,
     transactions: 5 + (deploysGuard ? 1 : 0) + profiles.length + (params.length - 1) + list.filter((p) => p.admitted).length
       + list.filter((p) => p.operator).length + bindings + list.filter((p) => p.fundEth).length,
@@ -231,7 +237,7 @@ function planText(config, p) {
     `  genesis   ${c.iso(p.genesisTime)}  (${p.genesisTime - BigInt(p.latestBlock.timestamp)} s after the latest block)`,
     `  epochs    ${p.epochDuration} s each: epoch 0 ends ${c.iso(p.genesisTime + p.epochDuration)}, epoch 1 ends ${c.iso(p.genesisTime + 2n * p.epochDuration)}`,
     `  seed      ${config.seedSource} (v2's own copy)`,
-    `  tenders   ERC-8414 contract ${p.taskToken}, its log read from block ${p.tokenBlock}`,
+    `  tenders   ERC-8414 contract ${p.taskToken}, its log read from block ${p.tokenBlock} (${p.tokenHistory.detail})`,
     p.supersedes ? `  replaces  ${p.supersedes.name}, ledger ${p.supersedes.ledger}: named in the manifest, nothing of it is read or changed`
       : "  replaces  nothing: the manifest names no deployment it supersedes",
   ];
@@ -341,7 +347,7 @@ async function deployV2({ config, steward, genesisTime, parties, supersedes = nu
       protocol: c.version(),
       contracts: Object.fromEntries(Object.entries(deployed).map(([role, d]) => [role, d.address])),
       code: Object.fromEntries(Object.entries(deployed).map(([role, d]) => [role, { contract: d.contract, codeHash: d.codeHash, deployTx: d.deployTx, block: d.block }])),
-      external: { taskToken8414: { address: p.taskToken, deployBlock: p.tokenBlock, codeHash: await g.codeHashOf(provider, p.taskToken) } },
+      external: { taskToken8414: { address: p.taskToken, deployBlock: p.tokenBlock, ...(p.tokenTx ? { deployTx: p.tokenTx } : {}), codeHash: await g.codeHashOf(provider, p.taskToken) } },
       guards,
       ...(p.supersedes ? { supersedes: p.supersedes } : {}),
       clock: { genesisTime: Number(p.genesisTime), epochDuration: Number(p.epochDuration) },
@@ -395,6 +401,7 @@ async function deployV2({ config, steward, genesisTime, parties, supersedes = nu
       profiles: p.profiles.map((f) => ({ ...f, module: deployed[MODULES[f.name]].address })),
       parties: p.parties.map(({ hasCode, ...q }) => ({ ...q, contractAccount: hasCode })),
       cells: p.cells,
+      tenderHistory: { address: p.taskToken, start: p.tokenBlock, ...(p.tokenTx ? { deployTx: p.tokenTx } : {}), found: p.tokenHistory.detail },
       ...(p.supersedes ? { supersedes: p.supersedes } : {}),
       transactions,
       gasUsed: transactions.reduce((a, t) => a + t.gasUsed, 0n),

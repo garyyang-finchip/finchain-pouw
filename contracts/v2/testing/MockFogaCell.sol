@@ -23,6 +23,15 @@ contract MockFogaCell {
         _bindings.push(keccak256("binding 0"));
     }
 
+    /// The account's own call, which its owner makes it send: a FOGA Cell Account calls a contract
+    /// through `execute`, and the account, not the owner's key, is then the caller.
+    function execute(address target, uint256 value, bytes calldata data) external payable returns (bytes memory) {
+        require(msg.sender == owner, "not the owner");
+        (bool ok, bytes memory out) = target.call{value: value}(data);
+        if (!ok) assembly { revert(add(out, 32), mload(out)) }
+        return out;
+    }
+
     function setRevision(uint8 revision) external { ACCOUNT_VERSION = revision; }
     function setOwner(address owner_) external { owner = owner_; }
     function setAid(address registry) external { _aid = registry; }

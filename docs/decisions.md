@@ -12,6 +12,15 @@ is neither approved nor in force until the owner adopts it in a statement of his
 review that the owner relays is not adopted by being relayed (A66). Once adopted, it is cited by
 the ruling that adopts it and stays with its question for its wording (A70; section 12).
 
+Design revision 0.2.2 comes with software release 0.2.2. It closes the three points that the
+advisor's review of 2026-11-28 found still open in release 0.2.1 - the journal of a deployment
+whose file cannot be written, the start of the tenders' log held to the ERC-8414 contract's own
+history, and the route of a direct entry told by its evidence - each reproduced on release 0.2.1
+and corrected; it adds the read-only check of a signed permit; and it puts the operation package of
+round R2b for review, rehearsed on a development network (section 23). No contract of the
+ledger, no compiled interface and no build changes; the cell stand-in that only the tests deploy
+gains the account's `execute`. Nothing is deployed, signed or sent.
+
 Design revision 0.2.1 comes with software release 0.2.1, and from it on the design revision and
 the software release share one number, the last part of which does not go past 10 (A88). It
 records the advisor's reviews of releases 0.1.10 and 0.1.11 and of the record of the cell probe,
@@ -1838,6 +1847,8 @@ compiled interface and no build. The probe's configuration names its environment
 | P80 | The run record of the v2 client, schema `finchain-pouw.ledger-v2.run/1`, with two labels: `delegated-by-owner-permit` when the key sent under a permit, `direct-by-key` when it sent for itself; participant, sender and origin apart; the permit by digest, fields, signer and the SHA-256 of its file; and a reading that the record says nothing about which program decided to do the work | Finding 4; A74, condition 7 | Proposed. Advisor recommendation recorded (2026-11-27): adopt the separation of participant, sender and origin and the record of the route, after the record's meaning is corrected for a receipt recorded before the run, for the declared signer and for the transactions sent; the label not to stand for an owner-only guarantee. Release 0.2.1 makes that correction, with schema `finchain-pouw.ledger-v2.run/2` (22.9). Owner adoption pending |
 | P81 | Exit status 5 for an audit, or an audit job, that agrees and is not complete; the job submits nothing on it | Finding 3; P71 | Proposed. Advisor recommendation recorded (2026-11-27): adopt 0, 2 and 5, with 5 meaning that the re-decision of the work agrees and is not complete, not that all evidence of authorization is complete (P71). Owner adoption pending |
 | P82 | The client sends a permit only as the signed record of `scripts/sign-permit.js`, read by the audit's rules, after the ledger's `checkPermit` and the entry called without a transaction; `--account` is the kernel's, and on ledger v2 an account takes part through a delegate or by its own key | Findings 1 and 2 | Proposed. Advisor recommendation recorded (2026-11-27): adopt the format of the full signed record and the delegate route of the reference client, once the shared reader and the checks before sending are corrected (22.2, 22.9); the format does not show which program made a file, and that the reference client does not take `--account` on ledger v2 is a limit of the client, not of the account's own `execute`. Owner adoption pending |
+| P83 | The run record names how a receipt was entered by the evidence alone: `delegated-by-owner-permit` when its authorization is a permit's digest; for a direct entry, `direct-by-key` when the transaction's origin is the participant, `direct-by-account` when another key sent the transaction in which the participant's account called the entry itself, and `direct-route-unknown` when the origin cannot be read | The advisor's review of 2026-11-28, V0111-02 | Proposed (23.2) |
+| P84 | A signed permit is checked read-only before the first work under it, with `pouw check-permit`: at one block, as the ledger checks it when its delegate sends, recorded as `finchain-pouw.ledger-v2.permit-check/1`; the check of the valid permit is recorded apart from the probe's measurement of a foreign signature | The advisor's review of 2026-11-28 | Proposed (23.3) |
 
 ### 21.4 What was verified
 
@@ -1895,7 +1906,7 @@ block now ends in the error the correction raises).
 | --- | --- |
 | An initial reading of the two deployed cells, OG and cell-b, from release 0.1.10 | made on 2026-11-26 from the host of cell-b; `evidence/cell-probe-20261126T152040Z.json`, kept as it was made |
 | The six calls of that record, read again | by the advisor on the same public endpoint at the same historical block 645150, with the record's public signature: the same gas, answers and answer lengths, and the same block hash before and after. This is the advisor's evidence, an independent reading of one endpoint and not a second node, and it does not show that release 0.1.10 asked for the hash again; it did not |
-| The record's byte identity with the file on the host | not confirmed: the record was reconstructed from the `cat` output the owner supplied, and a reconstruction that serializes back to itself shows a stable form, not the host file. A digest computed on the host at a routine visit closes it; the probe is not run again for it |
+| The record's byte identity with the file on the host | not confirmed when this revision was written: the record was reconstructed from the `cat` output the owner supplied, and a reconstruction that serializes back to itself shows a stable form, not the host file. Confirmed on 2026-11-27 by a digest computed on the host (23.5) |
 | The probe's corrections | made in this release (22.2) |
 | The corrected probe's run against the cells | due in the preflight of round R2b, from a fixed reviewed commit, with its full record and the record's SHA-256 |
 
@@ -1979,3 +1990,86 @@ package of its own.
 No contract of the ledger, compiled interface or build changes. Under `contracts/v2/testing`,
 which only the tests deploy, the cell stand-in can be made to fail when its registry is asked
 for, and `GasBurner` is added, a function that uses all the gas it is given and still answers.
+
+## 23. The open points of 0.2.1, the check of a permit, and the package of R2b (release 0.2.2)
+
+### 23.1 What this revision is
+
+Release 0.2.1 was uploaded on 2026-11-27 as commit `61dc4f027fc3f4b6a61a4bc509a988b8882cdf63`; the
+executor compared `main` with its own copy file by file and found them equal. The advisor's
+review of 2026-11-28, relayed by the owner, found the five groups of the review of 0.1.10 closed
+except three points, still open in the code of 0.2.1, and asked that they be closed in the release
+that carries the operation package of round R2b, with that package itself: a configuration, the
+roles, the transactions and fees, the read-only preflight, the runbook with its stop conditions
+and recovery, the acceptance table, the permit templates and the independent recomputation. This
+revision is both. The owner relayed the review and said to take in what is useful and continue;
+that is not an adoption of its recommendations, and none is recorded as adopted.
+
+### 23.2 The three points, each reproduced on 0.2.1 and corrected
+
+The tests of rows L59 to L61 were run against the code of release 0.2.1 (with the cell stand-in's
+`execute`, which only the tests use) before anything else was changed, and each failed where the
+point is: the tenders' log start moved later with its twin field passed the check; with the
+journal's second write failing, the command reported the disk error and not the transaction it had
+sent; a cell's own entry was labelled `direct-by-key`. On this release all three pass.
+
+| Point | On 0.2.1 | Correction | Row |
+| --- | --- | --- | --- |
+| V0110-03. A journal that cannot be written | the error handling wrote to the same journal again and failed before it listed what had been sent | every event of the journal is shown on the standard error first, in a line of its own; a write that fails stops the run - nothing more is sent - and the file is not written to again; the stopped run lists every transaction taken with its hash, sender, nonce and outcome, says to look up each of unknown outcome before anything is sent again, and keeps its record in a file of its own; a deployment that is complete when the journal fails still writes its manifest and record, or prints them | L59 |
+| V0110-04. The tenders' log start | the two fields that name it were held to each other, which shows only that the manifest is consistent | the start is held to the chain: it holds the ERC-8414 contract's whole history when it is block 0, when the contract had no code at the block before it, or - where that state is not served - when the named creation transaction made that contract at or after it; otherwise it is reported as not verified, and the deployment refuses a configuration it cannot hold so. The configuration may name the creation transaction (`taskToken8414.deployTx`), which the manifest then records | L60 |
+| V0111-02. The route of a direct entry | a receipt with no permit was labelled `direct-by-key` | the label is told by the evidence: the participant's key when the origin is the participant, the participant's account when another key sent the transaction in which the account called the entry itself, and not known when the origin cannot be read (P83) | L61 |
+
+### 23.3 The read-only check of a permit
+
+`pouw check-permit` checks a signed permit at one block as the ledger checks it when its delegate
+sends - the caller, the scope, the epochs, the nonce and the revocation, the account's signature by
+ERC-1271, the guard - each under the ledger's own gas bound, and asks for the block's hash again at
+the end. It reads no key and sends nothing; its record is `finchain-pouw.ledger-v2.permit-check/1`.
+Before the genesis the ledger takes no permit and the check says so. It is the check of the valid
+permit's path, which the probe's measurement of a foreign signature does not stand for (P84).
+
+### 23.4 The operation package of round R2b
+
+`docs/r2b-operation.md` and `deployments/finchain-sepolia-r2b.config.json`: Finchain Sepolia, chain
+id 85422; the OG and cell-b as Cell Accounts, both declared under operator 1, the owner's; a
+delegate key of each; the cell guard bound to both; the tenders' log from the ERC-8414 contract's
+creation block, held to its creation transaction; round R2a superseded and left as it is; 17
+deployment transactions, the gas of each step and the funds; the read-only preflight with the
+corrected probe; the permits generated only from the verified deployment, reviewed unsigned, signed
+once on each cell's host, and checked read-only after the genesis; two epochs of work through the
+delegates; the expected figures; the acceptance table; the recovery from each kind of failure; and
+the hosted runner's recomputation. Row L62 works the same configuration with stand-ins for the
+cells and the tender and holds the expected figures of the package: in each epoch each cell's
+audit job is 10 GMU in G0 and takes 25 of G0's 100 points, the cap per address binding; the
+confirmation of tender 5, delivered before the deployment, is measured and earns nothing. The
+package records the advisor's distinction: the round shows the accounts' identity and the route of
+authorization, not that agent software decided or started the work.
+
+Where the OG's signer key is kept - on the host of the OG's node - is written as the package's
+understanding, to be confirmed by the owner in its review.
+
+### 23.5 The probe's record, confirmed
+
+On 2026-11-27 at 01:41 (UTC+8) the owner computed on the host of cell-b the SHA-256, the size and
+the hash of the parsed content of `~/cell-probe-20261126.json`: `906421e9...dfd70`, 3915 bytes and
+`9f692f35...ee0c`, equal to those of `evidence/cell-probe-20261126T152040Z.json`. The committed
+record is the host's file, byte for byte. The probe was not run again.
+
+### 23.6 What was verified
+
+| What | Result |
+| --- | --- |
+| The tests | 174 pass, none fails: the 170 of release 0.2.1 and four new ones, L59 to L62 |
+| The rows L1 to L62 | every row has a passing test that carries its id |
+| The three points on 0.2.1 | the tests of L59 to L61 fail on the code of 0.2.1, each where its point is |
+| The contracts of the ledger, the builds and the compiled interfaces | byte for byte those of `61dc4f0` |
+| A clean copy | `npm ci`, `npm test`, `npm run export-abi`: 174 tests pass and the builds are rewritten byte for byte as committed; the builds and the compiled interfaces equal those of `61dc4f0` |
+| The rehearsal | 58 of 58 checks from a clean copy, with the new check of `pouw check-permit`; its record is `evidence/local-run-20261127T183716Z.json` |
+| The changes that should break the tests | 14 new ones, all killed - 13 by the tests and one, the exit status of `check-permit`, by the rehearsal; three of them first survived and the tests were made to find them (the journal tried again, the stopped run's own list, the permit check's block replaced). The 55 earlier changes of the files this release touches rerun: one reworded where its line moved, one killed once the test held the refusal's exact words, all killed |
+
+### 23.7 What comes next
+
+The review of this package. Then, as the package sets out, one step at a time: the keys and the
+steward's gas, the preflight, the deployment on Finchain Sepolia and its verification, the two
+permits generated from it and reviewed, signed on the cells' hosts, checked read-only, and the two
+epochs of the round with the audits and the hosted runner's recomputation.
