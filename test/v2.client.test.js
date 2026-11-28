@@ -57,6 +57,33 @@ async function world() {
   return { d, ctx, dir, steward, w1, w2, delegate, other, owner, cell, guard, holder };
 }
 
+/// A JSON-RPC provider of ethers itself: every request is serialized as it is for a public endpoint,
+/// and reaches the development network through `answer`, which lets it through, fails it as an
+/// endpoint would, or changes the chain in between. `requests` is what went on the wire.
+class Wire extends ethers.JsonRpcProvider {
+  constructor(chainId) {
+    const network = ethers.Network.from(Number(chainId));
+    super(undefined, network, { staticNetwork: network, batchMaxCount: 1, cacheTimeout: -1 });
+    this.requests = [];
+    this.answer = (method, params, pass) => pass();
+  }
+
+  async _send(payload) {
+    const out = [];
+    for (const q of [].concat(payload)) {
+      this.requests.push({ method: q.method, params: q.params });
+      const pass = () => h.network.provider.request({ method: q.method, params: q.params ?? [] });
+      try { out.push({ id: q.id, result: await this.answer(q.method, q.params ?? [], pass) }); } catch (e) {
+        out.push({ id: q.id, error: { code: e.code ?? -32000, message: e.message, ...(e.data === undefined ? {} : { data: e.data }) } });
+      }
+    }
+    return out;
+  }
+}
+
+/// An endpoint's failure to serve a request, as a public endpoint answers it.
+const unserved = (message) => Object.assign(new Error(message), { code: -32000 });
+
 const refused = async (promise, text) => {
   let error = null;
   try { await promise; } catch (e) { error = e; }
@@ -406,5 +433,164 @@ describe("Ledger v2: the client, directly and through a delegate", () => {
       const unknown = c2.runRecord(ctx, { ...await c2.workG0(ctx, delegate, { permit: c2.readPermitFile(ctx, cellPermit) }), origin: "unknown" });
       expect([unknown.label, unknown.reading[1].includes("could not be read")]).to.deep.equal(["direct-route-unknown", true]);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+describe("Ledger v2: the read-only check of a permit, at one block", () => {
+  /// The world of the client's tests, read through a Wire, with the cell's permit signed for its guard.
+  async function checked() {
+    const w = await world();
+    const wire = new Wire(w.d.chainId);
+    const ctx = await a2.connect({ name: "fixture", environment: "local-devnet", labels: ["cell-account-integration"], ledger: w.d.ledgerAddress,
+      policy: w.d.policy.target, deployBlock: 0, chainId: w.d.chainId }, wire, { tag: "latest" });
+    const file = signPermit(w.dir, "cell.json", w.d, w.owner.file,
+      { account: w.cell.target, delegate: w.delegate.address, scope: "submit-g0", guard: w.guard.target, guardBindingVersion: 1 });
+    const cellPermit = c2.readPermitFile(ctx, file);
+    const selector = (contract, name) => contract.interface.getFunction(name).selector;
+    const reads = {
+      check: (m, p) => m === "eth_call" && p[0].data.startsWith(selector(w.d.ledger, "checkPermit")),
+      code: (m, p) => m === "eth_getCode" && p[0].toLowerCase() === w.cell.target.toLowerCase(),
+      guard: (m, p) => m === "eth_call" && p[0].to.toLowerCase() === w.cell.target.toLowerCase() && p[0].data.startsWith(ethers.id("ACCOUNT_VERSION()").slice(0, 10)),
+      epoch: (m, p) => m === "eth_call" && p[0].data.startsWith(selector(w.d.policy, "currentEpoch")),
+      estimate: (m) => m === "eth_estimateGas",
+    };
+    return { ...w, wire, ctx, cellPermit, reads };
+  }
+
+  it("asks the endpoint's gas estimate at the block it read, on the wire, and stands without it where the endpoint gives none (L63)", async () => {
+    const w = await checked();
+    try {
+      const pin = await g.pinBlock(w.wire, "latest");
+      w.wire.requests.length = 0;
+      const r = await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin });
+      const estimates = w.wire.requests.filter((q) => q.method === "eth_estimateGas");
+      expect(estimates.length).to.equal(1);
+      expect(estimates[0].params.length, "the block goes as eth_estimateGas's own parameter").to.equal(2);
+      expect(estimates[0].params[1]).to.equal(ethers.toQuantity(pin.number));
+      expect(estimates[0].params[0].to.toLowerCase()).to.equal(w.d.ledgerAddress.toLowerCase());
+      expect([r.accepted, r.gasEstimateUnavailable, typeof r.gasEstimate, r.gasEstimate > 21000n]).to.deep.equal([true, null, "bigint", true]);
+      // every read is at that block, and the hash is asked for again after the last of them
+      const methods = w.wire.requests.map((q) => q.method);
+      expect(methods.at(-1)).to.equal("eth_getBlockByNumber");
+      expect(w.wire.requests.at(-1).params[0]).to.equal(ethers.toQuantity(pin.number));
+      for (const q of w.wire.requests.filter((x) => x.method === "eth_call")) expect(q.params[1], JSON.stringify(q)).to.equal(ethers.toQuantity(pin.number));
+      // an endpoint that estimates at no named block: the check stands, the estimate is absent and says why
+      w.wire.answer = (method, params, pass) => { if (method === "eth_estimateGas") throw unserved("historical estimation is not supported"); return pass(); };
+      const none = await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin });
+      expect([none.accepted, none.gasEstimate, none.gasEstimateUnavailable.includes("historical estimation is not supported"), none.block.hashRechecked])
+        .to.deep.equal([true, null, true, true]);
+    } finally { fs.rmSync(w.dir, { recursive: true, force: true }); }
+  });
+
+  it("stops with StateUnavailable when the endpoint cannot serve a read, and refuses only on the contract's own answer (L64)", async () => {
+    const w = await checked();
+    try {
+      const pin = await g.pinBlock(w.wire, "latest");
+      // only the first request of that read fails: a later read of the same state does not stand in for it
+      const failing = async (read, message) => {
+        let failed = false;
+        w.wire.answer = (method, params, pass) => {
+          if (!failed && w.reads[read](method, params)) { failed = true; throw unserved(message); }
+          return pass();
+        };
+        let error = null; let result = null;
+        try { result = await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin }); } catch (e) { error = e; }
+        w.wire.answer = (method, params, pass) => pass();
+        expect(result, `${read}: nothing is reported`).to.equal(null);
+        expect(error, read).to.be.instanceOf(g.StateUnavailable);
+        expect(error.message).to.contain(message);
+      };
+      await failing("check", "missing trie node at requested historical block");
+      await failing("code", "header not found");
+      await failing("guard", "request timed out");
+      await failing("epoch", "upstream timed out");
+      // the contract's own answers: a refusal is a refusal, and a policy that answers its epoch with anything but NotStarted stops the check
+      const outOfScope = await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.CONFIRM_TENDER, pin });
+      expect([outOfScope.accepted, outOfScope.refused.startsWith("OutOfScope"), outOfScope.beforeGenesis, outOfScope.epoch]).to.deep.equal([false, true, false, 0n]);
+      const paused = w.d.policy.interface.encodeErrorResult("NotSteward", []);
+      w.wire.answer = (method, params, pass) => {
+        if (w.reads.epoch(method, params)) throw Object.assign(new Error("execution reverted"), { code: 3, data: paused });
+        return pass();
+      };
+      await refused(c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin }), "the policy answers its current epoch at block");
+      // NotStarted, and only NotStarted, leaves the epoch absent: the block is before the genesis
+      const early = w.d.policy.interface.encodeErrorResult("NotStarted", []);
+      w.wire.answer = (method, params, pass) => {
+        if (w.reads.epoch(method, params)) throw Object.assign(new Error("execution reverted"), { code: 3, data: early });
+        return pass();
+      };
+      const before = await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin });
+      expect([before.beforeGenesis, before.epoch]).to.deep.equal([true, null]);
+    } finally { fs.rmSync(w.dir, { recursive: true, force: true }); }
+  });
+
+  it("asks for the block's hash again after every read, the last included: a block replaced during any of them is reported as moved (L65)", async () => {
+    const w = await checked();
+    try {
+      for (const read of ["check", "code", "guard", "epoch", "estimate"]) {
+        const snap = await h.network.provider.send("evm_snapshot", []);
+        await (await w.steward.sendTransaction({ to: w.steward.address, value: 1n })).wait();
+        const pin = await g.pinBlock(w.wire, "latest");
+        let replaced = false;
+        w.wire.answer = async (method, params, pass) => {
+          const result = await pass();
+          if (!replaced && w.reads[read](method, params)) {
+            replaced = true;
+            await h.network.provider.send("evm_revert", [snap]);
+            await (await w.steward.sendTransaction({ to: w.steward.address, value: 2n })).wait();
+          }
+          return result;
+        };
+        let error = null;
+        try { await c2.permitCheck(w.ctx, w.cellPermit, { operation: permit.OP.SUBMIT_G0, pin }); } catch (e) { error = e; }
+        w.wire.answer = (method, params, pass) => pass();
+        expect(replaced, read).to.equal(true);
+        expect(error, `the block replaced during the ${read} read`).to.be.instanceOf(g.SnapshotMoved);
+      }
+    } finally { fs.rmSync(w.dir, { recursive: true, force: true }); }
+  });
+
+  it("sends work and confirmations only in the epoch they are meant for; reads an endpoint's waiting and fees; prints a key's address only (L66)", async () => {
+    const w = await checked();
+    const { d, delegate, dir } = w;
+    try {
+      // the epoch: work meant for epoch 1 is not done in epoch 0, and nothing is sent
+      const direct = await a2.connect({ name: "fixture", environment: "local-devnet", labels: [], ledger: d.ledgerAddress, policy: d.policy.target, deployBlock: 0, chainId: d.chainId },
+        ethers.provider, { tag: "latest" });
+      const nonce = await ethers.provider.getTransactionCount(delegate.address);
+      await refused(c2.workG0(direct, delegate, { permit: c2.readPermitFile(direct, path.join(dir, "cell.json")), expectEpoch: 1 }), "the work was meant for epoch 1; the chain is in epoch 0; nothing was sent");
+      await refused(c2.confirmTender(direct, w.holder.wallet, { tokenId: 1, submissionId: 1, expectEpoch: 2 }), "the confirmation was meant for epoch 2; the chain is in epoch 0; nothing was sent");
+      expect(await ethers.provider.getTransactionCount(delegate.address)).to.equal(nonce);
+      const done = await c2.workG0(direct, delegate, { permit: c2.readPermitFile(direct, path.join(dir, "cell.json")), expectEpoch: 0 });
+      expect([done.epoch, done.alreadyRecorded]).to.deep.equal([0n, false]);
+
+      // the endpoint's waiting and fees: without a GasPriceOracle the data fee is not known and coverage is not established
+      const reading = require("../scripts/lib/reading");
+      const bare = await reading.readEndpoint(w.wire, { txBytes: 1000 });
+      expect([bare.chainId, bare.dataFee.perTransaction, bare.finalized !== null, bare.fees.feeCap > 0n]).to.deep.equal([BigInt(d.chainId), null, true, true]);
+      expect(reading.coverage(bare, { funds: ethers.parseEther("1"), gas: 1000000, transactions: 2, marginPercent: 50 }).covered).to.equal(null);
+      // an oracle that answers 10^12 wei for any size: covered exactly at the margin, and not one wei below it
+      const word = (10n ** 12n).toString(16).padStart(64, "0");
+      await h.network.provider.send("hardhat_setCode", [reading.GAS_PRICE_ORACLE, `0x7f${word}60005260206000f3`]);
+      const read = await reading.readEndpoint(w.wire, { txBytes: 1000 });
+      expect([read.dataFee.perTransaction, read.dataFee.how]).to.deep.equal([10n ** 12n, "getL1FeeUpperBound"]);
+      const needed = (1000000n * read.fees.feeCap + 2n * 10n ** 12n) * 150n / 100n;
+      const at = (funds) => reading.coverage(read, { funds, gas: 1000000, transactions: 2, marginPercent: 50 });
+      expect([at(needed).covered, at(needed - 1n).covered, at(needed).withMargin]).to.deep.equal([true, false, needed]);
+      const sending = reading.coverage(read, { funds: needed + 5n, gas: 1000000, transactions: 2, marginPercent: 50, value: 5n });
+      expect([sending.withMargin, sending.covered, reading.coverage(read, { funds: needed + 4n, gas: 1000000, transactions: 2, marginPercent: 50, value: 5n }).covered])
+        .to.deep.equal([needed + 5n, true, false]);
+      const cli = spawnSync(process.execPath, ["scripts/chain-reading.js", "--help"], { cwd: root, encoding: "utf8" });
+      expect([cli.status, cli.stdout.includes("Exit status: 0 read")]).to.deep.equal([0, true]);
+
+      // the key's address, and nothing else: no statement, no signature, no key
+      const shown = execFileSync(process.execPath, ["scripts/sign-permit.js", "address", "--key-file", w.owner.file], { cwd: root, encoding: "utf8" });
+      expect(shown).to.equal(`${w.owner.wallet.address}\n`);
+      const extra = spawnSync(process.execPath, ["scripts/sign-permit.js", "address", "--key-file", w.owner.file, "--out", path.join(dir, "x.json")], { cwd: root, encoding: "utf8" });
+      expect([extra.status, extra.stderr.includes("takes --key-file only"), fs.existsSync(path.join(dir, "x.json"))]).to.deep.equal([1, true, false]);
+    } finally {
+      await h.network.provider.send("hardhat_setCode", [require("../scripts/lib/reading").GAS_PRICE_ORACLE, "0x"]);
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

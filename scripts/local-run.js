@@ -45,6 +45,7 @@ const m2 = require("../client/lib/manifest2");
 const canonical = require("../client/lib/canonical");
 const c = require("./lib/common");
 const { TENDER_ABI, eventIn, stageTender } = require("./lib/tender");
+const { GAS_PRICE_ORACLE } = require("./lib/reading");
 
 const root = c.root;
 const NODE_PORT = Number(process.env.POUW_LOCAL_PORT ?? 18545);
@@ -150,6 +151,8 @@ async function main() {
   const [chainOperator] = await provider.listAccounts();
   const mock = artifact("testing/MockL1Block.sol/MockL1Block.json");
   await provider.send("hardhat_setCode", [L1_BLOCK, mock.deployedBytecode]);
+  // and the GasPriceOracle predeploy: a stand-in that prices the data of any transaction at 10^12 wei
+  await provider.send("hardhat_setCode", [GAS_PRICE_ORACLE, `0x7f${(10n ** 12n).toString(16).padStart(64, "0")}60005260206000f3`]);
   const l1 = new ethers.Contract(L1_BLOCK, mock.abi, chainOperator);
   let l1Number = 9000000n;
   const l1Origin = async () => { l1Number += 600n; await sent(l1.set(l1Number, ethers.id(`l1 block ${l1Number}`))); };
@@ -447,7 +450,14 @@ async function main() {
   const planned3 = show(must(await run("scripts/deploy-v2.js", deploy3Args), "scripts/deploy-v2.js (plan)"));
   check("v2: without --yes the deployment is planned and nothing is sent; the plan names what it supersedes and what the cell guard would answer",
     planned3.stdout.includes("plan only") && planned3.stdout.includes("replaces  local-run, ledger") && planned3.stdout.includes("the cell guard would allow it now")
-    && (await provider.getTransactionCount(address.steward)) === nonce3 && !fs.existsSync(manifest3Path));
+    && planned3.stdout.includes("fees      the endpoint's present fee cap") && (await provider.getTransactionCount(address.steward)) === nonce3 && !fs.existsSync(manifest3Path));
+  // a delegate's funds held against its budget at the fee cap read now, with the data fee and a margin
+  const readingArgs = ["--rpc", RPC, "--chain-id", chainId, "--address", address.delegate, "--gas", 2000000, "--txs", 3, "--json"];
+  const short3 = await run("scripts/chain-reading.js", [...readingArgs, "--funds", "0.000001"]);
+  const ample3 = await run("scripts/chain-reading.js", [...readingArgs, "--funds", "10"]);
+  check("chain-reading: the finalized block's lag, the fee cap and the data fee of the chain read; a delegate's budget not covered (exit status 2) and covered",
+    short3.status === 2 && short3.json?.coverage?.covered === false && ample3.status === 0 && ample3.json?.coverage?.covered === true
+    && ample3.json.dataFee.perTransaction === String(10n ** 12n) && ample3.json.finalityLagSeconds !== null && BigInt(ample3.json.fees.feeCap) > 0n);
   const deployed3 = must(await run("scripts/deploy-v2.js", [...deploy3Args, "--yes"]), "scripts/deploy-v2.js");
   console.log(`      | ${deployed3.stdout.trimEnd().split("\n").slice(-6).join("\n      | ")}`);
   const manifest3Bytes = fs.readFileSync(manifest3Path);
@@ -483,7 +493,6 @@ async function main() {
   const ledger3 = manifest3.contracts.GenesisLedgerV2;
   const EPOCH3 = BigInt(manifest3.clock.epochDuration);
   await l1Origin();
-  await setTime(BigInt(manifest3.clock.genesisTime) + 5n);
   const sign3 = (out, account, keyName, scope, extra = []) => run("scripts/sign-permit.js", ["permit", "--chain-id", chainId, "--ledger", ledger3, "--account", account,
     "--delegate", address.delegate, "--scope", scope, "--not-before-epoch", 0, "--not-after-epoch", 10, "--nonce", 1, ...extra, "--key-file", keyFile(keyName), "--out", path.join(OUT3, out)]);
   must(await sign3("permit-cell.json", cell, "agent-x", "submit-g0", ["--guard", manifest3.contracts.FogaCellGuard, "--guard-binding-version", 1]), "scripts/sign-permit.js (the cell)");
@@ -491,15 +500,28 @@ async function main() {
   const pouw3 = (args, key, extra = []) => run("client/pouw.js", [...args, "--manifest", manifest3Path, "--json", ...(key ? ["--key-file", keyFile(key)] : []), ...extra]);
   const permitCell = path.join(OUT3, "permit-cell.json");
   const runs3 = [];
+  // the owner's key named by its address only, before anything is signed with it
+  const shown3 = await run("scripts/sign-permit.js", ["address", "--key-file", keyFile("agent-x")]);
+  // before the genesis the check decides nothing: it waits, and records nothing
+  const earlyOut3 = path.join(OUT3, "permit-check-before-genesis.json");
+  const early3 = await pouw3(["check-permit"], null, ["--permit", permitCell, "--operation", "submit-g0", "--tag", "latest", "--out", earlyOut3]);
+  check("v2: sign-permit address prints the key's address only; pouw check-permit before the genesis waits (exit status 3) and records nothing",
+    shown3.status === 0 && shown3.stdout.trim() === address["agent-x"] && early3.status === 3 && early3.stderr.includes("is before the genesis") && !fs.existsSync(earlyOut3));
+  await setTime(BigInt(manifest3.clock.genesisTime) + 5n);
   // the signed permit checked read-only before the first work, as the operation package of round R2b does it
   const nonceD3 = await provider.getTransactionCount(address.delegate);
   const pc3 = await pouw3(["check-permit"], null, ["--permit", permitCell, "--operation", "submit-g0", "--tag", "latest", "--out", path.join(OUT3, "permit-check-cell.json")]);
   const pcOut3 = await pouw3(["check-permit"], null, ["--permit", permitCell, "--operation", "confirm-tender", "--tag", "latest"]);
   check("v2: pouw check-permit: the cell's signed permit accepted read-only at one block, the cell guard allowing it, no key read and nothing sent; an operation outside its scope refused",
-    pc3.status === 0 && pc3.json?.schema === "finchain-pouw.ledger-v2.permit-check/1" && pc3.json.accepted === true && pc3.json.guard?.allows === true
-    && pc3.json.block.hashRechecked === true && pcOut3.status === 2 && pcOut3.json?.refused?.startsWith("OutOfScope")
+    pc3.status === 0 && pc3.json?.schema === "finchain-pouw.ledger-v2.permit-check/2" && pc3.json.accepted === true && pc3.json.guard?.allows === true
+    && pc3.json.block.hashRechecked === true && pc3.json.beforeGenesis === false && pc3.json.gasEstimateUnavailable === null && BigInt(pc3.json.gasEstimate) > 21000n && pcOut3.status === 2 && pcOut3.json?.refused?.startsWith("OutOfScope")
     && (await provider.getTransactionCount(address.delegate)) === nonceD3 && fs.existsSync(path.join(OUT3, "permit-check-cell.json")));
-  const wc = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--out", path.join(OUT3, "run-work-cell-0.json")]), "pouw work --permit (the cell)").json;
+  // work meant for another epoch than the chain's is not done, and nothing is sent
+  const wrongEpoch3 = await pouw3(["work"], "delegate", ["--permit", permitCell, "--epoch", "1", "--out", path.join(OUT3, "run-work-cell-wrong-epoch.json")]);
+  check("v2: pouw work --epoch 1 in epoch 0 sends nothing and keeps no output",
+    wrongEpoch3.status === 1 && wrongEpoch3.stderr.includes("meant for epoch 1; the chain is in epoch 0") && (await provider.getTransactionCount(address.delegate)) === nonceD3
+    && !fs.existsSync(path.join(OUT3, "run-work-cell-wrong-epoch.json")));
+  const wc = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--epoch", "0", "--out", path.join(OUT3, "run-work-cell-0.json")]), "pouw work --permit (the cell)").json;
   check("v2: pouw work --permit: the cell's audit job, sent by the delegate under the cell's permit; the cell is the worker of record, the run record says delegated-by-owner-permit and lists the opening of the epoch and the entry",
     wc.label === "delegated-by-owner-permit" && wc.participant === cell && wc.sender === address.delegate && wc.origin === address.delegate
     && wc.receipt.worker === cell && wc.status.verdict === "accepted" && wc.differences.length === 0
@@ -507,8 +529,11 @@ async function main() {
     && c.readJson(path.join(OUT3, "run-work-cell-0.json")).reportHash === wc.reportHash);
   const wa = must(await pouw3(["work"], "wallet-a"), "pouw work (wallet-a, for itself)").json;
   check("v2: pouw work without a permit: a wallet for itself, labelled direct-by-key", wa.label === "direct-by-key" && wa.participant === address["wallet-a"] && wa.sender === address["wallet-a"]);
-  const again3 = must(await pouw3(["work"], "delegate", ["--permit", permitCell]), "pouw work --permit (again)").json;
-  check("v2: a second pouw work --permit finds the cell's receipt and sends nothing", again3.alreadyRecorded === true && again3.receiptId === wc.receiptId);
+  // round R2b's acceptance row B5: the same job again in the same epoch, to a new output
+  const again3 = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--epoch", "0", "--out", path.join(OUT3, "run-work-cell-0-repeat.json")]), "pouw work --permit (again)").json;
+  check("v2: a second pouw work --permit in the same epoch, to a new output, finds the cell's receipt by its contribution id and sends nothing",
+    again3.alreadyRecorded === true && again3.receiptId === wc.receiptId && again3.contributionId === wc.contributionId && again3.transactions.length === 0
+    && c.readJson(path.join(OUT3, "run-work-cell-0-repeat.json")).reportHash === again3.reportHash);
   const nonceB3 = await provider.getTransactionCount(address["wallet-b"]);
   const absent3 = await pouw3(["work"], "wallet-b", ["--out", path.join(OUT3, "absent", "run.json")]);
   check("v2: an --out in a directory that does not exist is refused before anything is read or sent",
@@ -519,7 +544,7 @@ async function main() {
   await sent(chainOperator.sendTransaction({ to: address["wallet-a"], value: ethers.parseEther("0.1") }));
   const staged = await stageTender({ tenderAddress: taskToken.target, demander: c.walletOf(KEYS, "wallet-a", provider), worker: Y.key,
     reward: ethers.parseEther(String(r2.round.rewardEth)), label: "local-run-v2" });
-  const wb = must(await pouw3(["bridge", staged.tokenId, staged.submissionId], "delegate", ["--permit", path.join(OUT3, "permit-wallet-a.json"), "--out", path.join(OUT3, "run-bridge.json")]), "pouw bridge --permit").json;
+  const wb = must(await pouw3(["bridge", staged.tokenId, staged.submissionId], "delegate", ["--permit", path.join(OUT3, "permit-wallet-a.json"), "--epoch", "0", "--out", path.join(OUT3, "run-bridge.json")]), "pouw bridge --permit").json;
   check("v2: pouw bridge --permit: wallet-a's tender confirmed by the delegate under wallet-a's permit, for the delivering key",
     wb.label === "delegated-by-owner-permit" && wb.participant === address["wallet-a"] && wb.receipt.counterparty === address["wallet-a"] && wb.receipt.worker === Y.key.address
     && wb.receipt.sender === address.delegate);
@@ -530,12 +555,13 @@ async function main() {
 
   await l1Origin();
   await setTime(BigInt(manifest3.clock.genesisTime) + EPOCH3 + 5n);
-  must(await pouw3(["seal", 0], "delegate"), "pouw seal 0 (v2)");
+  const seal3 = must(await pouw3(["seal", 0], "delegate"), "pouw seal 0 (v2)").json;
   const audit3 = await pouw3(["audit", 0, "--out", path.join(OUT3, "audit-epoch-0.json")]);
   check("v2: pouw audit: the epoch agrees with the ledger and is complete; both delegated receipts read from the delegate's own transactions",
     audit3.status === 0 && audit3.json?.ok === true && audit3.json.complete === true && audit3.json.receiptCount === "3" && audit3.json.entries.delegated === 2
-    && audit3.json.entries.byPermitEvidence["permit-in-the-transaction"] === 2 && audit3.json.sealed === true);
-  const wc1 = must(await pouw3(["work"], "delegate", ["--permit", permitCell]), "pouw work --permit (epoch 1)").json;
+    && audit3.json.entries.byPermitEvidence["permit-in-the-transaction"] === 2 && audit3.json.sealed === true
+    && seal3.sealed === true && Number.isInteger(seal3.block) && seal3.block <= Number(audit3.json.snapshot.number));
+  const wc1 = must(await pouw3(["work"], "delegate", ["--permit", permitCell, "--epoch", "1"]), "pouw work --permit (epoch 1)").json;
   check("v2: in epoch 1 the cell's audit job recomputes epoch 0 in full through its delegate and is accepted",
     wc1.epoch === "1" && wc1.work.audited === "0" && wc1.work.receipts === 3 && wc1.status.verdict === "accepted");
   runs3.push(wc1);

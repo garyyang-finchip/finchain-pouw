@@ -207,7 +207,9 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
     + GAS.party * BigInt(list.filter((p) => p.admitted).length + list.filter((p) => p.operator).length) + GAS.binding * BigInt(bindings)
     + GAS.transfer * BigInt(list.filter((p) => p.fundEth).length);
   const fees = await provider.getFeeData();
-  const gasCost = gas * (fees.maxFeePerGas ?? fees.gasPrice ?? 0n);
+  // the fee cap a transaction sent now would carry: the sender must hold its gas limit times it
+  const feeCap = fees.maxFeePerGas ?? fees.gasPrice ?? 0n;
+  const gasCost = gas * feeCap;
   const balance = await provider.getBalance(stewardAddress);
   if (balance < funding + gasCost) {
     fail(`the steward ${stewardAddress} holds ${ethers.formatEther(balance)}; the parties are to be sent ${ethers.formatEther(funding)} and the gas is about ${ethers.formatEther(gasCost)} at the endpoint's present price`);
@@ -224,6 +226,7 @@ async function plan({ config, provider, stewardAddress, genesisTime, parties, su
     chainId, steward: stewardAddress, stewardBalance: balance, genesisTime: BigInt(genesisTime), epochDuration: BigInt(config.epochDuration),
     latestBlock: { number: latest.number, timestamp: latest.timestamp }, params, profiles, parties: list, funding, taskToken, tokenBlock, tokenTx, tokenHistory,
     deploysGuard, cells, supersedes: superseded, gas, gasCost,
+    fees: { maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas, gasPrice: fees.gasPrice, feeCap },
     transactions: 5 + (deploysGuard ? 1 : 0) + profiles.length + (params.length - 1) + list.filter((p) => p.admitted).length
       + list.filter((p) => p.operator).length + bindings + list.filter((p) => p.fundEth).length,
   };
@@ -254,7 +257,9 @@ function planText(config, p) {
   for (const cell of p.cells) {
     lines.push(`  cell      ${cell.account}: the cell guard would ${cell.allows ? "allow it now" : `refuse it now (${cell.reasons.join("; ")})`}`);
   }
-  lines.push(`  ${p.transactions} transactions; ${ethers.formatEther(p.funding)} goes to the parties; gas about ${p.gas}, which is at most ${ethers.formatEther(p.gasCost)} at the endpoint's present price`
+  const gwei = (v) => (v === null || v === undefined ? "not given" : `${ethers.formatUnits(v, "gwei")} gwei`);
+  lines.push(`  fees      the endpoint's present fee cap ${gwei(p.fees.feeCap)} (maxFeePerGas ${gwei(p.fees.maxFeePerGas)}, maxPriorityFeePerGas ${gwei(p.fees.maxPriorityFeePerGas)}, gasPrice ${gwei(p.fees.gasPrice)})`);
+  lines.push(`  ${p.transactions} transactions; ${ethers.formatEther(p.funding)} goes to the parties; gas about ${p.gas}, which is at most ${ethers.formatEther(p.gasCost)} at that fee cap`
     + " (a rollup's data fee comes on top)");
   return lines.join("\n");
 }

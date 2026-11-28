@@ -115,7 +115,7 @@ describe("Round R2b: the operation package, rehearsed", () => {
         "cell-b": c2.readPermitFile(ctx, signPermit(dir, "permit-cell-b", fields("cell-b", "submit-g0"))) };
       // before the genesis the ledger takes no permit: the read-only check says so, and is made again once epoch 0 has begun
       const early = await c2.permitCheck(ctx, permits.OG, { operation: permitLib.OP.SUBMIT_G0 });
-      expect([early.accepted, early.refused, early.epoch]).to.deep.equal([false, "NotStarted()", null]);
+      expect([early.accepted, early.refused, early.epoch, early.beforeGenesis]).to.deep.equal([false, "NotStarted()", null, true]);
       await h.setTime(genesisTime);
       for (const [name, p] of Object.entries(permits)) {
         expect([p.message.account, p.message.delegate, p.message.notAfterEpoch, p.message.nonce, p.message.guard, p.message.guardBindingVersion, p.signatureKey])

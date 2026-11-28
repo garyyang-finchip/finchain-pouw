@@ -33,7 +33,8 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
   pouw check-permit --permit <file> --operation submit-g0|confirm-tender [--delegate <address>]
                                        check a signed permit at one block as the ledger would when its
                                        delegate sends (default: the permit's delegate). No key, nothing sent;
-                                       exit 0 accepted, 2 refused
+                                       exit 0 accepted, 2 refused by the ledger, 3 the block is before the
+                                       genesis, 4 the endpoint cannot serve a read at the block
 
   --manifest <path>    deployment manifest                       (or POUW_MANIFEST)
   --rpc <url>          JSON-RPC endpoint                          (or POUW_RPC, else the manifest's rpc)
@@ -44,6 +45,8 @@ const USAGE = `pouw ${CLIENT.version} - Genesis Mining reference client
   --permit <file>      ledger v2, work and bridge: send as the delegate named in this permit, for the
                        permit's account. The file is the record scripts/sign-permit.js wrote where the
                        account's key is, signed; the key file given here is the delegate's own
+  --epoch <n>          ledger v2, work and bridge: send only if the chain is in epoch n now; otherwise nothing
+                       is sent. The epoch of the receipt is the record's own and is checked there
   --permits <file>     ledger v2, audit and work: permits a deployment has published, as one record or
                        a JSON array of records, for receipts whose transaction does not show its permit
   --address <address>  status: also show this address
@@ -220,7 +223,7 @@ async function seal(opts) {
   const { ctx, signer } = await open(opts, { signer: true });
   const rc = await (await ctx.ledger.connect(signer).seal(epoch)).wait();
   const s = await ctx.ledger.epochSummary(epoch);
-  print(opts, { epoch, sealed: s.isSealed, txHash: rc.hash }, `epoch ${epoch} sealed; tx ${rc.hash}`);
+  print(opts, { epoch, sealed: s.isSealed, txHash: rc.hash, block: rc.blockNumber }, `epoch ${epoch} sealed; tx ${rc.hash}, block ${rc.blockNumber}`);
 }
 
 async function audit(opts) {
@@ -306,9 +309,16 @@ async function sent(promise) {
   try { return await promise; } catch (e) { if (e instanceof c2.ReceiptDiffers) return e.result; throw e; }
 }
 
+/// --epoch: the epoch a run of work or bridge is meant for, or null.
+function expectedEpoch(opts) {
+  if (opts.epoch === undefined) return null;
+  if (!/^\d+$/.test(opts.epoch)) throw new Error(`--epoch is a whole number, not ${opts.epoch}`);
+  return BigInt(opts.epoch);
+}
+
 async function work2(opts, ctx, signer, rpc) {
   const permit = opts.permit === undefined ? null : c2.readPermitFile(ctx, opts.permit);
-  const r = await sent(c2.workG0(ctx, signer, { permit, permits: givenPermits(opts), onEvent }));
+  const r = await sent(c2.workG0(ctx, signer, { permit, permits: givenPermits(opts), expectEpoch: expectedEpoch(opts), onEvent }));
   const record = c2.runRecord(ctx, r, { rpc, host: { node: process.version, platform: `${process.platform}/${process.arch}` } });
   const text = r.alreadyRecorded
     ? `epoch ${r.epoch}: the audit job of ${r.participant} is recorded already, receipt ${r.receiptId} (${statusText(r.status)}), ${record.label}; nothing was sent`
@@ -320,7 +330,7 @@ async function work2(opts, ctx, signer, rpc) {
 
 async function bridge2(opts, ctx, signer, rpc, tokenId, submissionId) {
   const permit = opts.permit === undefined ? null : c2.readPermitFile(ctx, opts.permit);
-  const r = await sent(c2.confirmTender(ctx, signer, { tokenId, submissionId, permit, onEvent }));
+  const r = await sent(c2.confirmTender(ctx, signer, { tokenId, submissionId, permit, expectEpoch: expectedEpoch(opts), onEvent }));
   const record = c2.runRecord(ctx, r, { rpc, host: { node: process.version, platform: `${process.platform}/${process.arch}` } });
   const text = `receipt ${r.receiptId} in epoch ${r.epoch}: tender ${tokenId}, submission ${submissionId} of ${r.participant}, confirmed ${r.alreadyRecorded ? "before this run" : scopeText(r)} for the worker ${r.receipt.worker}; `
     + `${statusText(r.status)}, relation ${g.RELATION_NAME[r.status.relation]}; ${r.alreadyRecorded ? "recorded already, nothing was sent" : `tx ${r.txHash}`}`;
@@ -364,21 +374,27 @@ async function checkPermit(opts) {
   const operation = { "submit-g0": permitLib.OP.SUBMIT_G0, "confirm-tender": permitLib.OP.CONFIRM_TENDER }[need(opts.operation, "--operation (submit-g0 or confirm-tender)")];
   if (operation === undefined) throw new Error("--operation is submit-g0 or confirm-tender");
   const r = await c2.permitCheck(ctx, permit, { delegate: opts.delegate ?? null, operation });
+  if (r.beforeGenesis) {
+    // the ledger takes no permit before its genesis: a check at such a block decides nothing yet
+    throw new g.NotFinalYet(`block ${r.block.number} (${new Date(Number(r.block.timestamp) * 1000).toISOString()}, ${r.block.finality}) is before the genesis, `
+      + `and the ledger takes no permit before it (NotStarted): check again once the ${ctx.tag ?? "finalized"} block's time has reached ${new Date(Number(ctx.genesisTime) * 1000).toISOString()}; nothing was recorded`);
+  }
   const m = ctx.manifest;
   const record = g.withHashes(g.jsonable({
-    schema: "finchain-pouw.ledger-v2.permit-check/1", environment: m.environment ?? "unspecified", labels: m.labels ?? [], deployment: m.name ?? "unnamed",
+    schema: "finchain-pouw.ledger-v2.permit-check/2", environment: m.environment ?? "unspecified", labels: m.labels ?? [], deployment: m.name ?? "unnamed",
     chainId: ctx.chainId, ledger: ctx.address, endpointHost: (() => { try { return new URL(rpc).host; } catch { return "unknown"; } })(),
     recordedAt: new Date().toISOString(), client: CLIENT, ...r,
     reading: [
       "Read-only: no key was read and no transaction was sent. The permit was checked at the block named, as the ledger checks it when its delegate sends: the caller, the scope, the epochs, the nonce and the revocation, the account's signature (ERC-1271 for an account with code) and the guard, each under the ledger's own gas bound.",
       "This is the path of the valid permit. The probe's measurement of the refusal of a foreign signature is another path and does not stand for it. A check is of its block: the chain can change after it, and the transaction is then decided by the ledger.",
-      "gasEstimate is the endpoint's estimate of the whole view call at that block, where the endpoint gives one; it is not the gas left to the callee.",
+      "gasEstimate is the endpoint's estimate of the whole view call, asked with the block's number as the block parameter of eth_estimateGas, before the hash was asked for again; it is not the gas left to the callee. Where the endpoint gives none at that block, it is null and gasEstimateUnavailable says why; the check does not depend on it.",
+      "A read the endpoint could not serve at the block stops the check (exit 4) and is never recorded as the ledger's refusal; a refusal is the contract's own answer.",
     ],
   }));
   const text = [`permit ${r.permit.digest} of ${r.permit.account} for ${r.sender}, ${r.operation.join(",")}: ${r.accepted ? "ACCEPTED" : `REFUSED, ${r.refused}`}`,
-    `  read at block ${r.block.number} ${r.block.hash} (${r.block.finality}), epoch ${r.epoch}; the hash asked for again at the end`,
+    `  read at block ${r.block.number} ${r.block.hash} (${r.block.finality}, ${new Date(Number(r.block.timestamp) * 1000).toISOString()}), epoch ${r.epoch}; the hash asked for again after every read`,
     `  account ${r.accountHasCode ? "with code" : "without code"}; signature key ${r.permit.signatureKey ?? "not an ECDSA signature"}; guard ${r.permit.guard} binding ${r.permit.guardBindingVersion}${r.guard ? `, which would ${r.guard.allows ? "allow" : "refuse"} it` : ""}`,
-    `  gas estimate of the view call ${r.gasEstimate ?? "not given by the endpoint"}`].join("\n");
+    `  gas estimate of the view call at that block ${r.gasEstimate ?? `not available (${r.gasEstimateUnavailable})`}`].join("\n");
   emitRecord(opts, record, text);
   return r.accepted ? 0 : 2;
 }

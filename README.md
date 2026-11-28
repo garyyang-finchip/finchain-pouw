@@ -6,12 +6,13 @@ measured, and be rewarded for it on an EVM chain. Finchain is the first referenc
 chain (Finchain Sepolia first, Finchain mainnet after acceptance); the protocol itself does not
 depend on Finchain.
 
-Status: **v0.2.2 - round R1 passed with conditions; round R2a passed advisor technical
+Status: **v0.2.3 - round R1 passed with conditions; round R2a passed advisor technical
 acceptance; ledger v2 is built and tested on a local network, its interfaces are frozen, its
 builds are committed with their record, its deployment tooling and manifest and the client for a
 v2 deployment - work and confirmation through a delegate included - are built, corrected after
 the advisor's reviews and rehearsed on a development network; the operation package of round R2b
-is prepared for review (`docs/r2b-operation.md`), and ledger v2 is not deployed.**
+is prepared, with the conditions of each step, for review (`docs/r2b-operation.md`), and ledger v2
+is not deployed.**
 The Genesis Mining kernel runs on a local network: workers, G0 and G1 work, GMU, epochs closed by
 time, and an audit from the chain alone that agrees with the ledger on every figure. The kernel's
 contracts are those of v0.1.2. Release 0.1.3 added what a public deployment needs - committed
@@ -51,6 +52,18 @@ corrected. The signing script could overwrite its own key file when `--out` name
 or through a link, and now writes to a new file only. The canonical form of a record refuses
 an array with an empty slot. The second program for a record's hashes refuses a member named
 twice. No contract and no compiled interface changed.
+
+Release 0.2.3, with design revision 0.2.3 (2026-11-28), takes in the advisor's review of 0.2.2
+(`docs/decisions.md` 24). The read-only check of a permit asks the endpoint's gas estimate at
+the block it names, stops when the endpoint cannot serve one of its reads instead of recording a
+refusal, and makes every read before it asks for the block's hash again; each point was
+reproduced on 0.2.2 first. The operation package of round R2b says what each step waits for, in
+finalized blocks, and what stops it: the genesis chosen once, the epoch named with the client's
+new `--epoch`, the funds of the delegates and the steward checked against the fee cap, the data
+fee and a margin with the new read-only `scripts/chain-reading.js`, a cell's key located from
+its node's configuration and its address shown alone by `sign-permit.js address` before it
+signs, and the repeat that B5 of its acceptance table asks for. No contract of the ledger,
+compiled interface or build changed; nothing is deployed, signed or sent.
 
 Release 0.2.2, with design revision 0.2.2 (2026-11-28), closes the three points the advisor's
 review of 2026-11-28 found still open in 0.2.1, each reproduced there first (`docs/decisions.md`
@@ -247,7 +260,8 @@ client/                the reference client: pouw.js, lib/, abi/
 test/                  the test suite; v2.*.test.js for ledger v2, vectors/ for the typed statements
 scripts/               the tooling of a deployment and a round
   sign-permit.js         one statement of ledger v2, signed off line from a key file; no network;
-                         its record goes to a new file and overwrites nothing
+                         its record goes to a new file and overwrites nothing. `address` prints a
+                         key's address and nothing else
   report-hash.py         the two hashes of a record, computed again from its file
   keys.js                key files for a deployment's parties, made on the host that uses them
   deploy.js              a deployment from a configuration file and build/, with a read-back
@@ -257,6 +271,8 @@ scripts/               the tooling of a deployment and a round
   identity-check.js      who is who on a chain whose agents are contract accounts (read-only)
   cell-probe.js          what the cell guard would answer for each contract account, and the gas
                          of the guard and the signature check against the bounds (read-only)
+  chain-reading.js       an endpoint's finality lag, fee cap and data fee, and whether an address's
+                         funds cover a budget of gas and transactions (read-only)
   local-run.js           the rehearsal of round R2 on a development network
   export-abi.js          client/abi, build/ and build/v2/ from the compilers' output
 deployments/           the manifest format; the configuration and the manifest of round R2a
@@ -341,9 +357,11 @@ the client asks is refused before anything is sent; the opening of an epoch is a
 its own, and each transaction is shown when it is taken and with its outcome. `--out` writes the
 run's record, which keeps what the run was given apart from how the receipt was entered; on a v2
 manifest the file is created before anything is read or sent, holds the journal of the run's
-transactions while it runs, and a path that exists or cannot be created is refused. `check-permit`
-checks a signed permit read-only at one block, as the ledger checks it when its delegate sends,
-before any work under it; it reads no key and sends nothing. `audit` exits with 5 when the audit
+transactions while it runs, and a path that exists or cannot be created is refused. `--epoch <n>`
+makes `work` and `bridge` send nothing unless the chain is in epoch n. `check-permit` checks a
+signed permit read-only at one block, as the ledger checks it when its delegate sends, before any
+work under it; it reads no key and sends nothing, exits 3 at a block before the genesis and 4 when
+the endpoint cannot serve one of its reads. `audit` exits with 5 when the audit
 agrees with the ledger but left receipts undecided
 (`docs/ledger-v2.md` 13.2).
 

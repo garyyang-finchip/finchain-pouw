@@ -1,6 +1,6 @@
 # Ledger v2: bounded delegation, operator aggregation, work facts and receipts
 
-Status: **revision 0.2.2. Implemented and tested on a local network; the interfaces are frozen
+Status: **revision 0.2.3. Implemented and tested on a local network; the interfaces are frozen
 (section 11.8); the v2 contracts are compiled behind a boundary of their own, and their builds
 are committed with a build record (section 1), with v2's own copies of `AuditV1` and of the seed
 sources (A87); the deployment of v2 from its builds, with its manifest, is built (section 1);
@@ -9,10 +9,10 @@ for a key itself or through a delegate under the participant's permit, with a re
 run (13.2) - and all of it is rehearsed on a development network; the deployment tooling, the
 check of a manifest and the probe are corrected on the points the advisor's review of 0.1.10
 found, and the client on the points its review of 0.1.11 found, with the three points left open
-closed in 0.2.2; a first probe of the deployed cells of OG and cell-b is recorded, and the
-corrected probe's run is due in the preflight of round R2b, whose operation package is prepared
-(`r2b-operation.md`) (11.7). Not deployed; no participant key read and no operational permit
-signed.**
+closed in 0.2.2 and the read-only check of a permit corrected in 0.2.3; a first probe of the
+deployed cells of OG and cell-b is recorded, and the corrected probe's run is due in the
+preflight of round R2b, whose operation package is prepared (`r2b-operation.md`) (11.7). Not
+deployed; no participant key read and no operational permit signed.**
 
 The contracts are in `contracts/v2/`, beside the kernel of release 0.1.3, which is not changed.
 The tests are `test/v2.*.test.js`; section 14 gives the result of every row of the test matrix.
@@ -30,8 +30,11 @@ manifest and the probe, on the points the advisor's review of 0.1.10 found, and 
 checks before sending, its run record and its output, on the points of the review of 0.1.11
 (`decisions.md` 22). Release 0.2.2 closes three points left open there - a journal that cannot
 be written, the tenders' log start held to the contract's history, the route of a direct entry
-told by its evidence - and adds the read-only check of a signed permit (`decisions.md` 23). What
-is not built is listed in section 16.
+told by its evidence - and adds the read-only check of a signed permit (`decisions.md` 23).
+Release 0.2.3 corrects that check on the points the review of 0.2.2 found - the block of its gas
+estimate, a read the endpoint could not serve, the order of its last read - and adds the client's
+`--epoch` and two read-only tools the operation package of round R2b uses (`decisions.md` 24).
+What is not built is listed in section 16.
 
 Where this comes from, in order: revision 1 was this repository's draft for the rulings on Q13,
 Q14 and Q16; revision 2 applied the advisor's walk-through of it and the six choices the owner
@@ -68,7 +71,9 @@ release 0.1.10 found and three that the review of release 0.1.11 found, each rep
 release 0.1.11 first, and narrows what is said of the probe's first record (sections 1, 11.7,
 13.1, 13.2; `decisions.md` 22). Revision 0.2.2 closes three points the review of 2026-11-28 found
 still open, adds the read-only check of a signed permit, and comes with the operation package of
-round R2b (sections 1, 13.2; `decisions.md` 23).
+round R2b (sections 1, 13.2; `decisions.md` 23). Revision 0.2.3 corrects the read-only check
+of a permit on three points of the review of 0.2.2 and completes the conditions of that package
+(13.2; `decisions.md` 24).
 
 What v2 is: the minimum coherent next version of the Genesis ledger. It adds four things and
 changes nothing else of the kernel: (1) a participant can authorize a separate key, within
@@ -1221,10 +1226,18 @@ the manifest of a v2 deployment as they take a kernel's, and tell the two apart 
   its current owner could make it. The record says which run of the client sent the
   transactions, and nothing about which program decided to do the work (A74, condition 7).
 - **The read-only check of a signed permit.** `pouw check-permit` checks a permit at one block as
-  the ledger checks it when its delegate sends, each part under the ledger's own gas bound, and
-  asks for the block's hash again at the end; it reads no key and sends nothing, and records
-  `finchain-pouw.ledger-v2.permit-check/1`. It is the path of the valid permit, which the
-  probe's measurement of a foreign signature does not stand for (row L62).
+  the ledger checks it when its delegate sends, each part under the ledger's own gas bound: the
+  ledger's check, the account's code, the guard's reading and the epoch, each at that block, and
+  last the endpoint's gas estimate, asked with the block as `eth_estimateGas`'s own parameter;
+  then the block's hash is asked for again, and only then is the record made. A read the
+  endpoint could not serve stops the check (exit 4) and is never recorded as a refusal, which is
+  the contract's own answer (exit 2); a block before the genesis - the policy's NotStarted -
+  records nothing and exits 3. An endpoint that gives no estimate at the block leaves it null,
+  and says why. It reads no key and sends nothing, and records
+  `finchain-pouw.ledger-v2.permit-check/2`. It is the path of the valid permit, which the
+  probe's measurement of a foreign signature does not stand for (rows L62 to L65).
+- **The epoch a run is meant for.** `work` and `bridge` take `--epoch <n>` and send nothing unless
+  the chain is in that epoch; the receipt's epoch is the record's own (row L66).
 - **Outputs are created, never replaced** (P68). For a v2 manifest the place of every `--out` is
   taken before anything is read or sent, by creating the file: a path that exists, a link
   included, or that cannot be created is refused with nothing sent. While `work` or `bridge`
@@ -1242,7 +1255,7 @@ or hold any key but the one it sends with.
 ## 14. The test matrix, as run
 
 Run on 2026-11-27 on the in-process network (Node 22.23.5, Hardhat 2.29.2; the kernel compiled
-by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.2.2, 174 tests pass and none fails:
+by solc 0.8.24, ledger v2 by solc 0.8.39). With release 0.2.3, 178 tests pass and none fails:
 the 83 of the kernel of 0.1.3, of which three were adapted to the client's new behaviour; the 48
 that release 0.1.4 added; six that release 0.1.5 added; six that release 0.1.6 added, on the
 compile boundary and the builds; eight that release 0.1.7 added, on the audit of ledger v2,
@@ -1253,7 +1266,8 @@ deployment, the rows L48 to L50 and one on records that are never replaced, and 
 probe, the row L51 and one on its meter; three that release 0.1.11 added on the client for a v2
 deployment, the rows L52 to L54; and five that release 0.2.1 adds on its corrections, a second
 test of L51 and the rows L55 to L58, beside more cases in L46, L49, L50, L51, L52 and L54; and
-four that release 0.2.2 adds, the rows L59 to L62. The
+four that release 0.2.2 added, the rows L59 to L62; and four that release 0.2.3 adds, the rows
+L63 to L66. The
 twelve of releases 0.1.5 and 0.1.6 and three of release 0.1.10 have no row below.
 Every row below has at least one test that carries its id in its title; the last column names
 the file. A row is "passed" when every test that carries its id passed. The limits of what a
@@ -1263,9 +1277,9 @@ compiler - the builds a deployment would be made from - and no longer on those o
 The advisor ran the 131 tests of release 0.1.4 and the rehearsal again on its own, under
 another version of Node, and found all 35 ids of that release in its output (`decisions.md`
 15.2). That run is the advisor's evidence; it is not repeated here as this repository's. The
-rows L36 to L62 came after it.
+rows L36 to L66 came after it.
 
-The ids L1 to L62 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
+The ids L1 to L66 are this document's. `acceptance-matrix.md` has a row L1 of its own, the
 linked chain of business evidence; where both could be meant, the document is named.
 
 | Id | Case | Expected | Result |
@@ -1331,7 +1345,11 @@ linked chain of business evidence; where both could be meant, the document is na
 | L59 | Deployment at the command line: a journal whose second write fails with ENOSPC after the first transaction was taken | nothing more sent; the transaction on the standard error with its hash, sender and nonce, before and after the failure, with the advice to look it up; the journal keeps its first line and is not written to again; the stopped run's record in a file of its own; no manifest | passed (`v2.deploy`) |
 | L60 | The tenders' log start: both fields moved after the ERC-8414 contract's creation block; its own block and earlier ones; an endpoint that does not serve the earlier state, with and without the creation transaction; the plan given a later start, a malformed transaction hash, an unknown field | found; accepted; not verified, and verified by the transaction; refused before anything is sent; the manifest records the transaction and the record what was found | passed (`v2.deploy`) |
 | L61 | The route of a direct entry: a cell's own audit job entered through its execute, found by a delegate; a wallet's own; an origin that cannot be read | `direct-by-account` with the owner as origin and the cell as sender, nothing sent; `direct-by-key`; `direct-route-unknown` | passed (`v2.client`) |
-| L62 | The operation package of round R2b, rehearsed: its configuration deployed with stand-ins, the permits signed by `scripts/sign-permit.js` and checked read-only before and after the genesis, two epochs worked through the delegates, both audited | 17 transactions and the read-back as configured; the valid permits accepted and the others refused; the figures of `r2b-operation.md` 7 | passed (`v2.r2b`) |
+| L62 | The operation package of round R2b, rehearsed: its configuration deployed with stand-ins, the permits signed by `scripts/sign-permit.js` and checked read-only before and after the genesis, two epochs worked through the delegates, both audited | 17 transactions and the read-back as configured; before the genesis NotStarted and no epoch; the valid permits accepted and the others refused; the figures of `r2b-operation.md` 7 | passed (`v2.r2b`) |
+| L63 | The permit check through ethers' own JSON-RPC provider: what goes on the wire; an endpoint that gives no estimate at a named block | `eth_estimateGas` with the block's number as its second parameter, every call at that block, the hash asked for last; the check accepted, the estimate null and why | passed (`v2.client`) |
+| L64 | The permit check: the endpoint failing the ledger's check, the account's code, the guard's reading or the epoch; a refusal; the policy answering the epoch with another error; NotStarted | StateUnavailable, and nothing reported, in each of the four; the refusal recorded; the check stopped; the epoch absent and the block before the genesis | passed (`v2.client`) |
+| L65 | The permit check: the block replaced during each read in turn - the ledger's check, the code, the guard, the epoch, the estimate | SnapshotMoved each time, the last read included | passed (`v2.client`) |
+| L66 | Work and a confirmation meant for another epoch; the endpoint reading and the funds check, without and with a data fee; `sign-permit.js address` | refused with nothing sent, and done in the epoch meant; coverage not established without the data fee, covered at the margin and not one wei below, what is sent counted besides; the key's address alone, other options refused | passed (`v2.client`) |
 
 What a pass covers, and what it does not:
 
@@ -1358,7 +1376,7 @@ What a pass covers, and what it does not:
   than the chain's, because the ledger as built does not produce them; the records of L46 are
   made by editing the signing script's record. From release 0.1.11 `pouw audit` runs it on a v2
   manifest (13.2).
-- **L48 to L62 run on the in-process network**, the cell being the stand-in of
+- **L48 to L66 run on the in-process network**, the cell being the stand-in of
   `contracts/v2/testing`. The rehearsal (`npm run local-run`) makes a v2 deployment with the
   command itself, against a development node behind an endpoint, superseding the rehearsal's
   first deployment, checks it from the outside at the finalized block, and works it with the
@@ -1381,7 +1399,7 @@ What a pass covers, and what it does not:
 - **Three tests of release 0.1.10 carry no row.** They hold v2's own copies of the kernel's
   audit function and seed sources (section 1), the creation of records that never replaces one
   (P68), and the probe's meter against its listing.
-- **The tests were checked against changes that should break them.** Each of 175 changes that
+- **The tests were checked against changes that should break them.** Each of 196 changes that
   break one rule of the contracts, of the client or of a tool - a missing revocation check, a
   guard compared by address only, an allocation that reads the present declaration, a read at
   the latest block, an output written over a file that exists, a statement not verified when it
@@ -1400,7 +1418,10 @@ What a pass covers, and what it does not:
   identity is held before anything is sent and the two ids are then equal; the client reports
   the receipt's all the same. Release 0.2.2 adds 14, on the journal, the tenders' history, the
   route labels and the check of a permit, all killed - one, the exit status of `check-permit`,
-  by the rehearsal rather than a test. The first run of that check, with release 0.1.4, found
+  by the rehearsal rather than a test. Release 0.2.3 adds 21, on the permit check's block, its
+  reads the endpoint could not serve and its last recheck, the epoch a run is meant for, the funds
+  check and the address command, all killed - four, of the command line's own lines, by the
+  rehearsal. The first run of that check, with release 0.1.4, found
   one test that did not notice a rule being broken: the bound on the gas given to a signature
   check. The test now measures the gas a refused transaction used. Its review with release 0.1.7
   found that the runner had counted a test process that died for memory as a kill, for the
@@ -1441,6 +1462,18 @@ Revision 0.2.2 against revision 0.2.1 (`decisions.md` 23):
 | The route of a direct entry | `direct-by-key` | by key, by account or unknown, from the origin |
 | A signed permit before the first work | checked inside the work command | also checked read-only, at one block, with its own record |
 | The test matrix | L1 to L58 | L1 to L62 |
+
+Revision 0.2.3 against revision 0.2.2 (`decisions.md` 24):
+
+| Point | Revision 0.2.2 | Revision 0.2.3 |
+| --- | --- | --- |
+| The permit check's gas estimate | asked through `estimateGas`, which did not send the block | asked at the block, as `eth_estimateGas`'s own parameter; null with a reason where the endpoint gives none |
+| A read the endpoint could not serve, in the permit check | recorded as a refusal, or as no epoch | stops the check (exit 4); a refusal is the contract's answer; only NotStarted leaves no epoch, and then nothing is recorded (exit 3) |
+| The permit check's last read | after the block's hash was asked for again | every read before it |
+| The permit check's record | schema 1 | schema 2, with `beforeGenesis` and `gasEstimateUnavailable` |
+| The epoch of a run | the chain's current one | also named with `--epoch`, and nothing sent in another |
+| The operation package of round R2b | its steps in order | each step's wait in finalized blocks, the funds checked against the fee cap and the data fee, B5 as a step (`r2b-operation.md` 6) |
+| The test matrix | L1 to L62 | L1 to L66 |
 
 Revision 10 against revision 9 adds the client for a v2 deployment and changes nothing on chain
 (`decisions.md` 21):
@@ -1566,7 +1599,8 @@ through a delegate, and the run record with its label (13.2); and in 0.2.1 the c
 the reading of full records, the checks of a deployment's configuration, its journal, the check
 of a manifest and the probe, and the client's checks before sending, its run record and its
 output (`decisions.md` 22); and in 0.2.2 the three points left open, the read-only check of a
-signed permit and the operation package of round R2b (`decisions.md` 23).
+signed permit and the operation package of round R2b (`decisions.md` 23); and in 0.2.3 that check
+corrected and the package's conditions completed (`decisions.md` 24).
 
 Not built, and needed before round R2b (the production module only where the round uses its
 profile):
@@ -1575,7 +1609,7 @@ profile):
 | --- | --- |
 | The deployment of v2 on Finchain Sepolia, superseding the deployment of round R2a | an operation package of its own, reviewed as such: the configuration, the steward's key on the host where it is, the plan as the command prints it, the funds. The tooling is built (section 1) |
 | The module of the first production profile, which shows membership of the committed set and the named demander | part of the first production increment, which runs beside R2b and R3 (A70, Q23). It is a precondition of a round only where that round uses the profile (A87); R2b as the roadmap describes it does not |
-| The run of round R2b | its operation package is prepared and rehearsed (`r2b-operation.md`, row L62); the deployment, the signatures and the run are its steps, each after the step before it is checked |
+| The run of round R2b | its operation package is prepared and rehearsed (`r2b-operation.md`, rows L62 to L66); the deployment, the signatures and the run are its steps, each after the step before it is checked |
 | The run of the corrected probe against the cells of OG and cell-b | the first record, from release 0.1.10, is kept as an initial observation, and its six calls were read again by the advisor; the corrected probe runs in the preflight of the round's package, from a fixed reviewed commit |
 
 It does not show that an agent's software did the work, that a model ran, or that demand is

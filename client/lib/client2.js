@@ -133,32 +133,56 @@ async function checkPermitNow(ctx, permit, sender, operation) {
 /// delegate sends: the caller, the scope, the epochs, the nonce and the revocation, the account's
 /// signature - by ERC-1271 for an account with code - and the guard, each under the gas bound the
 /// ledger gives it. This is the path of a valid permit; a measurement of the refusal of a foreign
-/// signature (the probe) does not stand for it. The block is taken once, every read is made at its
-/// number, and its hash is asked for again at the end. No key is read and nothing is sent.
+/// signature (the probe) does not stand for it. No key is read and nothing is sent.
+///
+/// The block is taken once and every read is made at its number: the ledger's check, the account's
+/// code, the guard's reading, the epoch and, last, the endpoint's gas estimate, asked with the block
+/// as eth_estimateGas's own block parameter. Then the block's hash is asked for again, and only then
+/// is the record put together. A read the endpoint could not serve stops the check with
+/// StateUnavailable; it is never taken for the ledger's answer. Only a contract's own answer is a
+/// refusal, and only the policy's NotStarted makes the epoch absent (`beforeGenesis`). The gas
+/// estimate alone is optional: an endpoint that gives none at that block leaves it null, with the
+/// reason in `gasEstimateUnavailable`, and the check stands without it.
 async function permitCheck(ctx, permit, { delegate = null, operation, pin = null } = {}) {
   pin = pin ?? ctx.pin ?? await g.pinBlock(ctx.provider, ctx.tag);
   const sender = ethers.getAddress(delegate ?? permit.message.delegate);
   const at = { blockTag: pin.number };
+  const read = (what, call) => g.stateRead(pin, what, call);
+  const why = (e) => e?.info?.error?.message ?? e?.error?.message ?? e?.shortMessage ?? e?.message ?? String(e);
+
   let accepted = false; let digest = null; let refused = null;
-  try { digest = await ctx.ledger.checkPermit(permit.tuple, permit.signature, sender, operation, at); accepted = true; } catch (e) {
-    const r = refusal(e);
-    refused = r ? `${r.name}(${r.args.join(", ")})` : (e.shortMessage ?? e.message);
-  }
-  let gasEstimate = null;
   try {
-    gasEstimate = await ctx.provider.estimateGas({ from: sender, to: ctx.address, data: ctx.ledger.interface.encodeFunctionData("checkPermit", [permit.tuple, permit.signature, sender, operation]), blockTag: pin.number });
-  } catch { gasEstimate = null; }
+    digest = await read("the ledger's check of the permit", () => ctx.ledger.checkPermit(permit.tuple, permit.signature, sender, operation, at));
+    accepted = true;
+  } catch (e) {
+    if (e instanceof g.StateUnavailable) throw e;
+    const r = refusal(e);
+    refused = r ? `${r.name}(${r.args.join(", ")})` : why(e);
+  }
   const account = permit.message.account;
-  const hasCode = (await ctx.provider.getCode(account, pin.number)) !== "0x";
-  const guard = permit.message.guard !== ethers.ZeroAddress ? await m2.cellGuardReading(ctx.provider, account, { blockTag: pin.number }) : null;
+  const hasCode = (await read(`the code at ${account}`, () => ctx.provider.getCode(account, pin.number))) !== "0x";
+  const guard = permit.message.guard !== ethers.ZeroAddress ? await m2.cellGuardReading(ctx.provider, account, { pin }) : null;
+  let epoch = null; let beforeGenesis = false;
+  try { epoch = await read("the policy's current epoch", () => ctx.policy.currentEpoch(at)); } catch (e) {
+    if (e instanceof g.StateUnavailable) throw e;
+    const r = refusal(e);
+    if (r?.name !== "NotStarted") throw new Error(`the policy answers its current epoch at block ${pin.number} with ${r ? `${r.name}(${r.args.join(", ")})` : why(e)}`);
+    beforeGenesis = true;
+  }
+  let gasEstimate = null; let gasEstimateUnavailable = null;
+  if (typeof ctx.provider.send !== "function") gasEstimateUnavailable = "the provider takes no request with a block parameter";
+  else {
+    const call = { from: sender, to: ctx.address, data: ctx.ledger.interface.encodeFunctionData("checkPermit", [permit.tuple, permit.signature, sender, operation]) };
+    try { gasEstimate = BigInt(await ctx.provider.send("eth_estimateGas", [call, ethers.toQuantity(pin.number)])); } catch (e) { gasEstimateUnavailable = why(e); }
+  }
   await g.recheck(ctx.provider, pin);
   return {
     block: { number: pin.number, hash: pin.hash, timestamp: pin.timestamp, finality: pin.finality, observedAt: pin.observedAt, hashRechecked: true },
-    epoch: await ctx.policy.currentEpoch(at).catch(() => null), // null before the genesis: the ledger refuses every permit then (NotStarted)
+    epoch, beforeGenesis,
     permit: { digest: permit.digest, account, delegate: permit.message.delegate, scope: permitLib.scopeNames(permit.message.scope), notBeforeEpoch: permit.message.notBeforeEpoch,
       notAfterEpoch: permit.message.notAfterEpoch, nonce: permit.message.nonce, guard: permit.message.guard, guardBindingVersion: permit.message.guardBindingVersion,
       signatureKey: permit.signatureKey, declaredSigner: permit.declaredSigner, recordSha256: permit.sha256 },
-    sender, operation: permitLib.scopeNames(operation), accountHasCode: hasCode, accepted, digestReturned: digest, refused, gasEstimate, guard,
+    sender, operation: permitLib.scopeNames(operation), accountHasCode: hasCode, accepted, digestReturned: digest, refused, gasEstimate, gasEstimateUnavailable, guard,
   };
 }
 
@@ -294,6 +318,7 @@ async function g0Profile(ctx, epoch) {
 /// permit the delegate sends `submitG0For`; without one the key sends `submitG0` for itself.
 ///   permit  - from readPermitFile, or null
 ///   permits - permits given to the audit of the epoch before (audit2.js permitIndex)
+///   expectEpoch - the epoch the work is meant for: nothing is done unless the chain is in it
 ///   onEvent - told of each transaction when it is taken and again with its outcome
 /// Before any transaction, everything that can be known before the epoch's seed is checked: the
 /// permit, the profile and its function, and the entry itself asked without a transaction. Opening
@@ -303,7 +328,7 @@ async function workG0(ctx, signer, { permit = null, permits = [], wait = 1, expe
   const ledger = ctx.ledger.connect(signer);
   const run = newRun(onEvent);
   const epoch = await ctx.policy.currentEpoch();
-  if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the work was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}`);
+  if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the work was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}; nothing was sent`);
   const contributionId = v2.g0ContributionId(ctx.domain, g.AUDIT_V1_FUNCTION_ID, epoch, 0, participant);
   const base = { command: "work", given: { sendingKey: sender, permit }, participant, epoch, transactions: run.transactions };
   // what is recorded is not sent again: found by its contribution id before anything else is done.
@@ -365,12 +390,14 @@ async function workG0(ctx, signer, { permit = null, permits = [], wait = 1, expe
 /// Confirm a settled submission of an ERC-8414 tender that the participant owns (g1.tender). With a
 /// permit the delegate sends `confirmFor` to the adapter; without one the owner's key sends `confirm`.
 /// The adapter is the module of the g1.tender profile in force, held to this ledger and to the
-/// deployment's adapter where the deployment names one.
-async function confirmTender(ctx, signer, { tokenId, submissionId, permit = null, wait = 1, onEvent }) {
+/// deployment's adapter where the deployment names one. With `expectEpoch`, nothing is done unless the
+/// chain is in that epoch.
+async function confirmTender(ctx, signer, { tokenId, submissionId, permit = null, wait = 1, expectEpoch = null, onEvent }) {
   tokenId = BigInt(tokenId); submissionId = BigInt(submissionId);
   const { participant, sender } = await party(signer, permit, permitLib.OP.CONFIRM_TENDER);
   const run = newRun(onEvent);
   const epoch = await ctx.policy.currentEpoch();
+  if (expectEpoch !== null && BigInt(expectEpoch) !== epoch) throw new Error(`the confirmation was meant for epoch ${expectEpoch}; the chain is in epoch ${epoch}; nothing was sent`);
   let profile;
   try { profile = await ctx.policy.activeProfile(g.profileKey(g.PROFILE_G1_TENDER), epoch); } catch (e) {
     const r = refusal(e);

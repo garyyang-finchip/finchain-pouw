@@ -201,7 +201,7 @@ async function verifyDeployment(ctx, { pin = null, build = loadBuild } = {}) {
 
 /// What the guard of a contract account would answer now for each of the two delegated operations,
 /// and why, read from the account's public views as FogaCellGuard reads them. Read-only.
-async function cellGuardReading(provider, account, { blockTag = "latest" } = {}) {
+async function cellGuardReading(provider, account, { blockTag = "latest", pin = null } = {}) {
   const views = new ethers.Contract(account, [
     "function ACCOUNT_VERSION() view returns (uint8)",
     "function presentedBindings() view returns (bytes32[])",
@@ -209,14 +209,19 @@ async function cellGuardReading(provider, account, { blockTag = "latest" } = {})
     "function aid() view returns (address)",
     "function requirement() view returns ((uint8 combinator, uint16 k, (address specRegistry, bytes32 specId, uint32[] versions, address adopter, bytes32 subjectKey, bytes32 scopeKey, uint16 enforcement, (address account, uint8 rights)[] interveners)[] clauses))",
   ], provider);
-  const attempt = async (call) => { try { return { value: await call() }; } catch (e) { return { error: e.shortMessage ?? e.message }; } };
-  const o = { blockTag };
-  const out = { account, code: (await provider.getCode(account, blockTag)) !== "0x" };
-  const version = await attempt(() => views.ACCOUNT_VERSION(o));
-  const bindings = await attempt(() => views.presentedBindings(o));
-  const requirement = await attempt(() => views.requirement(o));
-  const status = await attempt(() => views.status(o));
-  const aid = await attempt(() => views.aid(o));
+  // given a pinned block (genesis.js pinBlock), every call is made at it, and a call the endpoint
+  // could not serve stops the reading with StateUnavailable; a contract's own answer is a reading
+  const served = (what, call) => (pin ? g.stateRead(pin, what, call) : call());
+  const attempt = async (what, call) => {
+    try { return { value: await served(what, call) }; } catch (e) { if (e instanceof g.StateUnavailable) throw e; return { error: e.shortMessage ?? e.message }; }
+  };
+  const o = { blockTag: pin ? pin.number : blockTag };
+  const out = { account, code: (await served(`the code at ${account}`, () => provider.getCode(account, o.blockTag))) !== "0x" };
+  const version = await attempt(`the account version of ${account}`, () => views.ACCOUNT_VERSION(o));
+  const bindings = await attempt(`the bindings ${account} presents`, () => views.presentedBindings(o));
+  const requirement = await attempt(`the requirement of ${account}`, () => views.requirement(o));
+  const status = await attempt(`the registry status of ${account}`, () => views.status(o));
+  const aid = await attempt(`the AID registry ${account} names`, () => views.aid(o));
   out.accountVersion = version.value === undefined ? null : Number(version.value);
   out.presentedBindings = bindings.value === undefined ? null : bindings.value.length;
   out.clauses = requirement.value === undefined ? null : requirement.value.clauses.length;
@@ -226,7 +231,7 @@ async function cellGuardReading(provider, account, { blockTag = "latest" } = {})
   out.aidState = null;
   if (out.aid && out.aid !== ethers.ZeroAddress) {
     const registry = new ethers.Contract(out.aid, ["function state(address) view returns (uint8)"], provider);
-    const st = await attempt(() => registry.state(account, o));
+    const st = await attempt(`the state of ${account} in its AID registry`, () => registry.state(account, o));
     out.aidState = st.value === undefined ? null : Number(st.value);
   }
   const why = [];

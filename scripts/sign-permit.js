@@ -13,6 +13,9 @@
 //
 // Without --key-file it stops after the digest: that is the form in which a statement is put
 // into an operation package and reviewed before anything is signed.
+//
+// `address --key-file <path>` prints the address of the key in the file and nothing else: the public
+// address is compared with the account's owner before anything is signed.
 "use strict";
 
 const fs = require("fs");
@@ -26,6 +29,7 @@ const USAGE = `sign-permit - one statement of ledger v2, signed off line
                                           --nonce <n> [--guard <address> --guard-binding-version <n>]
   node scripts/sign-permit.js revoke      --chain-id <n> --ledger <address> --account <address> --permit-digest <0x...>
   node scripts/sign-permit.js raise-nonce --chain-id <n> --ledger <address> --account <address> --min-nonce <n>
+  node scripts/sign-permit.js address     --key-file <path>      the key's public address only; nothing is signed
 
   --key-file <path>   the file that holds the signing key. It is read where it is and must be its owner's alone
                       (mode 600). Without it the statement and its digest are printed and nothing is signed
@@ -95,6 +99,14 @@ function readKeyFile(file) {
 
 async function main() {
   const opts = parse(process.argv.slice(2));
+  if (opts._[0] === "address" && !opts.help) {
+    for (const name of Object.keys(opts)) if (!["_", "key-file", "json"].includes(name)) throw new Error(`--${name} is not an option of address: it takes --key-file only`);
+    if (opts._.length > 1) throw new Error(`unexpected argument ${opts._[1]}`);
+    if (opts["key-file"] === undefined) throw new Error("--key-file is required");
+    const address = new ethers.Wallet(readKeyFile(opts["key-file"])).address;
+    console.log(opts.json ? JSON.stringify({ address }) : address);
+    return 0;
+  }
   const kind = KINDS[opts._[0]];
   if (opts.help || !kind) { console.log(USAGE); return opts.help ? 0 : 1; }
   if (opts._.length > 1) throw new Error(`unexpected argument ${opts._[1]}: every field is a named option`);
