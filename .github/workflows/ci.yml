@@ -18,6 +18,11 @@ on:
         description: "Epochs to audit, separated by spaces"
         required: false
         default: "0 1"
+      require_sealed:
+        description: "Also require each epoch's close record at the block read (pouw audit --require-sealed)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -51,6 +56,7 @@ jobs:
     env:
       MANIFEST: ${{ inputs.manifest }}
       EPOCHS: ${{ inputs.epochs }}
+      REQUIRE_SEALED: ${{ inputs.require_sealed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,13 +70,15 @@ jobs:
       - name: Say where this runs
         run: |
           mkdir -p out/audit
-          node -e 'const e = process.env; console.log(JSON.stringify({ schema: "finchain-pouw.audit-run/1", repository: e.GITHUB_REPOSITORY, commit: e.GITHUB_SHA, workflowRun: `${e.GITHUB_SERVER_URL}/${e.GITHUB_REPOSITORY}/actions/runs/${e.GITHUB_RUN_ID}`, runner: `${e.RUNNER_OS}/${e.RUNNER_ARCH}`, node: process.version, manifest: e.MANIFEST, epochs: e.EPOCHS, startedAt: new Date().toISOString() }, null, 2))' | tee out/audit/run.json
+          node -e 'const e = process.env; console.log(JSON.stringify({ schema: "finchain-pouw.audit-run/1", repository: e.GITHUB_REPOSITORY, commit: e.GITHUB_SHA, workflowRun: `${e.GITHUB_SERVER_URL}/${e.GITHUB_REPOSITORY}/actions/runs/${e.GITHUB_RUN_ID}`, runner: `${e.RUNNER_OS}/${e.RUNNER_ARCH}`, node: process.version, manifest: e.MANIFEST, epochs: e.EPOCHS, requireSealed: e.REQUIRE_SEALED === "true", startedAt: new Date().toISOString() }, null, 2))' | tee out/audit/run.json
       - name: Check the deployment against the committed builds
         run: node client/pouw.js verify --manifest "$MANIFEST" --out out/audit/verify.json
       - name: Recompute the epochs from the chain
         run: |
+          sealed=""
+          if [ "$REQUIRE_SEALED" = "true" ]; then sealed="--require-sealed"; fi
           for e in $EPOCHS; do
-            node client/pouw.js audit "$e" --manifest "$MANIFEST" --out "out/audit/audit-epoch-$e.json"
+            node client/pouw.js audit "$e" --manifest "$MANIFEST" $sealed --out "out/audit/audit-epoch-$e.json"
           done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
