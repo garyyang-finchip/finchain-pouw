@@ -1,0 +1,100 @@
+# E05 (ip-172-31-27-236), 2026-11-28 between 23:00 and 23:02 UTC+8, as pasted by the owner: cell-b's owner key, at the path its node's service is started with, signs its permit offline. Its file is listed and never printed. No transaction was sent and `foga-cell-b` was neither stopped nor restarted. The owner's paste repeated the same commands and output once more; they are written here once.
+
+$ cd ~/finchip/finch/finchain-pouw
+$ O=out/finchain-sepolia-r2b
+$ KEY=/home/ec2-user/foga-cell-b/wallet/signer.key
+$ ls -la /home/ec2-user/foga-cell-b/wallet
+$ A=$(node scripts/sign-permit.js address --key-file $KEY) && echo "key address $A" \
+ && [ "$A" = 0x7dCE041276791F2371EA2e77F99119f22D32cd81 ] \
+ && node scripts/sign-permit.js permit --chain-id 85422 --ledger 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C --account 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB --delegate 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E --scope submit-g0 --not-before-epoch 0 --not-after-epoch 2 --nonce 0 --guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 --guard-binding-version 1 --key-file $KEY --out $O/permit-cell-b.json > /dev/null \
+ && node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.digest!=="0xc5e867116fe59e87cb3cd11dc5f61baa311e86528239573c50f1f1fce38acd5c"||r.signer!=="0x7dCE041276791F2371EA2e77F99119f22D32cd81"||!r.signature){console.error("STOP: the signed record is not the reviewed statement by the owner key");process.exit(2)}console.log("digest and signer as reviewed")' $O/permit-cell-b.json \
+ && sha256sum $O/permit-cell-b.json $O/identity-check-signing-*.json && cat $O/permit-cell-b.json
+total 24
+drwx------.  2 ec2-user ec2-user    43 Nov 13 14:16 .
+drwx------. 10 ec2-user ec2-user 16384 Nov 19 08:13 ..
+-rw-------.  1 ec2-user ec2-user    67 Nov 13 14:16 signer.key
+-rw-r--r--.  1 ec2-user ec2-user   226 Nov 13 14:16 wallet.json
+key address 0x7dCE041276791F2371EA2e77F99119f22D32cd81
+digest and signer as reviewed
+87d82dfdecdf193d42f85273b9ca2aec95339bb09fde6328215893739218831e  out/finchain-sepolia-r2b/permit-cell-b.json
+3351a38c0d20a31e7cb45d80b98cf45c14e27950b83601fcfa66348be1196637  out/finchain-sepolia-r2b/identity-check-signing-20261128T150031Z.json
+{
+  "schema": "finchain-pouw.signed-statement/1",
+  "kind": "Permit",
+  "typedData": {
+    "types": {
+      "EIP712Domain": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "chainId",
+          "type": "uint256"
+        },
+        {
+          "name": "verifyingContract",
+          "type": "address"
+        }
+      ],
+      "Permit": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "delegate",
+          "type": "address"
+        },
+        {
+          "name": "scope",
+          "type": "uint32"
+        },
+        {
+          "name": "notBeforeEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "notAfterEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        },
+        {
+          "name": "guard",
+          "type": "address"
+        },
+        {
+          "name": "guardBindingVersion",
+          "type": "uint64"
+        }
+      ]
+    },
+    "primaryType": "Permit",
+    "domain": {
+      "name": "PoUW Genesis Ledger",
+      "version": "2",
+      "chainId": "85422",
+      "verifyingContract": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C"
+    },
+    "message": {
+      "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "delegate": "0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E",
+      "scope": "1",
+      "notBeforeEpoch": "0",
+      "notAfterEpoch": "2",
+      "nonce": "0",
+      "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "guardBindingVersion": "1"
+    }
+  },
+  "digest": "0xc5e867116fe59e87cb3cd11dc5f61baa311e86528239573c50f1f1fce38acd5c",
+  "signer": "0x7dCE041276791F2371EA2e77F99119f22D32cd81",
+  "signature": "0x2889fc8f8f70dc6767e8dcb883513bd0eb37757d111f44bd09f2f9f6cf880f2254c7e2f8e6415a2031f334bcb0939075d2edc5326695964702e8a48eec6cfb2c1c"
+}

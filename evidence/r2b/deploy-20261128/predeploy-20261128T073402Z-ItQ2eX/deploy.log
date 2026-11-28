@@ -1,0 +1,88 @@
+finchain-sepolia-r2b (public-testnet, controlled-self-test, cell-account-integration) on chain 85422: ledger v2, from build/v2
+  steward   0xdC4f433282f00170610d80703b952A250B4cdF50  balance 0.02
+  genesis   2026-11-29T03:30:00Z  (71756 s after the latest block)
+  epochs    7200 s each: epoch 0 ends 2026-11-29T05:30:00Z, epoch 1 ends 2026-11-29T07:30:00Z
+  seed      L1BlockSeedSource (v2's own copy)
+  tenders   ERC-8414 contract 0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908, its log read from block 61392 (no code at block 61391: all of its history is at or after block 61392)
+  replaces  finchain-sepolia-r2, ledger 0x7180CdDA4aE494f551d196146E6fcCB717675F1a: named in the manifest, nothing of it is read or changed
+  from epoch 0: controlled-self-test; budget 1000 test points, G0 10% / G1 90%, share cap 25% per address and 50% per operator, least bounty 0.0001, at most 3 per demander and 1 per pair
+  from epoch 1: standard; budget 1000 test points, G0 10% / G1 90%, share cap 25% per address and 50% per operator, least bounty 0.0001, at most 3 per demander and 1 per pair
+  profile   g0.ref: 10 GMU a unit, at most 10 GMU per worker and epoch (AuditV1)
+  profile   g1.tender: 50 GMU a unit, at most 200 GMU per worker and epoch (TenderAdapter8414V2)
+  party     0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 (OG): admitted, operator 1, guard FogaCellGuard
+  party     0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB (cell-b): admitted, operator 1, guard FogaCellGuard
+  party     0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 (delegate-og): not admitted, operator undeclared, funded with 0.002
+  party     0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E (delegate-cell-b): not admitted, operator undeclared, funded with 0.002
+  cell      0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the cell guard would allow it now
+  cell      0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the cell guard would allow it now
+  fees      the endpoint's present fee cap 0.001000502 gwei (maxFeePerGas 0.001000502 gwei, maxPriorityFeePerGas 0.001 gwei, gasPrice 0.001000251 gwei)
+  17 transactions; 0.004 goes to the parties; gas about 11250000, which is at most 0.0000112556475 at that fee cap (a rollup's data fee comes on top)
+  journal: planned 17 transactions of finchain-sepolia-r2b on chain 85422, steward 0xdC4f433282f00170610d80703b952A250B4cdF50
+
+  journal /home/ec2-user/finchip/finch/finchain-pouw/out/finchain-sepolia-r2b/deployment-20261128T073405Z.journal.jsonl
+  journal: submitted deploy GenesisPolicyV2: tx 0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 0, at 0x4706599ee07452A4d102139411dA5796D6D8940f
+  journal: confirmed deploy GenesisPolicyV2: tx 0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 0, block 718288, at 0x4706599ee07452A4d102139411dA5796D6D8940f
+  deploy GenesisPolicyV2
+  deployed GenesisPolicyV2 at 0x4706599ee07452A4d102139411dA5796D6D8940f
+  journal: submitted deploy L1BlockSeedSource: tx 0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 1, at 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07
+  journal: confirmed deploy L1BlockSeedSource: tx 0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 1, block 718289, at 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07
+  deploy L1BlockSeedSource
+  deployed L1BlockSeedSource at 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07
+  journal: submitted deploy GenesisLedgerV2: tx 0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 2, at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C
+  journal: confirmed deploy GenesisLedgerV2: tx 0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 2, block 718290, at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C
+  deploy GenesisLedgerV2
+  deployed GenesisLedgerV2 at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C
+  journal: submitted deploy AuditV1: tx 0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 3, at 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489
+  journal: confirmed deploy AuditV1: tx 0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 3, block 718291, at 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489
+  deploy AuditV1
+  deployed AuditV1 at 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489
+  journal: submitted deploy TenderAdapter8414V2: tx 0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 4, at 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A
+  journal: confirmed deploy TenderAdapter8414V2: tx 0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 4, block 718292, at 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A
+  deploy TenderAdapter8414V2
+  deployed TenderAdapter8414V2 at 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A
+  journal: submitted deploy FogaCellGuard: tx 0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 5, at 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730
+  journal: confirmed deploy FogaCellGuard: tx 0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 5, block 718293, at 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730
+  deploy FogaCellGuard
+  deployed FogaCellGuard at 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730
+  journal: submitted profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0: tx 0x0d23525a95eeb610af20f16d32e16a361439af8f6e93a7e2e8c3a709f12de440, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 6
+  journal: confirmed profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0: tx 0x0d23525a95eeb610af20f16d32e16a361439af8f6e93a7e2e8c3a709f12de440, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 6, block 718294
+  profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0
+  journal: submitted profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0: tx 0x89d8764f162994f8bb809195277a691abbce89deb65420e247c4ffce493ef3b5, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 7
+  journal: confirmed profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0: tx 0x89d8764f162994f8bb809195277a691abbce89deb65420e247c4ffce493ef3b5, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 7, block 718295
+  profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0
+  journal: submitted parameters from epoch 1: standard: tx 0x16924337a16723b13e41c430bd8317ae14ca323e6ab301423ef06c07ee8d8c0b, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 8
+  journal: confirmed parameters from epoch 1: standard: tx 0x16924337a16723b13e41c430bd8317ae14ca323e6ab301423ef06c07ee8d8c0b, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 8, block 718296
+  parameters from epoch 1: standard
+  journal: submitted admit 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: tx 0x19ca59c148cdb2d6d043bf32d3d8338e7152e626ffe33b0f21355642fd863ba1, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 9
+  journal: confirmed admit 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: tx 0x19ca59c148cdb2d6d043bf32d3d8338e7152e626ffe33b0f21355642fd863ba1, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 9, block 718297
+  admit 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1
+  journal: submitted declare 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 under operator 1: tx 0xbec0e7bb33f6ad7a1086cb753d1d9d2ceb7f355747d618436245c7eb1df09c7d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 10
+  journal: confirmed declare 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 under operator 1: tx 0xbec0e7bb33f6ad7a1086cb753d1d9d2ceb7f355747d618436245c7eb1df09c7d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 10, block 718298
+  declare 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 under operator 1
+  journal: submitted bind guard FogaCellGuard to 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: tx 0x9d13311d55b2bdf17eb5a5d98d0cb991bd71d8494d7eeb133e099467683bce56, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 11
+  journal: confirmed bind guard FogaCellGuard to 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: tx 0x9d13311d55b2bdf17eb5a5d98d0cb991bd71d8494d7eeb133e099467683bce56, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 11, block 718299
+  bind guard FogaCellGuard to 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1
+  journal: submitted admit 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: tx 0x2283e88b0c7b88ac62f97b4ab2ed148b96070189332318bc703f29c93efee373, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 12
+  journal: confirmed admit 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: tx 0x2283e88b0c7b88ac62f97b4ab2ed148b96070189332318bc703f29c93efee373, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 12, block 718300
+  admit 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB
+  journal: submitted declare 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB under operator 1: tx 0x8b63c0fd6ac440576f65f76933e61591f25a203ec3c35a8bb379333312c4e03d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 13
+  journal: confirmed declare 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB under operator 1: tx 0x8b63c0fd6ac440576f65f76933e61591f25a203ec3c35a8bb379333312c4e03d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 13, block 718301
+  declare 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB under operator 1
+  journal: submitted bind guard FogaCellGuard to 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: tx 0x605679215bc2565188b77096236035a5380b36a41968d85af739dde2107f3e0a, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 14
+  journal: confirmed bind guard FogaCellGuard to 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: tx 0x605679215bc2565188b77096236035a5380b36a41968d85af739dde2107f3e0a, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 14, block 718304
+  bind guard FogaCellGuard to 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB
+  journal: submitted fund 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 with 0.002: tx 0x6a0d5c1572f0318364a5d5168846a9c44e3101f596e973ede63168c47e94598d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 15
+  journal: confirmed fund 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 with 0.002: tx 0x6a0d5c1572f0318364a5d5168846a9c44e3101f596e973ede63168c47e94598d, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 15, block 718305
+  fund 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 with 0.002
+  journal: submitted fund 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E with 0.002: tx 0x89fc9fd9bab1ef44134f5693269e93ffdc0c332700b99c7288134db6c676c7da, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 16
+  journal: confirmed fund 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E with 0.002: tx 0x89fc9fd9bab1ef44134f5693269e93ffdc0c332700b99c7288134db6c676c7da, from 0xdC4f433282f00170610d80703b952A250B4cdF50, nonce 16, block 718306
+  fund 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E with 0.002
+  read back: everything is as configured
+  journal: finished, the ledger at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C
+
+DEPLOYED: 17 transactions, gas 10696715
+  manifest /home/ec2-user/finchip/finch/finchain-pouw/out/finchain-sepolia-r2b/manifest.json
+  record   /home/ec2-user/finchip/finch/finchain-pouw/out/finchain-sepolia-r2b/deployment-20261128T073445Z.json
+  journal  /home/ec2-user/finchip/finch/finchain-pouw/out/finchain-sepolia-r2b/deployment-20261128T073405Z.journal.jsonl
+  ledger   0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C
+  epoch 0  2026-11-29T03:30:00Z to 2026-11-29T05:30:00Z

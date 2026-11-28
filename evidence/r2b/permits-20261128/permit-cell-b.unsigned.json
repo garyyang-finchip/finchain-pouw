@@ -1,0 +1,80 @@
+{
+  "schema": "finchain-pouw.signed-statement/1",
+  "kind": "Permit",
+  "typedData": {
+    "types": {
+      "EIP712Domain": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "chainId",
+          "type": "uint256"
+        },
+        {
+          "name": "verifyingContract",
+          "type": "address"
+        }
+      ],
+      "Permit": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "delegate",
+          "type": "address"
+        },
+        {
+          "name": "scope",
+          "type": "uint32"
+        },
+        {
+          "name": "notBeforeEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "notAfterEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        },
+        {
+          "name": "guard",
+          "type": "address"
+        },
+        {
+          "name": "guardBindingVersion",
+          "type": "uint64"
+        }
+      ]
+    },
+    "primaryType": "Permit",
+    "domain": {
+      "name": "PoUW Genesis Ledger",
+      "version": "2",
+      "chainId": "85422",
+      "verifyingContract": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C"
+    },
+    "message": {
+      "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "delegate": "0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E",
+      "scope": "1",
+      "notBeforeEpoch": "0",
+      "notAfterEpoch": "2",
+      "nonce": "0",
+      "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "guardBindingVersion": "1"
+    }
+  },
+  "digest": "0xc5e867116fe59e87cb3cd11dc5f61baa311e86528239573c50f1f1fce38acd5c",
+  "signer": null,
+  "signature": null
+}

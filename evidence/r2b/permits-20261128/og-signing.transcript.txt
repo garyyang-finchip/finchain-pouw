@@ -1,0 +1,115 @@
+# E06 (ip-172-31-13-218), 2026-11-28 between 22:53 and 23:00 UTC+8, as pasted by the owner: a clone of this repository in the home directory, apart from the FOGA services' directories, checked out at `3c48477`; the OG's owner key, at the path its node's service is started with, signs its permit offline. No transaction was sent, no FOGA service was stopped or restarted, and no key was printed. The prompt is written `$`.
+
+$ cd ~
+$ [ -d ~/finchain-pouw ] || git clone https://github.com/garyyang-finchip/finchain-pouw.git ~/finchain-pouw
+$ cd ~/finchain-pouw && git fetch -q origin && git checkout -q --detach 3c484778612df82804f2e1de7f2fcc11e57170c4 && git rev-parse HEAD
+$ npm ci --omit=dev
+$ KEY=/home/ec2-user/foga-og/wallet/signer.key
+$ A=$(node scripts/sign-permit.js address --key-file $KEY) && echo "key address $A" \
+ && [ "$A" = 0x5Fee42D697975f6154164b29371c1c447F56fb4E ] \
+ && node scripts/sign-permit.js permit --chain-id 85422 --ledger 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C --account 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 --delegate 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 --scope submit-g0,confirm-tender --not-before-epoch 0 --not-after-epoch 2 --nonce 0 --guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 --guard-binding-version 1 --key-file $KEY --out ~/r2b-permit-og.json > /dev/null \
+ && node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.digest!=="0x1c0e5ec865dba3a7dedc3b05618b17919a9c6d9030cb5ff4637ebf6a5e3b1b73"||r.signer!=="0x5Fee42D697975f6154164b29371c1c447F56fb4E"||!r.signature){console.error("STOP: the signed record is not the reviewed statement by the owner key");process.exit(2)}console.log("digest and signer as reviewed")' ~/r2b-permit-og.json \
+ && sha256sum ~/r2b-permit-og.json && cat ~/r2b-permit-og.json
+Cloning into '/home/ec2-user/finchain-pouw'...
+remote: Enumerating objects: 737, done.
+remote: Counting objects: 100% (737/737), done.
+remote: Compressing objects: 100% (723/723), done.
+remote: Total 737 (delta 460), reused 0 (delta 0), pack-reused 0 (from 0)
+Receiving objects: 100% (737/737), 1.13 MiB | 5.12 MiB/s, done.
+Resolving deltas: 100% (460/460), done.
+3c484778612df82804f2e1de7f2fcc11e57170c4
+
+added 9 packages, and audited 10 packages in 2s
+
+3 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm notice
+npm notice New major version of npm available! 11.19.1 -> 12.2.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.3
+npm notice To update run: npm install -g npm@12.2.3
+npm notice
+key address 0x5Fee42D697975f6154164b29371c1c447F56fb4E
+digest and signer as reviewed
+4ca1abdc18e595296e99d54cf2076e42ed4430dbf1936717b26591c4b0202fea  /home/ec2-user/r2b-permit-og.json
+{
+  "schema": "finchain-pouw.signed-statement/1",
+  "kind": "Permit",
+  "typedData": {
+    "types": {
+      "EIP712Domain": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "chainId",
+          "type": "uint256"
+        },
+        {
+          "name": "verifyingContract",
+          "type": "address"
+        }
+      ],
+      "Permit": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "delegate",
+          "type": "address"
+        },
+        {
+          "name": "scope",
+          "type": "uint32"
+        },
+        {
+          "name": "notBeforeEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "notAfterEpoch",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        },
+        {
+          "name": "guard",
+          "type": "address"
+        },
+        {
+          "name": "guardBindingVersion",
+          "type": "uint64"
+        }
+      ]
+    },
+    "primaryType": "Permit",
+    "domain": {
+      "name": "PoUW Genesis Ledger",
+      "version": "2",
+      "chainId": "85422",
+      "verifyingContract": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C"
+    },
+    "message": {
+      "account": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "delegate": "0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92",
+      "scope": "3",
+      "notBeforeEpoch": "0",
+      "notAfterEpoch": "2",
+      "nonce": "0",
+      "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "guardBindingVersion": "1"
+    }
+  },
+  "digest": "0x1c0e5ec865dba3a7dedc3b05618b17919a9c6d9030cb5ff4637ebf6a5e3b1b73",
+  "signer": "0x5Fee42D697975f6154164b29371c1c447F56fb4E",
+  "signature": "0xd7b1ec8c6cf004c892952ad44b99b5f2f7d9a3a6d1010e7b2040f035b122906d266ee1bfe187455badad40f795e883af81ca6085731e0ef0e6b8a905939803311c"
+}

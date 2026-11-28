@@ -1,0 +1,80 @@
+# E05 (ip-172-31-27-236), 2026-11-28 22:53 UTC+8, as pasted by the owner: the endpoint reading, the check that the finalized block holds block 718306, the verification of the deployment (MATCH at finalized block 730812) and the two unsigned permits generated from the verified manifest. The prompt is written `$`.
+
+$ cd ~/finchip/finch/finchain-pouw
+$ O=out/finchain-sepolia-r2b; T=$(date -u +%Y%m%dT%H%M%SZ)
+$ node scripts/chain-reading.js --rpc https://rpc.finchain.one --chain-id 85422 --out $O/chain-reading-$T.json \
+ && node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(!r.finalized||r.finalized.number<718306){console.error("WAIT: finalized "+(r.finalized&&r.finalized.number)+" is below 718306");process.exit(3)}console.log("the finalized block holds block 718306")' $O/chain-reading-$T.json \
+ && node client/pouw.js verify --manifest $O/manifest.json --out $O/verify-$T.json \
+ && L=$(node -p "require('./$O/manifest.json').contracts.GenesisLedgerV2") \
+ && GD=$(node -p "require('./$O/manifest.json').contracts.FogaCellGuard") \
+ && echo "ledger $L guard $GD" \
+ && node scripts/sign-permit.js permit --chain-id 85422 --ledger $L --account 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 --delegate 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 --scope submit-g0,confirm-tender --not-before-epoch 0 --not-after-epoch 2 --nonce 0 --guard $GD --guard-binding-version 1 --out $O/permit-og.unsigned.json > /dev/null \
+ && node scripts/sign-permit.js permit --chain-id 85422 --ledger $L --account 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB --delegate 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E --scope submit-g0 --not-before-epoch 0 --not-after-epoch 2 --nonce 0 --guard $GD --guard-binding-version 1 --out $O/permit-cell-b.unsigned.json > /dev/null \
+ && sha256sum $O/chain-reading-$T.json $O/verify-$T.json $O/permit-og.unsigned.json $O/permit-cell-b.unsigned.json
+chain 85422, endpoint rpc.finchain.one, observed 2026-11-28T14:53:01.864Z
+  latest     block 731454, 2026-11-28T14:53:00Z
+  finalized  block 730812, 2026-11-28T14:31:36Z: 1284 s behind the latest
+  fee cap    0.001000502 gwei (maxFeePerGas 0.001000502 gwei, maxPriorityFeePerGas 0.001 gwei, gasPrice 0.001000251 gwei)
+  data fee   at most 0.000000483759495343 ETH for a transaction of 2000 bytes (getL1FeeUpperBound)
+the finalized block holds block 718306
+finchain-sepolia-r2b on chain 85422: ledger v2, MATCH
+  read at block 730812 0xfd5c4c7f46e4bbd506a9198851ed16e5759e6578ad6701608852769da9cf4399 (finalized), observed 2026-11-28T14:53:02.305Z
+  ok   the manifest is of schema finchain-pouw.deployment/2
+  ok   GenesisPolicyV2: a role of a v2 deployment, filled by the build it names
+  ok   GenesisPolicyV2 at 0x4706599ee07452A4d102139411dA5796D6D8940f: the code on chain is this repository's build of GenesisPolicyV2 (build/v2)
+  ok   GenesisPolicyV2: the code hash is the one the manifest records
+  ok   GenesisPolicyV2: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   SeedSource: a role of a v2 deployment, filled by the build it names
+  ok   SeedSource at 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07: the code on chain is this repository's build of L1BlockSeedSource (build/v2)
+  ok   SeedSource: the code hash is the one the manifest records
+  ok   SeedSource: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   GenesisLedgerV2: a role of a v2 deployment, filled by the build it names
+  ok   GenesisLedgerV2 at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C: the code on chain is this repository's build of GenesisLedgerV2 (build/v2)
+  ok   GenesisLedgerV2: the code hash is the one the manifest records
+  ok   GenesisLedgerV2: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   AuditV1: a role of a v2 deployment, filled by the build it names
+  ok   AuditV1 at 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489: the code on chain is this repository's build of AuditV1 (build/v2)
+  ok   AuditV1: the code hash is the one the manifest records
+  ok   AuditV1: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   TenderAdapter8414V2: a role of a v2 deployment, filled by the build it names
+  ok   TenderAdapter8414V2 at 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A: the code on chain is this repository's build of TenderAdapter8414V2 (build/v2)
+  ok   TenderAdapter8414V2: the code hash is the one the manifest records
+  ok   TenderAdapter8414V2: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   FogaCellGuard: a role of a v2 deployment, filled by the build it names
+  ok   FogaCellGuard at 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730: the code on chain is this repository's build of FogaCellGuard (build/v2)
+  ok   FogaCellGuard: the code hash is the one the manifest records
+  ok   FogaCellGuard: its deployment transaction created it in the block the manifest names, in the chain at or before this block
+  ok   the manifest names every contract of the deployment and records its code
+  ok   the manifest names where each log starts: at or before the block its contract was deployed in, and not after this block
+  ok   the tenders' log starts where the manifest says the ERC-8414 contract was deployed
+  ok   the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block
+  ok   the ledger is the manifest's GenesisLedgerV2
+  ok   the ledger's policy is the manifest's GenesisPolicyV2
+  ok   the ledger's seed source is the manifest's SeedSource
+  ok   the ledger answers at this block as it did when the connection was made
+  ok   the policy's clock is the manifest's
+  ok   the audit function reads this ledger
+  ok   the audit function is audit-v1
+  ok   the adapter reports to this ledger
+  ok   the adapter reads the manifest's ERC-8414 contract
+  ok   the adapter records under g1.tender
+  ok   the manifest records the ERC-8414 contract's code
+  ok   the ERC-8414 contract's code is what it was when the adapter was pointed at it
+  ok   epoch 0: the g0.ref profile's function is the manifest's AuditV1
+  ok   epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414V2
+  ok   the manifest records the guard of every account the policy bound one to
+  ok   0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the policy bound guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 as binding 1 from epoch 0, with the code hash the manifest records
+  ok   0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the guard's code is the code it had when it was bound
+  ok   0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the guard is the manifest's FogaCellGuard
+  ok   0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the binding in force for epoch 0 is the manifest's
+  ok   0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the policy bound guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 as binding 1 from epoch 0, with the code hash the manifest records
+  ok   0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the guard's code is the code it had when it was bound
+  ok   0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the guard is the manifest's FogaCellGuard
+  ok   0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the binding in force for epoch 0 is the manifest's
+  ok   it supersedes finchain-sepolia-r2: a ledger on the same chain, which is another ledger and has its code
+  steward 0xdC4f433282f00170610d80703b952A250B4cdF50
+ledger 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730
+35119d8c1250565c4e4b1ddcf828d7276abdff2fa623c8d87830f2e4c39956cd  out/finchain-sepolia-r2b/chain-reading-20261128T145301Z.json
+5930e363d7777680654c3c59a80d61887daed340db21898dd466c8c269c2924b  out/finchain-sepolia-r2b/verify-20261128T145301Z.json
+f6e0f74ff1c38b87dc6695129bb376b59f7a8147ed6834f29ddc46802fd036dc  out/finchain-sepolia-r2b/permit-og.unsigned.json
+1eb958c6c1e26383513563566ee4f018a3a10a827ff6fbd1e938b36f55afd38a  out/finchain-sepolia-r2b/permit-cell-b.unsigned.json

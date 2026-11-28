@@ -1,0 +1,32 @@
+# E05 (ip-172-31-27-236), 2026-11-28 23:00 UTC+8, as pasted by the owner: for every FOGA service, its user, start command, environment files and any FOGA_HOME or FOGA_OPERATOR_KEY_FILE in its environment, with any 64-hex string masked; then any FOGA_OPERATOR_KEY_FILE in /etc/foga; then the identity check of the evening (`identity-check-signing-20261128T150031Z.json`). The one FOGA service is `foga-cell-b.service`: it is started with `--wallet /home/ec2-user/foga-cell-b/wallet`, it has no environment file and no FOGA variable (systemctl leaves empty properties out), and /etc/foga gave nothing. No key was printed.
+
+$ cd ~/finchip/finch/finchain-pouw
+$ O=out/finchain-sepolia-r2b; T=$(date -u +%Y%m%dT%H%M%SZ)
+$ for u in $(systemctl list-units --type=service --all --no-legend --plain | awk '{print $1}' | grep -i foga); do echo "== $u"; systemctl show "$u" -p User -p ExecStart -p EnvironmentFiles; systemctl show "$u" -p Environment | tr ' ' '\n' | grep -E 'FOGA_(HOME|OPERATOR_KEY_FILE)='; done | sed -E 's/(0x)?[0-9a-fA-F]{64}/<64 hex, not shown>/g'
+$ sudo grep -H '^FOGA_OPERATOR_KEY_FILE=' /etc/foga/*.env 2>/dev/null
+$ node scripts/identity-check.js --config deployments/finchain-sepolia.identities.json --out $O/identity-check-signing-$T.json
+== foga-cell-b.service
+ExecStart={ path=/home/ec2-user/.nvm/versions/node/v22.22.0/bin/node ; argv[]=/home/ec2-user/.nvm/versions/node/v22.22.0/bin/node /home/ec2-user/.nvm/versions/node/v22.22.0/lib/node_modules/@finchip.ai/foga/bin/foga.js node run --config /home/ec2-user/foga-cell-b/cell.config.json --wallet /home/ec2-user/foga-cell-b/wallet --model stub --listen 127.0.0.1:8787 ; ignore_errors=no ; start_time=[Thu 2026-11-19 08:13:47 UTC] ; stop_time=[n/a] ; pid=2824 ; code=(null) ; status=0/0 }
+User=ec2-user
+finchain-sepolia on chain 85422, block 731679 (finalized 730992)
+  OG
+    account 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1  contract, revision 3
+      owner    0x5Fee42D697975f6154164b29371c1c447F56fb4E
+      operator 0x5Fee42D697975f6154164b29371c1c447F56fb4E
+    key     0x5Fee42D697975f6154164b29371c1c447F56fb4E  externally owned, 63 transactions sent
+  cell-b
+    account 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB  contract, revision 3
+      owner    0x7dCE041276791F2371EA2e77F99119f22D32cd81
+      operator 0x7dCE041276791F2371EA2e77F99119f22D32cd81
+    key     0x7dCE041276791F2371EA2e77F99119f22D32cd81  externally owned, 59 transactions sent
+  tender 5 of 0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908
+    owner 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1  the account of OG
+    judge 0xb90d0a7Bb619255C0f8fa796DbBA2421abbd96De  the World's hashlock verifier
+    submission 1: 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB  the account of cell-b, accepted, verifier
+
+- OG: the identity on chain is the contract account 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1; the key 0x5Fee42D697975f6154164b29371c1c447F56fb4E is its owner and operator. A transaction the key sends by itself comes from 0x5Fee42D697975f6154164b29371c1c447F56fb4E: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.
+- cell-b: the identity on chain is the contract account 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB; the key 0x7dCE041276791F2371EA2e77F99119f22D32cd81 is its owner and operator. A transaction the key sends by itself comes from 0x7dCE041276791F2371EA2e77F99119f22D32cd81: the ledger would record that address as the worker of an audit job, not the account. The account is the sender only of calls made through its execute.
+- tender 5 is owned by 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 (the account of OG): the adapter accepts its confirmation from that address only, and that address is a contract - a key sending by itself is refused (NotDemander).
+- tender 5, submission 1 (accepted, settled by a verifier) was delivered by 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB (the account of cell-b): that is the worker a receipt would name.
+- tender 5 is judged by 0xb90d0a7Bb619255C0f8fa796DbBA2421abbd96De (the World's hashlock verifier).
+- Here the agents' identities are contract accounts and the keys are other addresses. Taking part with keys alone is an operator-wallet integration; it is not the agents taking part as themselves, and the two are to be accepted separately.

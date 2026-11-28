@@ -1,0 +1,724 @@
+{
+  "schema": "finchain-pouw.deployment-record/2",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "cell-account-integration"
+  ],
+  "deployment": "finchain-sepolia-r2b",
+  "chainId": "85422",
+  "endpointHost": "rpc.finchain.one",
+  "recordedAt": "2026-11-28T07:34:45.788Z",
+  "ok": true,
+  "steward": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.2.3"
+  },
+  "host": {
+    "node": "v22.22.0",
+    "platform": "linux/x64"
+  },
+  "builds": {
+    "build/v2/AuditV1.json": "0c228d9288b93d8ee415476a998bba36d5c04e094d0b723b1d05c854ba97381a",
+    "build/v2/FogaCellGuard.json": "156a9abe18361b29eaec7029989a3fd014d8812cd6d4ba0befd77d4f487d1001",
+    "build/v2/GenesisLedgerV2.json": "16dbc3cd26df16e14e659bd97d2db8f7cbaf0830dbe27a2b217b802c9011c23e",
+    "build/v2/GenesisPolicyV2.json": "b9d4ba68079f177c8c18117fdb33c3f8f6b5a7ea5f84374b408478e4c0d85710",
+    "build/v2/L1BlockSeedSource.json": "a865e9bf8881d832d64ac31de6ca5086367d60d6f4c6120f2203607dee36c3fd",
+    "build/v2/TenderAdapter8414V2.json": "ac723522f8be4153b1f382027cf4cc74b7f1fcde6f15b7596aa2f14607264904",
+    "build/v2/build-record.json": "e76cb4449d73dc3b98d3f9900020fb880b194aab6d8295d564b0b10557fe6492"
+  },
+  "clock": {
+    "genesisTime": "1795923000",
+    "genesis": "2026-11-29T03:30:00Z",
+    "epochDuration": "7200"
+  },
+  "parameters": [
+    {
+      "activeFromEpoch": 0,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": true,
+      "operatorCapBps": 5000,
+      "mode": "controlled-self-test"
+    },
+    {
+      "activeFromEpoch": 1,
+      "budgetPoints": "1000",
+      "halvingInterval": 8,
+      "splitG0Bps": 1000,
+      "workerCapBps": 2500,
+      "minBountyEth": "0.0001",
+      "maxSubsidizedPerDemander": 3,
+      "maxSubsidizedPerPair": 1,
+      "subsidizeDeclaredRelated": false,
+      "operatorCapBps": 5000,
+      "mode": "standard"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "g0.ref",
+      "pool": 0,
+      "baseGmu": 10,
+      "maxGmuPerWorkerPerEpoch": 10,
+      "jobsPerEpoch": 1,
+      "activeFromEpoch": 0,
+      "role": 0,
+      "countsUnits": false,
+      "unitSetRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "issuerSetRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "module": "0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489"
+    },
+    {
+      "name": "g1.tender",
+      "pool": 1,
+      "baseGmu": 50,
+      "maxGmuPerWorkerPerEpoch": 200,
+      "jobsPerEpoch": 0,
+      "activeFromEpoch": 0,
+      "role": 0,
+      "countsUnits": false,
+      "unitSetRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "issuerSetRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "module": "0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A"
+    }
+  ],
+  "parties": [
+    {
+      "name": "OG",
+      "address": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "admitted": true,
+      "operator": 1,
+      "guard": "FogaCellGuard",
+      "contractAccount": true
+    },
+    {
+      "name": "cell-b",
+      "address": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "admitted": true,
+      "operator": 1,
+      "guard": "FogaCellGuard",
+      "contractAccount": true
+    },
+    {
+      "name": "delegate-og",
+      "key": "delegate-og",
+      "fundEth": "0.002",
+      "address": "0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92",
+      "admitted": false,
+      "operator": 0,
+      "guard": null,
+      "contractAccount": false
+    },
+    {
+      "name": "delegate-cell-b",
+      "key": "delegate-cell-b",
+      "fundEth": "0.002",
+      "address": "0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E",
+      "admitted": false,
+      "operator": 0,
+      "guard": null,
+      "contractAccount": false
+    }
+  ],
+  "cells": [
+    {
+      "account": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "code": true,
+      "accountVersion": 3,
+      "presentedBindings": 1,
+      "clauses": 1,
+      "verdict": 1,
+      "aid": "0x2Bb91282D6E8B2Fd1a6f82d76fD0226086E39e42",
+      "aidReadable": true,
+      "aidState": 1,
+      "allows": true,
+      "reasons": []
+    },
+    {
+      "account": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "code": true,
+      "accountVersion": 3,
+      "presentedBindings": 1,
+      "clauses": 1,
+      "verdict": 1,
+      "aid": "0x2Bb91282D6E8B2Fd1a6f82d76fD0226086E39e42",
+      "aidReadable": true,
+      "aidState": 1,
+      "allows": true,
+      "reasons": []
+    }
+  ],
+  "tenderHistory": {
+    "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+    "start": 61392,
+    "deployTx": "0x097042f33ef825a9b465280934da4bba92560c7fb024ea4c64d014178d6cd7d9",
+    "found": "no code at block 61391: all of its history is at or after block 61392"
+  },
+  "supersedes": {
+    "name": "finchain-sepolia-r2",
+    "chainId": 85422,
+    "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+    "manifestSha256": "9f54bf479a98db7739ad760b2c5bf07dfc634b36b6dd596cfa955de76d912f4a"
+  },
+  "transactions": [
+    {
+      "step": "deploy GenesisPolicyV2",
+      "txHash": "0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 0,
+      "status": "confirmed",
+      "address": "0x4706599ee07452A4d102139411dA5796D6D8940f",
+      "block": 718288,
+      "gasUsed": "2845287"
+    },
+    {
+      "step": "deploy L1BlockSeedSource",
+      "txHash": "0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 1,
+      "status": "confirmed",
+      "address": "0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07",
+      "block": 718289,
+      "gasUsed": "162335"
+    },
+    {
+      "step": "deploy GenesisLedgerV2",
+      "txHash": "0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 2,
+      "status": "confirmed",
+      "address": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C",
+      "block": 718290,
+      "gasUsed": "4779748"
+    },
+    {
+      "step": "deploy AuditV1",
+      "txHash": "0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 3,
+      "status": "confirmed",
+      "address": "0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489",
+      "block": 718291,
+      "gasUsed": "295201"
+    },
+    {
+      "step": "deploy TenderAdapter8414V2",
+      "txHash": "0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 4,
+      "status": "confirmed",
+      "address": "0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A",
+      "block": 718292,
+      "gasUsed": "1147977"
+    },
+    {
+      "step": "deploy FogaCellGuard",
+      "txHash": "0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 5,
+      "status": "confirmed",
+      "address": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "block": 718293,
+      "gasUsed": "577486"
+    },
+    {
+      "step": "profile g0.ref: 10 GMU a unit, at most 10 per worker and epoch, from epoch 0",
+      "txHash": "0x0d23525a95eeb610af20f16d32e16a361439af8f6e93a7e2e8c3a709f12de440",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 6,
+      "status": "confirmed",
+      "block": 718294,
+      "gasUsed": "199561"
+    },
+    {
+      "step": "profile g1.tender: 50 GMU a unit, at most 200 per worker and epoch, from epoch 0",
+      "txHash": "0x89d8764f162994f8bb809195277a691abbce89deb65420e247c4ffce493ef3b5",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 7,
+      "status": "confirmed",
+      "block": 718295,
+      "gasUsed": "199597"
+    },
+    {
+      "step": "parameters from epoch 1: standard",
+      "txHash": "0x16924337a16723b13e41c430bd8317ae14ca323e6ab301423ef06c07ee8d8c0b",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 8,
+      "status": "confirmed",
+      "block": 718296,
+      "gasUsed": "87837"
+    },
+    {
+      "step": "admit 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "txHash": "0x19ca59c148cdb2d6d043bf32d3d8338e7152e626ffe33b0f21355642fd863ba1",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 9,
+      "status": "confirmed",
+      "block": 718297,
+      "gasUsed": "48645"
+    },
+    {
+      "step": "declare 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1 under operator 1",
+      "txHash": "0xbec0e7bb33f6ad7a1086cb753d1d9d2ceb7f355747d618436245c7eb1df09c7d",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 10,
+      "status": "confirmed",
+      "block": 718298,
+      "gasUsed": "31484"
+    },
+    {
+      "step": "bind guard FogaCellGuard to 0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1",
+      "txHash": "0x9d13311d55b2bdf17eb5a5d98d0cb991bd71d8494d7eeb133e099467683bce56",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 11,
+      "status": "confirmed",
+      "block": 718299,
+      "gasUsed": "99714"
+    },
+    {
+      "step": "admit 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "txHash": "0x2283e88b0c7b88ac62f97b4ab2ed148b96070189332318bc703f29c93efee373",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 12,
+      "status": "confirmed",
+      "block": 718300,
+      "gasUsed": "48645"
+    },
+    {
+      "step": "declare 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB under operator 1",
+      "txHash": "0x8b63c0fd6ac440576f65f76933e61591f25a203ec3c35a8bb379333312c4e03d",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 13,
+      "status": "confirmed",
+      "block": 718301,
+      "gasUsed": "31484"
+    },
+    {
+      "step": "bind guard FogaCellGuard to 0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB",
+      "txHash": "0x605679215bc2565188b77096236035a5380b36a41968d85af739dde2107f3e0a",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 14,
+      "status": "confirmed",
+      "block": 718304,
+      "gasUsed": "99714"
+    },
+    {
+      "step": "fund 0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92 with 0.002",
+      "txHash": "0x6a0d5c1572f0318364a5d5168846a9c44e3101f596e973ede63168c47e94598d",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 15,
+      "status": "confirmed",
+      "block": 718305,
+      "gasUsed": "21000"
+    },
+    {
+      "step": "fund 0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E with 0.002",
+      "txHash": "0x89fc9fd9bab1ef44134f5693269e93ffdc0c332700b99c7288134db6c676c7da",
+      "from": "0xdC4f433282f00170610d80703b952A250B4cdF50",
+      "nonce": 16,
+      "status": "confirmed",
+      "block": 718306,
+      "gasUsed": "21000"
+    }
+  ],
+  "gasUsed": "10696715",
+  "verification": {
+    "deployment": [
+      {
+        "what": "the manifest is of schema finchain-pouw.deployment/2",
+        "ok": true,
+        "detail": "finchain-pouw.deployment/2"
+      },
+      {
+        "what": "GenesisPolicyV2: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "GenesisPolicyV2"
+      },
+      {
+        "what": "GenesisPolicyV2 at 0x4706599ee07452A4d102139411dA5796D6D8940f: the code on chain is this repository's build of GenesisPolicyV2 (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "GenesisPolicyV2: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x539142ee2853626d5fd2146f6e0dd4643926f8da0099d049c07f4847946b4fcf"
+      },
+      {
+        "what": "GenesisPolicyV2: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f: status 1, contract 0x4706599ee07452A4d102139411dA5796D6D8940f, block 718288"
+      },
+      {
+        "what": "SeedSource: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "L1BlockSeedSource"
+      },
+      {
+        "what": "SeedSource at 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07: the code on chain is this repository's build of L1BlockSeedSource (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "SeedSource: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x2a3114d534a85d36d1f41dc5c7cf8fd028b4e28d3250802e98c61e66677dbb1f"
+      },
+      {
+        "what": "SeedSource: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e: status 1, contract 0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07, block 718289"
+      },
+      {
+        "what": "GenesisLedgerV2: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "GenesisLedgerV2"
+      },
+      {
+        "what": "GenesisLedgerV2 at 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C: the code on chain is this repository's build of GenesisLedgerV2 (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "GenesisLedgerV2: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0xcb21e0598c7bea9d7cb617235eb0c9357c5b8cc7ce4487d38ba4dd4c9edb3f67"
+      },
+      {
+        "what": "GenesisLedgerV2: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9: status 1, contract 0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C, block 718290"
+      },
+      {
+        "what": "AuditV1: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "AuditV1"
+      },
+      {
+        "what": "AuditV1 at 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489: the code on chain is this repository's build of AuditV1 (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "AuditV1: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0x4977a3f228a063e535fb5af462b3fb58c35e20674c0f43271188d095d69fd198"
+      },
+      {
+        "what": "AuditV1: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564: status 1, contract 0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489, block 718291"
+      },
+      {
+        "what": "TenderAdapter8414V2: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "TenderAdapter8414V2"
+      },
+      {
+        "what": "TenderAdapter8414V2 at 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A: the code on chain is this repository's build of TenderAdapter8414V2 (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "TenderAdapter8414V2: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0xe695fa9e66c7ec3bfac914163998615192ee0ad4180ab27bc019570556730318"
+      },
+      {
+        "what": "TenderAdapter8414V2: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a: status 1, contract 0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A, block 718292"
+      },
+      {
+        "what": "FogaCellGuard: a role of a v2 deployment, filled by the build it names",
+        "ok": true,
+        "detail": "FogaCellGuard"
+      },
+      {
+        "what": "FogaCellGuard at 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730: the code on chain is this repository's build of FogaCellGuard (build/v2)",
+        "ok": true
+      },
+      {
+        "what": "FogaCellGuard: the code hash is the one the manifest records",
+        "ok": true,
+        "detail": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+      },
+      {
+        "what": "FogaCellGuard: its deployment transaction created it in the block the manifest names, in the chain at or before this block",
+        "ok": true,
+        "detail": "transaction 0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5: status 1, contract 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730, block 718293"
+      },
+      {
+        "what": "the manifest names every contract of the deployment and records its code",
+        "ok": true
+      },
+      {
+        "what": "the manifest names where each log starts: at or before the block its contract was deployed in, and not after this block",
+        "ok": true,
+        "detail": "deployBlock 718288, policy 718288 (deployed in 718288), ledger 718290 (deployed in 718290), tender 61392; this block 718306"
+      },
+      {
+        "what": "the tenders' log starts where the manifest says the ERC-8414 contract was deployed",
+        "ok": true,
+        "detail": "tenderDeployBlock 61392, external.taskToken8414.deployBlock 61392"
+      },
+      {
+        "what": "the tenders' log holds the ERC-8414 contract's whole history: it starts no later than the contract's first block",
+        "ok": true,
+        "detail": "no code at block 61391: all of its history is at or after block 61392"
+      },
+      {
+        "what": "the ledger is the manifest's GenesisLedgerV2",
+        "ok": true,
+        "detail": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C"
+      },
+      {
+        "what": "the ledger's policy is the manifest's GenesisPolicyV2",
+        "ok": true,
+        "detail": "0x4706599ee07452A4d102139411dA5796D6D8940f"
+      },
+      {
+        "what": "the ledger's seed source is the manifest's SeedSource",
+        "ok": true,
+        "detail": "0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07"
+      },
+      {
+        "what": "the ledger answers at this block as it did when the connection was made",
+        "ok": true
+      },
+      {
+        "what": "the policy's clock is the manifest's",
+        "ok": true,
+        "detail": "genesis 1795923000, epochs of 7200 s"
+      },
+      {
+        "what": "the audit function reads this ledger",
+        "ok": true
+      },
+      {
+        "what": "the audit function is audit-v1",
+        "ok": true
+      },
+      {
+        "what": "the adapter reports to this ledger",
+        "ok": true
+      },
+      {
+        "what": "the adapter reads the manifest's ERC-8414 contract",
+        "ok": true,
+        "detail": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908"
+      },
+      {
+        "what": "the adapter records under g1.tender",
+        "ok": true
+      },
+      {
+        "what": "the manifest records the ERC-8414 contract's code",
+        "ok": true
+      },
+      {
+        "what": "the ERC-8414 contract's code is what it was when the adapter was pointed at it",
+        "ok": true,
+        "detail": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+      },
+      {
+        "what": "epoch 0: the g0.ref profile's function is the manifest's AuditV1",
+        "ok": true,
+        "detail": "0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489"
+      },
+      {
+        "what": "epoch 0: the g1.tender profile's adapter is the manifest's TenderAdapter8414V2",
+        "ok": true,
+        "detail": "0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A"
+      },
+      {
+        "what": "the manifest records the guard of every account the policy bound one to",
+        "ok": true,
+        "detail": "2 account(s)"
+      },
+      {
+        "what": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the policy bound guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 as binding 1 from epoch 0, with the code hash the manifest records",
+        "ok": true,
+        "detail": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 from epoch 0, code hash 0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+      },
+      {
+        "what": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the guard's code is the code it had when it was bound",
+        "ok": true,
+        "detail": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+      },
+      {
+        "what": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the guard is the manifest's FogaCellGuard",
+        "ok": true
+      },
+      {
+        "what": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: the binding in force for epoch 0 is the manifest's",
+        "ok": true,
+        "detail": "binding 1 (0x898644471a222Fd8EDd6aaB54476dE37ACE3a730)"
+      },
+      {
+        "what": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the policy bound guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 as binding 1 from epoch 0, with the code hash the manifest records",
+        "ok": true,
+        "detail": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730 from epoch 0, code hash 0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+      },
+      {
+        "what": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the guard's code is the code it had when it was bound",
+        "ok": true,
+        "detail": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3"
+      },
+      {
+        "what": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the guard is the manifest's FogaCellGuard",
+        "ok": true
+      },
+      {
+        "what": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: the binding in force for epoch 0 is the manifest's",
+        "ok": true,
+        "detail": "binding 1 (0x898644471a222Fd8EDd6aaB54476dE37ACE3a730)"
+      },
+      {
+        "what": "it supersedes finchain-sepolia-r2: a ledger on the same chain, which is another ledger and has its code",
+        "ok": true,
+        "detail": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a on chain 85422; the SHA-256 of its manifest is a commitment, not checked against that file here"
+      }
+    ],
+    "policy": [
+      {
+        "what": "the parameters of epoch 0 are the configuration's (controlled-self-test)",
+        "ok": true
+      },
+      {
+        "what": "the parameters of epoch 1 are the configuration's (standard)",
+        "ok": true
+      },
+      {
+        "what": "the g0.ref profile of epoch 0 is the configuration's",
+        "ok": true
+      },
+      {
+        "what": "the g1.tender profile of epoch 0 is the configuration's",
+        "ok": true
+      },
+      {
+        "what": "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1: admitted, operator 1, guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730, from epoch 0",
+        "ok": true
+      },
+      {
+        "what": "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB: admitted, operator 1, guard 0x898644471a222Fd8EDd6aaB54476dE37ACE3a730, from epoch 0",
+        "ok": true
+      },
+      {
+        "what": "0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92: not admitted, operator undeclared, no guard, from epoch 0",
+        "ok": true
+      },
+      {
+        "what": "0x1d7823CFb6891bb2aDc5F6D86081FD37C818b63E: not admitted, operator undeclared, no guard, from epoch 0",
+        "ok": true
+      }
+    ]
+  },
+  "manifest": {
+    "schema": "finchain-pouw.deployment/2",
+    "name": "finchain-sepolia-r2b",
+    "environment": "public-testnet",
+    "labels": [
+      "controlled-self-test",
+      "cell-account-integration"
+    ],
+    "chainId": 85422,
+    "rpc": "https://rpc.finchain.one",
+    "logChunk": 50000,
+    "deployBlock": 718288,
+    "policyDeployBlock": 718288,
+    "ledgerDeployBlock": 718290,
+    "tenderDeployBlock": 61392,
+    "protocol": "0.2.3",
+    "contracts": {
+      "GenesisPolicyV2": "0x4706599ee07452A4d102139411dA5796D6D8940f",
+      "SeedSource": "0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07",
+      "GenesisLedgerV2": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C",
+      "AuditV1": "0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489",
+      "TenderAdapter8414V2": "0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A",
+      "FogaCellGuard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730"
+    },
+    "code": {
+      "GenesisPolicyV2": {
+        "contract": "GenesisPolicyV2",
+        "codeHash": "0x539142ee2853626d5fd2146f6e0dd4643926f8da0099d049c07f4847946b4fcf",
+        "deployTx": "0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f",
+        "block": 718288
+      },
+      "SeedSource": {
+        "contract": "L1BlockSeedSource",
+        "codeHash": "0x2a3114d534a85d36d1f41dc5c7cf8fd028b4e28d3250802e98c61e66677dbb1f",
+        "deployTx": "0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e",
+        "block": 718289
+      },
+      "GenesisLedgerV2": {
+        "contract": "GenesisLedgerV2",
+        "codeHash": "0xcb21e0598c7bea9d7cb617235eb0c9357c5b8cc7ce4487d38ba4dd4c9edb3f67",
+        "deployTx": "0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9",
+        "block": 718290
+      },
+      "AuditV1": {
+        "contract": "AuditV1",
+        "codeHash": "0x4977a3f228a063e535fb5af462b3fb58c35e20674c0f43271188d095d69fd198",
+        "deployTx": "0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564",
+        "block": 718291
+      },
+      "TenderAdapter8414V2": {
+        "contract": "TenderAdapter8414V2",
+        "codeHash": "0xe695fa9e66c7ec3bfac914163998615192ee0ad4180ab27bc019570556730318",
+        "deployTx": "0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a",
+        "block": 718292
+      },
+      "FogaCellGuard": {
+        "contract": "FogaCellGuard",
+        "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+        "deployTx": "0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5",
+        "block": 718293
+      }
+    },
+    "external": {
+      "taskToken8414": {
+        "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+        "deployBlock": 61392,
+        "deployTx": "0x097042f33ef825a9b465280934da4bba92560c7fb024ea4c64d014178d6cd7d9",
+        "codeHash": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+      }
+    },
+    "guards": {
+      "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1": {
+        "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+        "contract": "FogaCellGuard",
+        "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+        "bindingVersion": 1,
+        "fromEpoch": 0
+      },
+      "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB": {
+        "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+        "contract": "FogaCellGuard",
+        "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+        "bindingVersion": 1,
+        "fromEpoch": 0
+      }
+    },
+    "supersedes": {
+      "name": "finchain-sepolia-r2",
+      "chainId": 85422,
+      "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+      "manifestSha256": "9f54bf479a98db7739ad760b2c5bf07dfc634b36b6dd596cfa955de76d912f4a"
+    },
+    "clock": {
+      "genesisTime": 1795923000,
+      "epochDuration": 7200
+    }
+  },
+  "notes": [
+    "Round R2b: ledger v2 on Finchain Sepolia, worked by two FOGA Cell Accounts - the OG and cell-b - each through a delegate key of its own under one permit its owner signs once. The cells take part as themselves: the worker and the demander of record are their accounts, and each account's guard is the cell guard, bound by this deployment.",
+    "Both cells are the owner's: they are declared under one operator, 1, and are related parties of each other. Epoch 0 runs as a controlled self-test (declared-related parties are subsidized, under that label); from epoch 1 the parameters are the standard ones (declared-related parties are measured and not subsidized). The operator cap is 5000 basis points.",
+    "The delegates are keys made for this round. No key that a running FOGA node sends from takes part, and no cell's owner key sends a transaction: each signs one bounded permit, after the deployment is verified.",
+    "It supersedes the deployment of round R2a, which it names and does not change; round R2a and its evidence stay as they are.",
+    "The figures of this deployment are test points, the values of a view; nothing is issued, credited or claimable. A deployment's genesis time and epoch length are fixed for its life: two-hour epochs are this test deployment's parameter and no statement about any later one."
+  ]
+}

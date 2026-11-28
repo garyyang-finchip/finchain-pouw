@@ -1,0 +1,97 @@
+{
+  "schema": "finchain-pouw.deployment/2",
+  "name": "finchain-sepolia-r2b",
+  "environment": "public-testnet",
+  "labels": [
+    "controlled-self-test",
+    "cell-account-integration"
+  ],
+  "chainId": 85422,
+  "rpc": "https://rpc.finchain.one",
+  "logChunk": 50000,
+  "deployBlock": 718288,
+  "policyDeployBlock": 718288,
+  "ledgerDeployBlock": 718290,
+  "tenderDeployBlock": 61392,
+  "protocol": "0.2.3",
+  "contracts": {
+    "GenesisPolicyV2": "0x4706599ee07452A4d102139411dA5796D6D8940f",
+    "SeedSource": "0x0Fa6Cd8709d862f98614E4Fe9C24153Be2C61C07",
+    "GenesisLedgerV2": "0xA37C344559cebC73086DBfAe8fF8c7a7dFd5577C",
+    "AuditV1": "0xCA72E87349Aa837DA04130aCd3879Fc3A76f8489",
+    "TenderAdapter8414V2": "0xAe082F57FFcd34D2B6516Ed38b8205f5e22c567A",
+    "FogaCellGuard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730"
+  },
+  "code": {
+    "GenesisPolicyV2": {
+      "contract": "GenesisPolicyV2",
+      "codeHash": "0x539142ee2853626d5fd2146f6e0dd4643926f8da0099d049c07f4847946b4fcf",
+      "deployTx": "0x6ecf132427245178935f2fa67e3d51a1c355228d61a2c54802cd9ac9dd29712f",
+      "block": 718288
+    },
+    "SeedSource": {
+      "contract": "L1BlockSeedSource",
+      "codeHash": "0x2a3114d534a85d36d1f41dc5c7cf8fd028b4e28d3250802e98c61e66677dbb1f",
+      "deployTx": "0x58be9c204582f9fbec422085e72c7db2173e407e1412dce1c9977035659ba70e",
+      "block": 718289
+    },
+    "GenesisLedgerV2": {
+      "contract": "GenesisLedgerV2",
+      "codeHash": "0xcb21e0598c7bea9d7cb617235eb0c9357c5b8cc7ce4487d38ba4dd4c9edb3f67",
+      "deployTx": "0x3c858436095994b23cb09986976828cc5e4a4a5f9ce872c0923a0ddcd67cd6a9",
+      "block": 718290
+    },
+    "AuditV1": {
+      "contract": "AuditV1",
+      "codeHash": "0x4977a3f228a063e535fb5af462b3fb58c35e20674c0f43271188d095d69fd198",
+      "deployTx": "0x4c156f758e52b6efd133d767fa0ede469c6a991af85e01475ffa87f3cb665564",
+      "block": 718291
+    },
+    "TenderAdapter8414V2": {
+      "contract": "TenderAdapter8414V2",
+      "codeHash": "0xe695fa9e66c7ec3bfac914163998615192ee0ad4180ab27bc019570556730318",
+      "deployTx": "0x2739fe9d55988b981b00f5ba9c2c2ec47aa93b3f42e64c9703fa9e15acf1355a",
+      "block": 718292
+    },
+    "FogaCellGuard": {
+      "contract": "FogaCellGuard",
+      "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+      "deployTx": "0xda9e7ce849ae8b782f330cc24bdf85f144622e690d91148071e05db6690fd3c5",
+      "block": 718293
+    }
+  },
+  "external": {
+    "taskToken8414": {
+      "address": "0xfA4ED44c3A06f9087D98BEfb99f69ff43b381908",
+      "deployBlock": 61392,
+      "deployTx": "0x097042f33ef825a9b465280934da4bba92560c7fb024ea4c64d014178d6cd7d9",
+      "codeHash": "0xc574b6609c02562149e4d847c7e7eeb2941358543e3a1f3f7ba1e34af097a2aa"
+    }
+  },
+  "guards": {
+    "0x9F7647013499C44B7E0432F5E9e22E4Afd447aD1": {
+      "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "contract": "FogaCellGuard",
+      "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+      "bindingVersion": 1,
+      "fromEpoch": 0
+    },
+    "0x2Dd0c30383EcD6414e0b9DD6F10bf27BFe8715BB": {
+      "guard": "0x898644471a222Fd8EDd6aaB54476dE37ACE3a730",
+      "contract": "FogaCellGuard",
+      "codeHash": "0xd8a6e1fa19c2d6a88270c28c3a91b909ef1242f4b1a162a721956a41f63214d3",
+      "bindingVersion": 1,
+      "fromEpoch": 0
+    }
+  },
+  "supersedes": {
+    "name": "finchain-sepolia-r2",
+    "chainId": 85422,
+    "ledger": "0x7180CdDA4aE494f551d196146E6fcCB717675F1a",
+    "manifestSha256": "9f54bf479a98db7739ad760b2c5bf07dfc634b36b6dd596cfa955de76d912f4a"
+  },
+  "clock": {
+    "genesisTime": 1795923000,
+    "epochDuration": 7200
+  }
+}
