@@ -1,0 +1,30 @@
+# E06 (ip-172-31-13-218), 2026-11-28 14:03-14:06 UTC+8, as pasted by the owner. No key was printed.
+
+## The configuration of the OG's Finchain cell: fields named like wallet/key/signer/owner/path; values shown only when an address or a path starting with ~ / . and holding no ":"
+$ node -e '...' ~/foga-og-finchain/cell.config.json
+identity.owner = 0x5Fee42D697975f6154164b29371c1c447F56fb4E
+skills.dir = <not shown>
+skills.inputDir = <not shown>
+runtime.http.documentsDir = <not shown>
+access.keys.0.id = <not shown>
+access.keys.0.sha256 = <not shown>
+access.keys.0.level = <not shown>
+access.keys.0.visibility = <not shown>
+access.keys.0.note = <not shown>
+access.signers.default = <not shown>
+access.signers.actsNeedRequestBinding = <not shown>
+maintenance.dir = <not shown>
+flows.dir = <not shown>
+
+## The FOGA services: user, start command, environment files (any 64 hex digits masked); then any FOGA_OPERATOR_KEY_FILE line under /etc/foga
+== foga-og-finchain.service
+ExecStart={ path=/home/ec2-user/.nvm/versions/node/v24.22.1/bin/node ; argv[]=/home/ec2-user/.nvm/versions/node/v24.22.1/bin/node /home/ec2-user/finchip/finch/foga/bin/foga.js node serve --config /home/ec2-user/foga-og-finchain/cell.config.json --wallet /home/ec2-user/foga-og/wallet --listen 127.0.0.1:8788 ; ignore_errors=no ; start_time=[Fri 2026-11-13 14:09:07 UTC] ; stop_time=[n/a] ; pid=130949 ; code=(null) ; status=0/0 }
+User=ec2-user
+== foga-og.service
+ExecStart={ path=/home/ec2-user/.nvm/versions/node/v24.22.1/bin/node ; argv[]=/home/ec2-user/.nvm/versions/node/v24.22.1/bin/node /home/ec2-user/finchip/finch/foga/bin/foga.js node serve --config /home/ec2-user/foga-og/og.config.json --wallet /home/ec2-user/foga-og/wallet --listen 127.0.0.1:8787 ; ignore_errors=no ; start_time=[Fri 2026-11-13 14:09:07 UTC] ; stop_time=[n/a] ; pid=130950 ; code=(null) ; status=0/0 }
+User=ec2-user
+(no FOGA_OPERATOR_KEY_FILE line under /etc/foga)
+
+## The wallet directory (earlier, 03:09 UTC+8)
+-rw-------. 1 ec2-user ec2-user  67 Nov  3 08:40 signer.key
+-rw-r--r--. 1 ec2-user ec2-user 226 Nov  3 08:40 wallet.json

@@ -1,0 +1,10 @@
+# Mac mini (host A), ~/finchain, 2026-11-28 14:24 UTC+8, as pasted by the owner. The owner typed "yes".
+% make l2-send CHAIN=sepolia TO=0xdC4f433282f00170610d80703b952A250B4cdF50 AMOUNT=0.02 ROLE=deployer L2_RPC=https://rpc.finchain.one
+L2 RPC: https://rpc.finchain.one (chain id 85422)
+from:   0xA199250F15DCE1399288F967f8652A882B1947e9 (deployer)  0.530000 ETH
+to:     0xdC4f433282f00170610d80703b952A250B4cdF50  0.000000 ETH
+amount: 0.02 ETH
+Send now? [yes/NO] yes
+tx 0x832167bfbc84d57e13d43650340b4a7fa455b604caa3faf404ccf8522b30599f in block 716188
+from:   0xA199250F15DCE1399288F967f8652A882B1947e9  0.510000 ETH
+to:     0xdC4f433282f00170610d80703b952A250B4cdF50  0.020000 ETH

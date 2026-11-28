@@ -1,0 +1,52 @@
+{
+  "schema": "finchain-pouw.chain-reading/1",
+  "endpointHost": "rpc.finchain.one",
+  "client": {
+    "name": "finchain-pouw",
+    "version": "0.2.3"
+  },
+  "recordedAt": "2026-11-28T06:19:09.832Z",
+  "chainId": "85422",
+  "observedAt": "2026-11-28T06:19:09.653Z",
+  "latest": {
+    "number": 716038,
+    "timestamp": "1795846748"
+  },
+  "finalized": {
+    "number": 715417,
+    "timestamp": "1795845506"
+  },
+  "finalityLagSeconds": "1242",
+  "fees": {
+    "maxFeePerGas": "1000502",
+    "maxPriorityFeePerGas": "1000000",
+    "gasPrice": "1000251",
+    "feeCap": "1000502"
+  },
+  "dataFee": {
+    "oracle": "0x420000000000000000000000000000000000000F",
+    "txBytes": 2000,
+    "perTransaction": "2352527961475",
+    "how": "getL1FeeUpperBound",
+    "unavailable": null
+  },
+  "coverage": {
+    "address": "0x928Fa5F1155d05E23c827bd31CdF42E5f621ff92",
+    "fundsAssumed": true,
+    "funds": "2000000000000000",
+    "gas": "4113185",
+    "transactions": "5",
+    "marginPercent": "50",
+    "value": "0",
+    "execution": "4115249818870",
+    "data": "11762639807375",
+    "needed": "15877889626245",
+    "withMargin": "23816834439368",
+    "covered": true
+  },
+  "reading": [
+    "Every value is the endpoint's answer at its latest block when it was asked; the finalized block is the one it named then. It holds for now only.",
+    "feeCap is maxFeePerGas where the endpoint gives one, else gasPrice: what a transaction sent now would carry, and what its sender must hold per unit of its gas limit.",
+    "The data fee is the GasPriceOracle's upper bound for a transaction of txBytes; it is not the fee of a particular transaction."
+  ]
+}
